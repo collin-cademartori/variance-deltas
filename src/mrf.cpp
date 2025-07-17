@@ -12,17 +12,32 @@ struct Parameter {
   string name;
 };
 
-const vector<Parameter> params = { 
-  { .name = "theta" },
-  { .name = "mu" },
-  { .name = "tau" }
- };
+vector<Parameter> params(0);
 
-const vector<pair<int, int>> markov_edges = {
-  make_pair(0, 1), make_pair(0, 2)
-};
+vector<pair<int, int>> markov_edges;
 
 int main(int, char* []) {
+
+  // Read MRF file
+  ifstream mrf_file("../data/elec_r3.mrf");
+  if (!mrf_file.is_open()) {
+      std::cerr << "Could not open mrf file, aborting." << std::endl;
+      return 1;
+  }
+
+  string mrf_line;
+  while(getline(mrf_file, mrf_line) && mrf_line != "---") {
+    params.emplace_back(Parameter{ mrf_line });
+  }
+
+  while(getline(mrf_file, mrf_line)){
+    auto comma_pos = mrf_line.find(',');
+    int e1 = stoi(mrf_line.substr(0, comma_pos)) - 1;
+    int e2 = stoi(mrf_line.substr(comma_pos + 1)) - 1;
+    markov_edges.emplace_back(make_pair(e1, e2));
+  }
+
+  mrf_file.close();
 
   // Define empry Markov random field
   typedef adjacency_list<vecS, vecS, undirectedS, Parameter> MRF;
