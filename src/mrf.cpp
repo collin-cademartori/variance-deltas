@@ -2,24 +2,16 @@
 #include <fstream>
 #include <iterator>
 
-#include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graphviz.hpp>
-#include <boost/graph/undirected_dfs.hpp>
+#include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/property_map/property_map.hpp>
 
-#include "min_sep_vis.hpp"
+#include <markov.hpp>
 
 using namespace std;
 using namespace boost;
-
-struct Parameter {
-  string name;
-};
-
-typedef adjacency_list<vecS, vecS, undirectedS, Parameter> MRF;
-typedef graph_traits<MRF>::vertex_descriptor Vertex;
-typedef graph_traits<MRF>::edge_descriptor Edge;
+using namespace markov;
 
 vector<Parameter> params(0);
 
@@ -27,88 +19,6 @@ vector<Parameter> params(0);
 // Note: This is okay because only edges are mutated, so
 // vertex descriptors are not invalidated
 map<string, Vertex> param_vertices;
-
-set<string> minimal_separator_u(MRF mrf, vector<string> u, vector<string> v) {
-  add_vertex({ .name = "canary" }, mrf);
-
-  // Find vertices in u by name
-  set<Vertex> U;
-  for(const string& u_name: u) {
-    U.insert(param_vertices[u_name]);
-  }
-
-  set<Vertex> NU;
-  NU.insert(U.begin(), U.end());
-  for(const Vertex& u_vertex: U) {
-    auto [adj_begin, adj_end] = adjacent_vertices(u_vertex, mrf);
-    for_each(adj_begin, adj_end, [&](const Vertex& adj_vertex) {
-      NU.insert(adj_vertex);
-    });
-  }
-
-  // Find all edges that we need to remove to disconnect neighborhood of U
-  // and remove them from the graph, storing the vertex descriptors.
-  set<pair<Vertex, Vertex>> disc_edges;
-  for(const Vertex& u_vertex: U) {
-    auto [adj_begin, adj_end] = adjacent_vertices(u_vertex, mrf);
-    for_each(adj_begin, adj_end, [&](const Vertex& adj_vertex) {
-      auto [out_begin, out_end] = out_edges(adj_vertex, mrf);
-      for_each(out_begin, out_end, [&](const Edge& adj_edge){
-        Vertex u1 = source(adj_edge, mrf);
-        Vertex u2 = target(adj_edge, mrf);
-        if(NU.find(u1) == NU.end() || NU.find(u2) == NU.end()) {
-          disc_edges.insert(make_pair(u1, u2));
-        }
-      }); 
-    });
-  }
-
-  // Does not invalidate vertex descriptors!
-  for(auto& vertex_pair: disc_edges) {
-    remove_edge(vertex_pair.first, vertex_pair.second, mrf);
-  }
-
-  // Set up map for tracking which vertices are part of the
-  // connected component of v, as well as visitor which
-  // writes to this map during DFS.
-  map<string, bool> conn_v;
-  auto [vertex_begin, vertex_end] = vertices(mrf);
-  for_each(vertex_begin, vertex_end, [&](const Vertex& vertex){
-    conn_v.insert(make_pair(mrf[vertex].name, false));
-  });
-
-  component_recorder sep_rec(conn_v);
-
-  // Define external color map to be used by DFS to track visited edges
-  map<Edge, default_color_type> dfs_color_map;
-  associative_property_map<map<Edge, default_color_type>> dfs_color_property_map(dfs_color_map);
-
-  map<Vertex, default_color_type> dfv_color_map;
-  associative_property_map<map<Vertex, default_color_type>> dfv_color_property_map(dfv_color_map);
-
-  // We take the first vertex in v, assuming that all vertices in v
-  // are in the same connected component, so that the choice is arbitrary.
-  Vertex start_vertex = param_vertices[v[0]];
-
-  cout << "Running DFS" << endl;
-  depth_first_visit(mrf, start_vertex, sep_rec, dfv_color_property_map);
-  cout << "DFS finished." << endl;
-
-  // For each edge with only one vertex in u component, if other
-  // vertex lies in v component, add u vertex to separator.
-  // Additionally, repair graph by restoring removed edges.
-  set<string> separator;
-  for(pair<Vertex, Vertex> vertex_pair: disc_edges) {
-    if(conn_v[mrf[vertex_pair.first].name]) {
-      separator.insert(mrf[vertex_pair.second].name);
-    } else if(conn_v[mrf[vertex_pair.second].name]) {
-      separator.insert(mrf[vertex_pair.first].name);
-    }
-    add_edge(vertex_pair.first, vertex_pair.second, mrf);
-  }
-
-  return separator;
-}
 
 int main(int, char* []) {
 
@@ -156,19 +66,34 @@ int main(int, char* []) {
 
   cout << "MRF read." << endl;
 
-  vector<string> init_names = { "mu_b[49,40]" };
-  vector<string> end_names = { "n_democrat_potential[1]" };
-  set<string> separator = minimal_separator_u(mrf, end_names, init_names);
+  vertex_names init_names = { "mu_b[49,39]" };
+  vertex_names end_names = { "n_democrat_potential[1]" };
+  // set<string> separator = minimal_separator(mrf, init_names, end_names, param_vertices).first;
 
-  for(auto& sep_name: separator) {
-    cout << sep_name << ", ";
-  }
-  cout << endl << separator.size() << endl;
+  // for(auto& sep_name: separator) {
+  //   cout << sep_name << ", ";
+  // }
+  // cout << endl << separator.size() << endl;
 
-  set<string> separator_rev = minimal_separator_u(mrf, init_names, end_names);
+  // markov_chain test_chain = make_chain(mrf, init_names, end_names, param_vertices, 0.8);
+  // for(const vertex_names& chain_link: test_chain) {
+  //   for(const string& v_name: chain_link) {
+  //     cout << v_name << "; ";
+  //   }
+  //   cout << endl << "-------------------------------" << endl;
+  // }
 
-  for(auto& sep_name: separator_rev) {
-    cout << sep_name << ", ";
-  }
-  cout << endl << separator_rev.size() << endl;
+  MTree test_tree = make_tree(mrf, "mu_b[49,39]", { "n_democrat_potential[1]", "n_democrat_potential[2]" }, {}, param_vertices, 0.9);
+
+  map<Node, size_t> tree_index;
+  int vindex = 0;
+  const auto tree_nodes = vertices(test_tree);
+  for_each(tree_nodes.first, tree_nodes.second, [&tree_index, &vindex](const Node& tree_node){
+    tree_index[tree_node] = vindex;
+    vindex++;
+  });
+
+  ofstream gfile("../graph_test.gv");
+  write_graphviz(gfile, test_tree, default_writer{}, default_writer{}, default_writer{}, make_assoc_property_map(tree_index));
+  gfile.close();
 }
