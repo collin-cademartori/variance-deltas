@@ -1,7 +1,5 @@
 #include <boost/graph/adjacency_list.hpp>
 
-using namespace boost;
-
 typedef std::set<std::string> vertex_names;
 typedef std::vector<std::string> vertex_names_v;
 
@@ -9,9 +7,9 @@ struct Parameter {
   std::string name;
 };
 
-typedef adjacency_list<vecS, vecS, undirectedS, Parameter> MRF;
-typedef graph_traits<MRF>::vertex_descriptor Vertex;
-typedef graph_traits<MRF>::edge_descriptor Edge;
+typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, Parameter> MRF;
+typedef boost::graph_traits<MRF>::vertex_descriptor Vertex;
+typedef boost::graph_traits<MRF>::edge_descriptor Edge;
 typedef std::map<std::string, Vertex> VertexMap;
 
 struct MarkovNode {
@@ -21,6 +19,6 @@ struct MarkovNode {
   std::set<int> chain_nums;
 };
 
-typedef adjacency_list<listS, listS, directedS, MarkovNode> MTree;
-typedef graph_traits<MTree>::vertex_descriptor Node;
-typedef graph_traits<MTree>::edge_descriptor Branch;
+typedef boost::adjacency_list<boost::listS, boost::listS, boost::directedS, MarkovNode> MTree;
+typedef boost::graph_traits<MTree>::vertex_descriptor Node;
+typedef boost::graph_traits<MTree>::edge_descriptor Branch;

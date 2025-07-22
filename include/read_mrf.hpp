@@ -1,1 +1,1 @@
-std::pair<MRF, VertexMap> read_mrf(string mrf_file_path);
+std::pair<MRF, VertexMap> read_mrf(std::string mrf_file_path);

@@ -10,6 +10,8 @@
 #include <markov.hpp>
 #include <ws_client.hpp>
 #include <read_mrf.hpp>
+#include <read_stan.hpp>
+#include <regression.hpp>
 
 using namespace std;
 using namespace boost;
@@ -22,8 +24,11 @@ using namespace markov;
 int main(int, char* []) {
 
   auto [mrf, param_vertices] = read_mrf("../data/elec_r3.mrf");
+  standata posterior_data = read_stan_file("../data/standata", 6);
 
   MTree test_tree = make_tree(mrf, "mu_b[49,39]", { "n_democrat_potential[1]", "n_democrat_potential[2]" }, {}, param_vertices, 0.9);
+
+  double ars = adj_r_squared({ "n_democrat_potential[1]", "n_democrat_potential[2]" }, "mu_b[49,39]", posterior_data);
 
   map<Node, size_t> tree_index;
   int vindex = 0;
