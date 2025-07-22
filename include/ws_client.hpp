@@ -1,0 +1,1 @@
+void start_ws_client(std::string initial_message);
