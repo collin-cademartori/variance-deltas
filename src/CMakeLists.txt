@@ -9,7 +9,7 @@ find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
 
-set(GRAPH_SOURCES mrf.cpp markov.cpp ws_client.cpp read_mrf.cpp read_stan.cpp regression.cpp)
+set(GRAPH_SOURCES mrf.cpp markov.cpp ws_client.cpp read_mrf.cpp read_stan.cpp regression.cpp serialize_tree.cpp)
 add_executable(graph_test ${GRAPH_SOURCES})
 target_link_libraries(graph_test Boost::headers)
 target_link_libraries(graph_test OpenSSL::SSL OpenSSL::Crypto)

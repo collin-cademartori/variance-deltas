@@ -12,37 +12,45 @@
 #include <read_mrf.hpp>
 #include <read_stan.hpp>
 #include <regression.hpp>
+#include <serialize_tree.hpp>
 
 using namespace std;
 using namespace boost;
 using namespace markov;
-
-// Define map from parameter names to vertices.
-// Note: This is okay because only edges are mutated, so
-// vertex descriptors are not invalidated
 
 int main(int, char* []) {
 
   auto [mrf, param_vertices] = read_mrf("../data/elec_r3.mrf");
   standata posterior_data = read_stan_file("../data/standata", 6);
 
-  MTree test_tree = make_tree(mrf, "mu_b[49,39]", { "n_democrat_potential[1]", "n_democrat_potential[2]" }, {}, param_vertices, 0.9);
+  string leaf_base = "n_democrat_potential";
+  set<string> leaves;
+  for(int j = 1; j <= 54; ++j) {
+    leaves.insert(leaf_base + "[" + to_string(j) + "]");
+  }
 
-  double ars = adj_r_squared({ "n_democrat_potential[1]", "n_democrat_potential[2]" }, "mu_b[49,39]", posterior_data);
+  auto [mtree, root_node] = make_tree(
+    mrf, "mu_b[49,39]", { leaves },
+    {}, param_vertices,
+    posterior_data, 0.9);
+  
+  cout << *(*mtree)[root_node].parameters.begin() << endl;
 
-  map<Node, size_t> tree_index;
-  int vindex = 0;
-  const auto tree_nodes = vertices(test_tree);
-  for_each(tree_nodes.first, tree_nodes.second, [&tree_index, &vindex](const Node& tree_node){
-    tree_index[tree_node] = vindex;
-    vindex++;
-  });
+  string tree_str = serialize_tree(root_node, *mtree);
 
-  ostringstream gstream;
-  write_graphviz(gstream, test_tree, default_writer{}, default_writer{}, default_writer{}, make_assoc_property_map(tree_index));
-  string graph_str = gstream.str();
+  // map<Node, size_t> tree_index;
+  // int vindex = 0;
+  // const auto tree_nodes = vertices(mtree);
+  // for_each(tree_nodes.first, tree_nodes.second, [&tree_index, &vindex](const Node& tree_node){
+  //   tree_index[tree_node] = vindex;
+  //   vindex++;
+  // });
 
-  start_ws_client(graph_str);
+  // ostringstream gstream;
+  // write_graphviz(gstream, mtree, default_writer{}, default_writer{}, default_writer{}, make_assoc_property_map(tree_index));
+  // string graph_str = gstream.str();
+
+  start_ws_client(tree_str);
 }
 
   // vertex_names init_names = { "mu_b[49,39]" };

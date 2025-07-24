@@ -35,7 +35,7 @@ std::pair<MRF, VertexMap> read_mrf(string mrf_file_path) {
 
   mrf_file.close();
 
-  // Define empry Markov random field
+  // Define empty Markov random field
   MRF mrf(0);
 
   // Add vertices to graph with names stored as internal properties,

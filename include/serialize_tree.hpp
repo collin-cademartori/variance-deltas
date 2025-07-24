@@ -1,0 +1,3 @@
+#include <parameter_graph.hpp>
+
+std::string serialize_tree(const Node& root, const MTree& tree);

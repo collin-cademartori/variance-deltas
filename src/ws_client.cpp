@@ -6,17 +6,23 @@ using WsClient = SimpleWeb::SocketClient<SimpleWeb::WS>;
 
 WsClient ws_client("localhost:8000");
 
-void start_ws_client(string initial_message) {
+void send_tree(string tree_string, WsClient::Connection& conn) {
+  string msg_string = "{\"type\":\"tree\",";
+  msg_string += ("\"tree\":" + tree_string + "}");
+  conn.send(msg_string);
+}
+
+void start_ws_client(string initial_tree) {
   ws_client.on_message = [](std::shared_ptr<WsClient::Connection> connection, std::shared_ptr<WsClient::InMessage> in_message) {
     if(in_message -> string() == "test_message") {
       connection -> send("test_receipt");
     }
   };
 
-  ws_client.on_open = [&initial_message](std::shared_ptr<WsClient::Connection> connection) {
+  ws_client.on_open = [&initial_tree](std::shared_ptr<WsClient::Connection> connection) {
     cout << "Connected to server, sending tree." << endl;
     connection -> send("{ \"type\": \"id\", \"id\": \"backend\" }");
-    connection -> send(initial_message);
+    send_tree(initial_tree, *connection);
   };
 
   ws_client.on_close = [](std::shared_ptr<WsClient::Connection> /*connection*/, int status, const string & /*reason*/) {

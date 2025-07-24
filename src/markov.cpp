@@ -5,6 +5,7 @@
 
 #include <markov.hpp>
 #include <min_sep_vis.hpp>
+#include <regression.hpp>
 
 using namespace std;
 using namespace boost;
@@ -196,15 +197,22 @@ set<int> int_range(int lower, int upper) {
   return(irange);
 }
 
-std::optional<Node> search_children(Node parent_node, vertex_names parameters, MTree tree) {
+std::optional<Node> search_children(Node parent_node, vertex_names parameters, const unique_ptr<MTree>& tree) {
   std::optional<Node> found_node = nullopt;
-  auto branches = out_edges(parent_node, tree);
-  for_each(branches.first, branches.second, [&tree, &parameters, &found_node](const Branch& branch) {
-    Node child_node = target(branch, tree);
-    if(tree[child_node].parameters == parameters) {
+  auto [branch_it, branch_end] = out_edges(parent_node, *tree);
+  while(branch_it != branch_end) {
+    Node child_node = target(*branch_it, *tree);
+    if((*tree)[child_node].parameters == parameters) {
       found_node = child_node;
     }
-  });
+    branch_it = std::next(branch_it);
+  }
+  // for_each(branches.first, branches.second, [tree, &parameters, &found_node](const Branch& branch) {
+  //   Node child_node = target(branch, *tree);
+  //   if((*tree)[child_node].parameters == parameters) {
+  //     found_node = child_node;
+  //   }
+  // });
   return found_node;
 }
 
@@ -225,57 +233,70 @@ string print_set(set<string> sset) {
 }
 
 // TBD: Add global params functionablity
-MTree markov::make_tree(MRF mrf, const string& root, const vector<string> leaves, const vertex_names& globals, VertexMap& param_vertices, double y_cut) {
+std::pair<unique_ptr<MTree>, Node> markov::make_tree(
+  MRF mrf, const string& root, const vector<vertex_names> leaves, 
+  const vertex_names& globals, 
+  VertexMap& param_vertices,
+  std::optional<standata> posterior_data = nullopt,
+  double y_cut = 1
+) {
   int num_leaves = leaves.size();
   cout << "Number of leaves is " << num_leaves << endl;
   vector<markov_chain> chains(num_leaves);
   vector<markov_chain::iterator> chain_it(num_leaves);
   for(int ci = 0; ci < num_leaves; ++ci) {
-    chains[ci] = markov::make_chain(mrf, { root }, { leaves[ci] }, param_vertices, y_cut);
+    chains[ci] = markov::make_chain(mrf, { root }, leaves[ci], param_vertices, y_cut);
     chain_it[ci] = chains[ci].begin();
   }
 
   stack<Node> node_stack;
-
-  MTree markov_tree(0);
+  unique_ptr<MTree> markov_tree = make_unique<MTree>(0);
+  std::optional<double> ered = nullopt;
+  if(posterior_data != nullopt) {
+    ered = 0;
+  }
   Node root_node = add_vertex({ 
     .parameters = { root },
-    .ered = nullopt,
+    .ered = ered,
     .depth = 0,
     .chain_nums = int_range(0, num_leaves)
-  }, markov_tree);
+  }, *markov_tree);
   node_stack.push(root_node);
 
 
   while(node_stack.size() > 0) {
     Node cur_node = node_stack.top();
     node_stack.pop();
-    set<int> cur_node_chains(markov_tree[cur_node].chain_nums);
+    set<int> cur_node_chains((*markov_tree)[cur_node].chain_nums);
     for(int ci: cur_node_chains) {
       //cout << "CI is " << ci << endl;
-      int cur_depth = markov_tree[cur_node].depth;
+      int cur_depth = (*markov_tree)[cur_node].depth;
       if(std::next(chain_it[ci]) != chains[ci].end()) {
         chain_it[ci] = std::next(chain_it[ci]);
         vertex_names chain_parameters = *chain_it[ci];
 
         std::optional<Node> next_node = search_children(cur_node, chain_parameters, markov_tree);
         if(next_node == nullopt) {
+          std::optional<double> ered = nullopt;
+          if(posterior_data != nullopt) {
+            ered = adj_r_squared(chain_parameters, root, posterior_data.value());
+          }
           Node new_node = add_vertex({ 
             .parameters = chain_parameters,
-            .ered = nullopt,
+            .ered = ered,
             .depth = cur_depth + 1,
             .chain_nums = { ci }
-          }, markov_tree);
-          cout << "Connecting " << print_set(markov_tree[cur_node].parameters) << " to " << print_set(markov_tree[new_node].parameters) << "." << endl;
-          add_edge(cur_node, new_node, markov_tree);
+          }, *markov_tree);
+          cout << "Connecting " << print_set((*markov_tree)[cur_node].parameters) << " to " << print_set((*markov_tree)[new_node].parameters) << "." << endl;
+          add_edge(cur_node, new_node, *markov_tree);
           node_stack.push(new_node);
         } else {
           cout << "Found child!" << endl;
-          markov_tree[next_node.value()].chain_nums.insert(ci);
+          (*markov_tree)[next_node.value()].chain_nums.insert(ci);
         }
       }
     }
   }
 
-  return(markov_tree);
+  return(std::make_pair(std::move(markov_tree), root_node));
 }

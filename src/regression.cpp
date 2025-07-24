@@ -1,5 +1,6 @@
 #include <Eigen/Dense>
 #include <read_stan.hpp>
+#include <set>
 
 using namespace std;
 using Eigen::MatrixXd;
@@ -8,10 +9,12 @@ using Eigen::VectorXd;
 using Eigen::all;
 using Eigen::seqN;
 
-MatrixXd predictor_matrix(const standata& data, vector<string> pred_names, int poly, bool interactions){
+MatrixXd predictor_matrix(const standata& data, set<string> pred_names, int poly, bool interactions){
   vector<int> var_indices(pred_names.size());
-  for(int pi = 0; pi < pred_names.size(); ++pi) {
-    var_indices[pi] = data.vars.at(pred_names[pi]);
+  int pi = 0;
+  for(const string& pred_name: pred_names) {
+    var_indices[pi] = data.vars.at(pred_name);
+    pi++;
   }
 
   VectorXd intercept = (ArrayXd::Zero(data.samples.rows()) + 1).matrix();
@@ -48,7 +51,7 @@ MatrixXd predictor_matrix(const standata& data, vector<string> pred_names, int p
   return out_matrix;
 }
 
-double adj_r_squared(vector<string> predictor_names, string response_name, standata data) {
+double adj_r_squared(set<string> predictor_names, string response_name, standata data) {
 
   int num_observations = data.samples.rows();
   VectorXd response = data.samples(all, data.vars[response_name]);

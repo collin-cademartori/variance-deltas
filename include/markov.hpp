@@ -1,4 +1,5 @@
 #include <parameter_graph.hpp>
+#include <read_stan.hpp>
 
 namespace markov {
 
@@ -10,6 +11,10 @@ namespace markov {
 
   markov_chain make_chain(MRF mrf, vertex_names source, vertex_names sink, const std::map<std::string, Vertex>& param_vertices, double y_cut);
 
-  MTree make_tree(MRF mrf, const std::string& root, const std::vector<std::string> leaves, const vertex_names& globals, VertexMap& param_vertices, double y_cut);
+  std::pair<std::unique_ptr<MTree>, Node> make_tree(
+    MRF mrf, const std::string& root, const std::vector<vertex_names> leaves,
+    const vertex_names& globals, VertexMap& param_vertices,
+    std::optional<standata> posterior_data,
+    double y_cut);
 
 }
