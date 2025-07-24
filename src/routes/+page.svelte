@@ -1,55 +1,174 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { ws } from "$lib/websocket";
+  import * as ws from "$lib/websocket";
   import * as d3 from "d3";
-  import { flat_tree, type flat_node } from "$lib/test_tree";
+  import { annotate_tree, test_tree_flat, type flat_node, type flat_tree } from "$lib/test_tree";
 
-  const height = 600;
-  const width = 600;
+  const height = 500;
+  const width = 1500;
 
-  console.log(flat_tree);
+  //const x = d3.scalePow([0, 1], [0, width]).exponent(0.5);
+  const x = d3.scaleLinear([0, 1], [0, width]);
+  const y = d3.scaleLinear([0, 1], [0, 0.95 * height]);
+  const l_height = 0.045;
 
-  onMount(() => {
-    let svg = d3.select("#tree");
+  function draw_tree(tree : flat_tree, wf : (text : string | undefined) => number) {
     let tree_elem = d3.select("#tree_g");
-
-    let y = d3.scaleLinear([1, 0], [0, 0.95 * height]);
-    let yaxis = d3.axisLeft(y);
-    yaxis(svg.select("#y_axis"));
-
-    let x = d3.scaleLinear([0, 1], [0, 1 * width]);
-    // let xaxis = d3.axisBottom(x);
-    // xaxis(svg.select("#x_axis"));
-
-    for(const node of flat_tree) {
-      const pnode = flat_tree.find((n) => n.name === node.parent);
+    for(let i = 0; i < tree.length; ++i) {
+      const node = tree[i];
+      const pnode = tree.find((n) => n.name === node.parent);
       if(pnode != null) {
         const link = d3.line<flat_node>(
-          (d) => 50 + x(d.x_pos ?? 0),
-          (d) => y(d.ered)
-        ).curve(d3.curveStepAfter);
+          (d) => x(d.ered),
+          (d) => y(d.x_pos ?? 0)
+        ).curve(d3.curveStepBefore);
         tree_elem.append("path").attr("d", link([pnode, node]))
           .attr("stroke", "black")
-          .attr("stroke-width", 1.5)
-          .attr("fill", "none");
+          .attr("stroke-width", 2.5)
+          .attr("fill", "none")
+          .attr("id", `branch-${node.shortname}-${pnode.shortname}`)
+        tree_elem.append("path").attr("d", link([pnode, node]))
+          .attr("stroke", "red")
+          .attr("stroke-width", 15)
+          .attr("fill", "none")
+          .attr("opacity", 0)
+          .on("mouseover", () => {
+            const vis_path = document.getElementById(`branch-${node.shortname}-${pnode.shortname}`);
+            vis_path?.setAttribute("stroke", "#0161df");
+          })
+          .on("mouseleave", () => {
+            const vis_path = document.getElementById(`branch-${node.shortname}-${pnode.shortname}`);
+            vis_path?.setAttribute("stroke", "black");
+          });
       }
     }
 
-    tree_elem.selectAll(".tree_node").data(flat_tree)
-      .enter().append("circle")
-      .attr("class", "tree_node")
-      .attr("r", 5)
-      .attr("cx", (d : flat_node) => 50 + x(d.x_pos ?? 0))
-      .attr("cy", (d: flat_node) => y(d.ered))
-      .attr("fill", "black")
-      .attr("stroke", "white")
-      .attr("stroke-width", 4);
+    tree_elem.selectAll(".tree_node")
+      .data(tree, (d) => (d as flat_node).name)
+      .join((enter) => {
+        let g = enter.append("g");
+        
+        g.attr("class", "tree-node");
+
+        g.append("circle")
+          .attr("r", 5)
+          .attr("cx", (d : flat_node) => x(d.ered))
+          .attr("cy", (d: flat_node) => y(d.x_pos ?? 0))
+          .attr("fill", "black")
+          .attr("stroke", "white")
+          .attr("stroke-width", 2.5);
+
+        let fo = g.append("foreignObject")
+          .attr("x", (d : flat_node) => x(0.003 + d.ered))
+          .attr("y", (d: flat_node) => y(d.label_y ?? 0))
+          .attr("height", (d: flat_node) => y(l_height))
+          .attr("width", (d: flat_node) =>  x(2 * wf(d.shortname)));
+
+        let ld = fo.append("xhtml:div")
+          .attr("class", "label-div")
+          .style("background", "white")
+          .style("font-family", "sans-serif")
+          .style("box-sizing", "border-box")
+          .style("padding", "4px")
+          .style("border-width", "0.1rem")
+          .style("border-color", "black")
+          .style("border-style", "solid")
+          //.style("border-radius", "0.2rem")
+          .style("font-size", "11px")
+          .style("user-select", "none")
+          .style("width", "fit-content")
+          .style("height", "100%")
+          .style("opacity", "0.7")
+          .on("mouseover", (ev) => ev.currentTarget.style.opacity = 1)
+          .on("mouseleave", (ev) => ev.currentTarget.style.opacity = 0.7)
+          .html((d : flat_node) => {
+            if(d.shortname == null) {
+              throw new Error("Cannot create label, shortname undefined!");
+            } else {
+              return(d.shortname);
+            }
+          });
+
+        ld.append("xhtml:div")
+          .style("position", "absolute")
+          .style("width", "7px")
+          .style("height", "5px")
+          .style("bottom", (d : flat_node) => {
+            if(d.x_pos == null || d.label_y == null) {
+              return 0;
+            } else {
+              return d.x_pos > d.label_y ? null : 0
+            }
+          })
+          .style("top", (d : flat_node) => {
+            if(d.x_pos == null || d.label_y == null) {
+              return 0;
+            } else {
+              return d.x_pos > d.label_y ? null : 0
+            }
+          })
+          .style("left", "-2px")
+          .style("background", "black")
+          .style("border-radius", "1.5px")
+          //.style("transform", "rotate(45deg)")
+          
+        return g;
+      });
+  }
+
+  onMount(() => {
+    const svg = d3.select("#tree");
+    let xaxis = d3.axisBottom(x);
+    xaxis(svg.select("#x_axis"));
+
+    console.log("x(0) is ", x(0));
+    console.log("x(1) is ", x(1));
+
+    const ctx = (new OffscreenCanvas(10000, 10000)).getContext('2d');
+    if(ctx == null) {
+      throw new Error("Cannot compute width of text, rendering context undefined!");
+    }
+    ctx.font = "11px sans-serif";
+
+    function compute_width(text: string | undefined) {
+      if(text == null) {
+        return 0;
+      }
+      if(ctx == null) {
+        throw new Error("Cannot compute width of text, rendering context undefined!");
+      } else {
+        const text_measure = ctx?.measureText(text);
+        return(x.invert(text_measure.actualBoundingBoxLeft + text_measure.actualBoundingBoxRight));
+      }
+    }
+
+    if(ctx == null) {
+      throw new Error("Cannot proceed, rendering context null!");
+    } else {
+      const tree = annotate_tree(test_tree_flat, l_height, 1, ctx, x);
+      draw_tree(tree, compute_width);
+
+      ws.handle_message((data) => {
+        const tree = annotate_tree(data, l_height, height, ctx, x);
+        draw_tree(tree, compute_width);
+        console.log("Tree is now:")
+        console.log(tree);
+      });
+    }
   });
 </script>
 
 <div id="tree_container">
-  <svg id="tree" height={height} width={width}>
-    <g id="y_axis" transform="translate(40 20)"></g>
-    <g id="tree_g" transform="translate(40 20)"></g>
+  <svg id="tree" height={height} width={width + 100}>
+    <g id="tree_g" transform="translate(10 0)"></g>
+    <g id="x_axis" transform={`translate(10 ${0.96 * height})`}></g>
   </svg>
 </div>
+
+<style>
+  #tree_container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+  }
+</style>
