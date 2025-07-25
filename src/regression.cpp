@@ -9,18 +9,18 @@ using Eigen::VectorXd;
 using Eigen::all;
 using Eigen::seqN;
 
-MatrixXd predictor_matrix(const standata& data, set<string> pred_names, int poly, bool interactions){
+MatrixXd predictor_matrix(const MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars, set<string> pred_names, int poly, bool interactions){
   vector<int> var_indices(pred_names.size());
   int pi = 0;
   for(const string& pred_name: pred_names) {
-    var_indices[pi] = data.vars.at(pred_name);
+    var_indices[pi] = stan_vars.at(pred_name);
     pi++;
   }
 
-  VectorXd intercept = (ArrayXd::Zero(data.samples.rows()) + 1).matrix();
+  VectorXd intercept = (ArrayXd::Zero(stan_matrix.rows()) + 1).matrix();
 
-  MatrixXd pred_matrix = data.samples(all, var_indices);
-  MatrixXd out_matrix(data.samples.rows(), var_indices.size() + 1);
+  MatrixXd pred_matrix = stan_matrix(all, var_indices);
+  MatrixXd out_matrix(stan_matrix.rows(), var_indices.size() + 1);
   out_matrix << intercept, pred_matrix;
 
   int C = pred_matrix.cols();
@@ -51,11 +51,11 @@ MatrixXd predictor_matrix(const standata& data, set<string> pred_names, int poly
   return out_matrix;
 }
 
-double adj_r_squared(set<string> predictor_names, string response_name, standata data) {
+double adj_r_squared(set<string> predictor_names, std::string response_name, const MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars) {
 
-  int num_observations = data.samples.rows();
-  VectorXd response = data.samples(all, data.vars[response_name]);
-  MatrixXd predictors = predictor_matrix(data, predictor_names, 1, true);
+  int num_observations = stan_matrix.rows();
+  VectorXd response = stan_matrix(all, stan_vars.at(response_name));
+  MatrixXd predictors = predictor_matrix(stan_matrix, stan_vars, predictor_names, 1, true);
   int num_predictors = predictors.cols() - 1;
 
   VectorXd coefs = predictors.colPivHouseholderQr().solve(response);

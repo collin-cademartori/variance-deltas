@@ -1,5 +1,6 @@
 #include <parameter_graph.hpp>
 #include <read_stan.hpp>
+#include <Eigen/Dense>
 
 namespace markov {
 
@@ -14,7 +15,9 @@ namespace markov {
   std::pair<std::unique_ptr<MTree>, Node> make_tree(
     MRF mrf, const std::string& root, const std::vector<vertex_names> leaves,
     const vertex_names& globals, VertexMap& param_vertices,
-    std::optional<standata> posterior_data,
+    const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars,
     double y_cut);
 
+
+  void divide_branch(MTree& tree, const Node& root, size_t node_name, vertex_names params_kept, const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars);
 }

@@ -2,6 +2,8 @@
 #include <boost/graph/graphviz.hpp>
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/property_map/property_map.hpp>
+#include <numeric>
+#include <Eigen/Dense>
 
 #include <markov.hpp>
 #include <min_sep_vis.hpp>
@@ -237,7 +239,7 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
   MRF mrf, const string& root, const vector<vertex_names> leaves, 
   const vertex_names& globals, 
   VertexMap& param_vertices,
-  std::optional<standata> posterior_data = nullopt,
+  const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars,
   double y_cut = 1
 ) {
   int num_leaves = leaves.size();
@@ -251,13 +253,15 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
 
   stack<Node> node_stack;
   unique_ptr<MTree> markov_tree = make_unique<MTree>(0);
-  std::optional<double> ered = nullopt;
-  if(posterior_data != nullopt) {
-    ered = 0;
-  }
+
+  auto hf = std::hash<string> {};
+
+  vertex_names params = { root };
+  auto name_hash = hf(root);
   Node root_node = add_vertex({ 
-    .parameters = { root },
-    .ered = ered,
+    .name = name_hash,
+    .parameters = params,
+    .ered = 0,
     .depth = 0,
     .chain_nums = int_range(0, num_leaves)
   }, *markov_tree);
@@ -277,11 +281,10 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
 
         std::optional<Node> next_node = search_children(cur_node, chain_parameters, markov_tree);
         if(next_node == nullopt) {
-          std::optional<double> ered = nullopt;
-          if(posterior_data != nullopt) {
-            ered = adj_r_squared(chain_parameters, root, posterior_data.value());
-          }
+          double ered = sqrt(adj_r_squared(chain_parameters, root, stan_matrix, stan_vars));
+          auto name_hash = hf(std::reduce<vertex_names::iterator, string>(chain_parameters.begin(), chain_parameters.end(), ""));
           Node new_node = add_vertex({ 
+            .name = name_hash,
             .parameters = chain_parameters,
             .ered = ered,
             .depth = cur_depth + 1,
@@ -299,4 +302,60 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
   }
 
   return(std::make_pair(std::move(markov_tree), root_node));
+}
+
+void markov::divide_branch(
+  MTree& tree, const Node& root, 
+  size_t node_name, vertex_names params_kept, 
+  const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars
+) {
+  cout << "Beginning divide branch..." << endl;
+  auto hf = std::hash<string> {};
+
+  std::queue<Node> node_queue {};
+  node_queue.push(root);
+  bool not_found = true;
+  std::optional<std::pair<Node, Node>> split_nodes = std::nullopt;
+  while(node_queue.size() > 0 && not_found) {
+    Node cur_node = node_queue.front();
+    node_queue.pop();
+
+    auto out_it = out_edges(cur_node, tree);
+    for_each(out_it.first, out_it.second, [&](Branch branch) {
+      Node child_node = target(branch, tree);
+      if(tree[child_node].name == node_name) {
+        not_found = false;
+        split_nodes = std::make_pair(cur_node, child_node);
+      } else if(not_found) {
+        node_queue.push(child_node);
+      }
+    });
+  }
+  cout << "Found child node!" << endl;
+
+  if(split_nodes == nullopt) {
+    throw new std::out_of_range("Could not locate child node! Cannot divide branch.");
+  } else {
+    cout << "Modifying tree..." << endl;
+    auto [par_node, child_node] = split_nodes.value();
+    remove_edge(par_node, child_node, tree);
+
+    auto child_params = tree[child_node].parameters;
+    params_kept.insert(child_params.begin(), child_params.end());
+    string root_name = *tree[root].parameters.begin();
+    double ered = sqrt(adj_r_squared(params_kept, root_name, stan_matrix, stan_vars));
+    auto name_hash = hf(std::reduce<vertex_names::iterator, string>(params_kept.begin(), params_kept.end(), ""));
+    Node split_node = add_vertex({ 
+      .name = name_hash,
+      .parameters = params_kept,
+      .ered = ered,
+      .depth = tree[par_node].depth + 1,
+      .chain_nums = { }
+    }, tree);
+
+    add_edge(par_node, split_node, tree);
+    add_edge(split_node, child_node, tree);
+
+    // Fix depth?
+  }
 }

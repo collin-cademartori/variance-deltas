@@ -13,28 +13,30 @@ pair<string,string> serialize_node(const Node& node, const MTree& tree, string p
   }
   sort(ordered_params.begin(), ordered_params.end());
 
-  string set_name = "{";
+  //string set_name = "{";
   string set_array = "[";
   for(size_t pi = 0; pi < ordered_params.size(); ++pi) {
     string param = ordered_params[pi];
-    set_name += param;
+    //set_name += param;
     set_array += ("\"" + param + "\"");
     if(pi + 1 < ordered_params.size()) {
-      set_name += ", ";
+      //set_name += ", ";
       set_array += ",";
     }
   }
-  set_name += "}";
+  //set_name += "}";
   set_array += "]";
 
+  string node_name = to_string(tree[node].name);
+
   string serialized_str = "{";
-  serialized_str += "\"name\":\"" + set_name + "\",";
+  serialized_str += "\"name\":\"" + node_name + "\",";
   serialized_str += "\"params\":" + set_array + ",";
   serialized_str += "\"ered\":" + to_string(tree[node].ered.value()) + ",";
   serialized_str += "\"parent\":\"" + parent_name + "\"";
   serialized_str += "}";
   
-  return make_pair(serialized_str, set_name);
+  return make_pair(serialized_str, node_name);
 }
 
 string serialize_tree(const Node& root, const MTree& tree) {
@@ -63,6 +65,7 @@ string serialize_tree(const Node& root, const MTree& tree) {
   serialized_tree = serialized_tree.substr(0, serialized_tree.size() - 1);
   serialized_tree += "]";
 
-  cout << "Returning serialization." << endl;
-  return serialized_tree;
+  string tree_str = "{\"type\":\"tree\",";
+  tree_str += ("\"tree\":" + serialized_tree + "}");
+  return tree_str;
 }

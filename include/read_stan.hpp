@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 
 struct standata { 
-  Eigen::MatrixXd samples;
+  std::unique_ptr<Eigen::MatrixXd> samples;
   std::map<std::string, int> vars;
 };
 

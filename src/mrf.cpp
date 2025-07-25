@@ -6,6 +6,7 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/property_map/property_map.hpp>
+#include <nlohmann/json.hpp>
 
 #include <markov.hpp>
 #include <ws_client.hpp>
@@ -17,11 +18,12 @@
 using namespace std;
 using namespace boost;
 using namespace markov;
+using json = nlohmann::json;
 
 int main(int, char* []) {
 
   auto [mrf, param_vertices] = read_mrf("../data/elec_r3.mrf");
-  standata posterior_data = read_stan_file("../data/standata", 6);
+  auto stan_data = read_stan_file("../data/standata", 6);
 
   string leaf_base = "n_democrat_potential";
   set<string> leaves;
@@ -32,11 +34,32 @@ int main(int, char* []) {
   auto [mtree, root_node] = make_tree(
     mrf, "mu_b[49,39]", { leaves },
     {}, param_vertices,
-    posterior_data, 0.9);
+    *stan_data.samples, stan_data.vars, 0.9);
   
   cout << *(*mtree)[root_node].parameters.begin() << endl;
 
-  string tree_str = serialize_tree(root_node, *mtree);
+  handle_method("get_tree", [&root_node, &mtree](json _data){
+    cout << "Sending tree to server..." << endl;
+    return std::make_optional(serialize_tree(root_node, *mtree));
+  });
+
+  auto& stan_matrix = stan_data.samples;
+
+  handle_method("divide_branch", [&root_node, &mtree, &stan_matrix](json args) {
+    cout << "Dividing branch..."  << endl;
+    cout << args.dump() << endl;
+    size_t node_name = args.at("node_name");
+    cout << "Read in name!" << endl;
+    set<string> params_kept;
+    for(const string& param: args.at("params_kept")) {
+      params_kept.insert(param);
+    }
+    cout << "Data prepared!" << endl;
+    //divide_branch(*mtree, root_node, node_name, params_kept, *stan_matrix_ptr, stan_vars);
+    return std::make_optional(serialize_tree(root_node, *mtree));
+  });
+
+  start_ws_client();
 
   // map<Node, size_t> tree_index;
   // int vindex = 0;
@@ -49,8 +72,6 @@ int main(int, char* []) {
   // ostringstream gstream;
   // write_graphviz(gstream, mtree, default_writer{}, default_writer{}, default_writer{}, make_assoc_property_map(tree_index));
   // string graph_str = gstream.str();
-
-  start_ws_client(tree_str);
 }
 
   // vertex_names init_names = { "mu_b[49,39]" };

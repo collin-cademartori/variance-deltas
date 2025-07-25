@@ -59,13 +59,13 @@ standata read_stan_file(string file_name, int num_chains) {
 
   int num_vars = stan_names.size();
 
-  Map<MatrixXd> stan_matrix_t(stan_data.data(), num_vars, sample_size);
+  auto stan_matrix_t =  std::make_unique<Map<MatrixXd>>(stan_data.data(), num_vars, sample_size);
   cout << "Finished reading in matrix..." << endl;
-  MatrixXd stan_matrix = stan_matrix_t.transpose();
+  auto stan_matrix = std::make_unique<MatrixXd>(stan_matrix_t -> transpose());
   cout << "Finished transposing matrix..." << endl;
 
-  cout << "Read " << stan_matrix.rows() << " x " 
-       << stan_matrix.cols() << " matrix." << endl;
+  cout << "Read " << stan_matrix -> rows() << " x " 
+       << stan_matrix -> cols() << " matrix." << endl;
 
   map<string, int> col_names;
   for(int ci = 0; ci < stan_names.size(); ++ci) {
@@ -82,7 +82,7 @@ standata read_stan_file(string file_name, int num_chains) {
   }
 
   return {
-    .samples = stan_matrix,
+    .samples = std::move(stan_matrix),
     .vars = col_names
   };
 }
