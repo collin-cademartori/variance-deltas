@@ -3,11 +3,11 @@
   import * as ws from "$lib/websocket";
   import * as d3 from "d3";
   import { annotate_tree, test_tree_flat, type flat_node, type flat_tree } from "$lib/test_tree";
+  import { get_tree } from "$lib/tree_methods";
 
   const height = 500;
   const width = 1500;
 
-  //const x = d3.scalePow([0, 1], [0, width]).exponent(0.5);
   const x = d3.scaleLinear([0, 1], [0, width]);
   const y = d3.scaleLinear([0, 1], [0, 0.95 * height]);
   const l_height = 0.045;
@@ -121,10 +121,7 @@
     let xaxis = d3.axisBottom(x);
     xaxis(svg.select("#x_axis"));
 
-    console.log("x(0) is ", x(0));
-    console.log("x(1) is ", x(1));
-
-    const ctx = (new OffscreenCanvas(10000, 10000)).getContext('2d');
+    const ctx = (new OffscreenCanvas(1000, 1000)).getContext('2d');
     if(ctx == null) {
       throw new Error("Cannot compute width of text, rendering context undefined!");
     }
@@ -145,8 +142,8 @@
     if(ctx == null) {
       throw new Error("Cannot proceed, rendering context null!");
     } else {
-      const tree = annotate_tree(test_tree_flat, l_height, 1, ctx, x);
-      draw_tree(tree, compute_width);
+      // const tree = annotate_tree(test_tree_flat, l_height, 1, ctx, x);
+      // draw_tree(tree, compute_width);
 
       ws.handle_message((data) => {
         const tree = annotate_tree(data, l_height, height, ctx, x);
@@ -154,6 +151,9 @@
         console.log("Tree is now:")
         console.log(tree);
       });
+
+      console.log("Calling get_tree.")
+      get_tree([]);
     }
   });
 </script>
