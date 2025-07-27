@@ -1,6 +1,5 @@
 import * as d3 from "d3";
 import { short_name } from "./short_names.ts";
-import { E } from "../../.svelte-kit/output/server/chunks/index.js";
 
 export type flat_node = {
   name: string,
@@ -12,6 +11,10 @@ export type flat_node = {
   x_pos?: number,
   label_y?: number
 };
+export type flat_branch = {
+  child: flat_node,
+  parent: flat_node
+}
 export type flat_tree = Array<flat_node>;
 export type tree_node = d3.HierarchyNode<flat_node>;
 
@@ -20,37 +23,39 @@ type coord = {
   y: [number, number]
 }
 
-export const test_tree_flat : flat_tree = [
-  { name: "mu_b[39,49]", parent: "", ered: 0, params: ["mu_b[39,49]", "mu_b[39,51]", "mu_b[40,51]"] },
-  { name: "mu_b[38,1-3]", parent: "mu_b[39,49]", ered: 0.07, params: ["mu_b[38,1]", "mu_b[38,2]]", "mu_b[38,3]"] },
-  { name: "mu_b[37,49],e_bias[49]", parent: "mu_b[38,1-3]", ered: 0.14, params: ["mu_b[37,49]", "e_bias[49]"] },
-  { name: "mu_b[37,49]", parent: "mu_b[38,1-3]", ered: 0.12, params: ["mu_b[37,49]"] },
-  { name: "n_democrat_potential[2]", parent: "mu_b[37,49],e_bias[49]", ered: 0.9, params: ["n_democrat_potential[2]"] },
-  { name: "n_democrat_potential[1]", parent: "mu_b[37,49]", ered: 0.88, params: ["n_democrat_potential[1]"] },
-  { name: "n_democrat_potential[3]", parent: "mu_b[37,49]", ered: 1, params: ["n_democrat_potential[3]"] }
-];
+// export const test_tree_flat : flat_tree = [
+//   { name: "mu_b[39,49]", parent: "", ered: 0, params: ["mu_b[39,49]", "mu_b[39,51]", "mu_b[40,51]"] },
+//   { name: "mu_b[38,1-3]", parent: "mu_b[39,49]", ered: 0.07, params: ["mu_b[38,1]", "mu_b[38,2]]", "mu_b[38,3]"] },
+//   { name: "mu_b[37,49],e_bias[49]", parent: "mu_b[38,1-3]", ered: 0.14, params: ["mu_b[37,49]", "e_bias[49]"] },
+//   { name: "mu_b[37,49]", parent: "mu_b[38,1-3]", ered: 0.12, params: ["mu_b[37,49]"] },
+//   { name: "n_democrat_potential[2]", parent: "mu_b[37,49],e_bias[49]", ered: 0.9, params: ["n_democrat_potential[2]"] },
+//   { name: "n_democrat_potential[1]", parent: "mu_b[37,49]", ered: 0.88, params: ["n_democrat_potential[1]"] },
+//   { name: "n_democrat_potential[3]", parent: "mu_b[37,49]", ered: 1, params: ["n_democrat_potential[3]"] }
+// ];
 
 export function annotate_tree(ft : flat_tree,
   label_height : number, max_height : number,
   ctx : OffscreenCanvasRenderingContext2D,
   x_scale : d3.ScaleLinear<number, number, never>
 ) {
-  const tree_with_xs = compute_xs(ft);
-  for(const node of tree_with_xs) {
+  console.log("Setting short names.")
+  for(const node of ft) {
     node.shortname = short_name(node.params);
   }
-  compute_label_pos(ft, label_height, max_height, ctx, x_scale);
+  console.log("Setting xs.")
+  const tree_with_xs = compute_xs(ft);
+  compute_label_pos(tree_with_xs, label_height, max_height, ctx, x_scale);
   return(tree_with_xs);
 }
 
 function compute_xs(ft : flat_tree) {
   const test_tree = (d3.stratify<flat_node>()
-                    .id((n : flat_node) => n.name)
-                    .parentId((n : flat_node) => n.parent))(ft);
+                    .id((n : flat_node) => n.name.toString())
+                    .parentId((n : flat_node) => n.parent.toString()))(ft);
 
   for(const node of test_tree) {
     node.data.sortname = node.ancestors()
-      .map((n) => n.id)
+      .map((n) => n.data.shortname)
       .reverse()
       .reduce((p : string, n) => p + n, "");
   }

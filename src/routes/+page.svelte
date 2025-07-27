@@ -2,8 +2,8 @@
   import { onMount } from "svelte";
   import * as ws from "$lib/websocket";
   import * as d3 from "d3";
-  import { annotate_tree, test_tree_flat, type flat_node, type flat_tree } from "$lib/test_tree";
-  import { get_tree } from "$lib/tree_methods";
+  import { annotate_tree, type flat_node, type flat_tree, type flat_branch } from "$lib/test_tree";
+  import { divide_branch, extrude_branch, get_tree, reset_tree } from "$lib/tree_methods";
 
   const height = 500;
   const width = 1500;
@@ -14,51 +14,94 @@
 
   function draw_tree(tree : flat_tree, wf : (text : string | undefined) => number) {
     let tree_elem = d3.select("#tree_g");
-    for(let i = 0; i < tree.length; ++i) {
-      const node = tree[i];
-      const pnode = tree.find((n) => n.name === node.parent);
-      if(pnode != null) {
-        const link = d3.line<flat_node>(
-          (d) => x(d.ered),
-          (d) => y(d.x_pos ?? 0)
-        ).curve(d3.curveStepBefore);
-        tree_elem.append("path").attr("d", link([pnode, node]))
-          .attr("stroke", "black")
-          .attr("stroke-width", 2.5)
-          .attr("fill", "none")
-          .attr("id", `branch-${node.shortname}-${pnode.shortname}`)
-        tree_elem.append("path").attr("d", link([pnode, node]))
-          .attr("stroke", "red")
-          .attr("stroke-width", 15)
-          .attr("fill", "none")
-          .attr("opacity", 0)
-          .on("mouseover", () => {
-            const vis_path = document.getElementById(`branch-${node.shortname}-${pnode.shortname}`);
-            vis_path?.setAttribute("stroke", "#0161df");
-          })
-          .on("mouseleave", () => {
-            const vis_path = document.getElementById(`branch-${node.shortname}-${pnode.shortname}`);
-            vis_path?.setAttribute("stroke", "black");
-          });
+
+    let branch_data = tree.filter((n) => n.parent != "").map((n) => {
+      const pn = tree.find((n2) => n2.name === n.parent);
+      if(pn != null) {
+        return {
+          child: n,
+          parent: pn
+        }
+      } else {
+        throw new Error("Cannot find parent! Branch data failed.")
       }
-    }
+    });
+
+    console.log(branch_data);
+
+    const link = d3.line<flat_node>(
+      (d) => x(d.ered),
+      (d) => y(d.x_pos ?? 0)
+    ).curve(d3.curveStepBefore);
+
+    tree_elem.selectAll(".tree_branch")
+             .data(branch_data, (d) => `${(d as flat_branch).parent.name}-->${(d as flat_branch).child.name}`)
+             .join((enter) => {
+                let g = enter.append("g").attr("class", "tree_branch");
+                g.transition().attr("opacity", 1);
+
+                g.append("path").attr("d", (d) => link([d.parent, d.child]))
+                     .attr("class", "branch_path")
+                     .attr("stroke", "black")
+                     .attr("stroke-width", 2.5)
+                     .attr("fill", "none")
+                     .attr("id", (d) => `branch-${d.child.shortname}-${d.parent.shortname}`);
+
+                g.append("path").attr("d", (d) => link([d.parent, d.child]))
+                         .attr("class", "select_path")
+                         .attr("stroke", "red")
+                         .attr("stroke-width", 15)
+                         .attr("fill", "none")
+                         .attr("opacity", 0)
+                         .on("mouseover", (ev, d) => {
+                           const vis_path = document.getElementById(`branch-${d.child.shortname}-${d.parent.shortname}`);
+                           vis_path?.setAttribute("stroke", "#0161df");
+                         })
+                         .on("mouseleave", (ev, d) => {
+                           const vis_path = document.getElementById(`branch-${d.child.shortname}-${d.parent.shortname}`);
+                           vis_path?.setAttribute("stroke", "black");
+                         })
+                         .on("click", (ev, d) => {
+                           divide_branch({
+                            node_name: parseInt(d.child.name),
+                            params_kept: d.parent.params[9]
+                           })
+                         });
+
+                return g;
+             },
+            (update) => {
+              update.select(".branch_path").transition()
+                     .attr("d", (d) => link([d.parent, d.child]))
+              update.select(".select_path").transition()
+                     .attr("d", (d) => link([d.parent, d.child]))
+              return update;
+            },
+            (exit) => {
+              exit.transition().attr("opacity", 0).remove()
+            }
+          );
 
     tree_elem.selectAll(".tree_node")
+      // .data(tree, (d) => d ? (d as flat_node).name : this.id)
       .data(tree, (d) => (d as flat_node).name)
       .join((enter) => {
-        let g = enter.append("g");
-        
-        g.attr("class", "tree-node");
+        let g = enter.append("g")
+                     .attr("id", (d) => `${d.name}`)
+                     .attr("class", "tree_node");
+
+        g.transition().attr("opacity", 1);
 
         g.append("circle")
           .attr("r", 5)
           .attr("cx", (d : flat_node) => x(d.ered))
           .attr("cy", (d: flat_node) => y(d.x_pos ?? 0))
           .attr("fill", "black")
-          .attr("stroke", "white")
+          //.attr("stroke", "white")
           .attr("stroke-width", 2.5);
 
         let fo = g.append("foreignObject")
+          .attr("class", "label_fo")
           .attr("x", (d : flat_node) => x(0.003 + d.ered))
           .attr("y", (d: flat_node) => y(d.label_y ?? 0))
           .attr("height", (d: flat_node) => y(l_height))
@@ -87,6 +130,12 @@
             } else {
               return(d.shortname);
             }
+          })
+          .on("click", (ev, d) => {
+            extrude_branch({
+              node_name: parseInt(d.name),
+              params_kept: d.params.slice(Math.ceil(d.params.length / 2))
+            })
           });
 
         ld.append("xhtml:div")
@@ -113,7 +162,19 @@
           //.style("transform", "rotate(45deg)")
           
         return g;
-      });
+      },
+    (update) => {
+      update.select("circle").transition()
+        .attr("cx", (d : flat_node) => x(d.ered))
+        .attr("cy", (d: flat_node) => y(d.x_pos ?? 0));
+      update.select(".label_fo").transition()
+        .attr("x", (d : flat_node) => x(0.003 + d.ered))
+        .attr("y", (d: flat_node) => y(d.label_y ?? 0))
+      return update
+    },
+    (exit) => {
+      exit.transition().attr("opacity", 0).remove()
+    });
   }
 
   onMount(() => {
@@ -152,8 +213,13 @@
         console.log(tree);
       });
 
+      draw_tree([], compute_width);
       console.log("Calling get_tree.")
       get_tree([]);
+
+      document.addEventListener("keydown", (ev) => {
+        if(ev.code == "KeyR") reset_tree([]);
+      });
     }
   });
 </script>
