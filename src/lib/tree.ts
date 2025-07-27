@@ -1,5 +1,7 @@
 import * as d3 from "d3";
 import { short_name } from "./short_names.ts";
+import { compute_width } from "./compute_width.ts";
+import { D } from "../../.svelte-kit/output/server/chunks/index.js";
 
 export type flat_node = {
   name: string,
@@ -23,19 +25,8 @@ type coord = {
   y: [number, number]
 }
 
-// export const test_tree_flat : flat_tree = [
-//   { name: "mu_b[39,49]", parent: "", ered: 0, params: ["mu_b[39,49]", "mu_b[39,51]", "mu_b[40,51]"] },
-//   { name: "mu_b[38,1-3]", parent: "mu_b[39,49]", ered: 0.07, params: ["mu_b[38,1]", "mu_b[38,2]]", "mu_b[38,3]"] },
-//   { name: "mu_b[37,49],e_bias[49]", parent: "mu_b[38,1-3]", ered: 0.14, params: ["mu_b[37,49]", "e_bias[49]"] },
-//   { name: "mu_b[37,49]", parent: "mu_b[38,1-3]", ered: 0.12, params: ["mu_b[37,49]"] },
-//   { name: "n_democrat_potential[2]", parent: "mu_b[37,49],e_bias[49]", ered: 0.9, params: ["n_democrat_potential[2]"] },
-//   { name: "n_democrat_potential[1]", parent: "mu_b[37,49]", ered: 0.88, params: ["n_democrat_potential[1]"] },
-//   { name: "n_democrat_potential[3]", parent: "mu_b[37,49]", ered: 1, params: ["n_democrat_potential[3]"] }
-// ];
-
 export function annotate_tree(ft : flat_tree,
   label_height : number, max_height : number,
-  ctx : OffscreenCanvasRenderingContext2D,
   x_scale : d3.ScaleLinear<number, number, never>
 ) {
   console.log("Setting short names.")
@@ -44,7 +35,7 @@ export function annotate_tree(ft : flat_tree,
   }
   console.log("Setting xs.")
   const tree_with_xs = compute_xs(ft);
-  compute_label_pos(tree_with_xs, label_height, max_height, ctx, x_scale);
+  compute_label_pos(tree_with_xs, label_height, max_height, x_scale);
   return(tree_with_xs);
 }
 
@@ -104,13 +95,13 @@ function intersect(x1 : [number, number], x2: [number, number]) {
 function compute_label_pos(
   ft : flat_tree, 
   label_height : number, max_height : number,
-  ctx : OffscreenCanvasRenderingContext2D, x_scale : d3.ScaleLinear<number, number, never>) {
+  x_scale : d3.ScaleLinear<number, number, never>) {
   const label_coords : coord[] = [];
   for(const node of ft) {
     if(node.x_pos == null || node.shortname == null) {
       throw new Error("Cannot compute label positions before x coordinate and short name determined.");
     } else {
-      const label_width = x_scale.invert(15 + ctx.measureText(node.shortname).width);
+      const label_width = x_scale.invert(15) + compute_width(node.shortname, x_scale);
       console.log("Label is ", node.shortname);
       console.log("X is ", node.ered);
       console.log("Width is ", label_width);
