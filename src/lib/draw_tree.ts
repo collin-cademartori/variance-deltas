@@ -1,13 +1,38 @@
   import * as d3 from "d3";
   import { type flat_node, type flat_tree, type flat_branch } from "./tree.ts";
-  import { divide_branch, extrude_branch} from "./tree_methods.ts";
   import { compute_width } from "./compute_width.ts";
+
+  let label_rule_index : number | undefined = undefined;
+  let branch_rule_index : number | undefined= undefined;
+
+  function to_style_string(selector : string, styles : object) {
+    let sstr = `${selector} { `;
+    for(const [style_name, style_value] of Object.entries(styles)) {
+      sstr += `${style_name}: ${style_value} !important; `;
+    }
+    sstr += '}';
+    return sstr;
+  }
+
+  export function reset_styles() {
+    const branches = document.getElementsByClassName("branch_path");
+    for(let bi = 0; bi < branches.length; ++bi) {
+      branches[bi].classList.remove("branch_selected");
+    }
+    const labels = document.getElementsByClassName("label-div");
+    for(let li = 0; li < labels.length; ++li) {
+      labels[li].classList.remove("label_selected");
+    }
+  }
   
   export function draw_tree(
     tree : flat_tree, 
     x : d3.ScaleLinear<number, number>,
     y : d3.ScaleLinear<number, number>,
-    l_height : number) {
+    l_height : number,
+    label_handler : (d : flat_node) => object,
+    branch_handler : (d : flat_branch) => object,
+    ss : CSSStyleSheet) {
     const tree_elem = d3.select("#tree_g");
 
     const branch_data = tree.filter((n) => n.parent != "").map((n) => {
@@ -35,17 +60,17 @@
 
                 g.append("path").attr("d", (d) => link([d.parent, d.child]))
                      .attr("class", "branch_path")
-                     .attr("stroke", "black")
-                     .attr("stroke-width", 2.5)
-                     .attr("fill", "none")
+                     .style("stroke", "black")
+                     .style("stroke-width", 2.5)
+                     .style("fill", "none")
                      .attr("id", (d) => `branch-${d.child.shortname}-${d.parent.shortname}`);
 
                 g.append("path").attr("d", (d) => link([d.parent, d.child]))
                          .attr("class", "select_path")
-                         .attr("stroke", "red")
-                         .attr("stroke-width", 15)
-                         .attr("fill", "none")
-                         .attr("opacity", 0)
+                         .style("stroke", "red")
+                         .style("stroke-width", 15)
+                         .style("fill", "none")
+                         .style("opacity", 0)
                          .on("mouseover", (_ev, d) => {
                            const vis_path = document.getElementById(`branch-${d.child.shortname}-${d.parent.shortname}`);
                            vis_path?.setAttribute("stroke", "#0161df");
@@ -55,10 +80,23 @@
                            vis_path?.setAttribute("stroke", "black");
                          })
                          .on("click", (_ev, d) => {
-                           divide_branch({
-                            node_name: parseInt(d.child.name),
-                            params_kept: d.parent.params[9]
-                           })
+                            const target_classes = document.getElementById(`branch-${d.child.shortname}-${d.parent.shortname}`).classList;
+                            const cur_selected = target_classes.contains("branch_selected")
+                            const branch_styles = branch_handler(d);
+                            if(Object.keys(branch_styles).length === 0) {
+                              return;
+                            }
+                            if(branch_rule_index != null) {
+                              ss.deleteRule(branch_rule_index);
+                            }
+                            branch_rule_index = ss.insertRule(to_style_string(".branch_selected", branch_styles));
+                            const branches = document.getElementsByClassName("branch_path");
+                            for(let bi = 0; bi < branches.length; ++bi) {
+                              branches[bi].classList.remove("branch_selected");
+                            }
+                            if(!cur_selected) {
+                              target_classes.add("branch_selected");
+                            }
                          });
 
                 return g;
@@ -88,9 +126,9 @@
           .attr("r", 5)
           .attr("cx", (d : flat_node) => x(d.ered))
           .attr("cy", (d: flat_node) => y(d.x_pos ?? 0))
-          .attr("fill", "black")
+          .style("fill", "black")
           //.attr("stroke", "white")
-          .attr("stroke-width", 2.5);
+          .style("stroke-width", 2.5);
 
         const fo = g.append("foreignObject")
           .attr("class", "label_fo")
@@ -122,11 +160,24 @@
               return(d.shortname);
             }
           })
-          .on("click", (_ev, d) => {
-            extrude_branch({
-              node_name: parseInt(d.name),
-              params_kept: d.params.slice(Math.ceil(d.params.length / 2))
-            })
+          .on("click", (ev, d) => {
+            const target_classes = ev.currentTarget.classList;
+            const cur_selected = target_classes.contains("label_selected")
+            const label_styles = label_handler(d);
+            if(Object.keys(label_styles).length === 0) {
+              return;
+            }
+            if(label_rule_index != null) {
+              ss.deleteRule(label_rule_index);
+            }
+            label_rule_index = ss.insertRule(to_style_string(".label_selected", label_styles));
+            const labels = document.getElementsByClassName("label-div");
+            for(let li = 0; li < labels.length; ++li) {
+              labels[li].classList.remove("label_selected");
+            }
+            if(!cur_selected) {
+              target_classes.add("label_selected");
+            }
           });
 
         ld.append("xhtml:div")
