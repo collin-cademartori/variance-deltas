@@ -15,7 +15,7 @@ map<string, function<void(json, std::shared_ptr<WsClient::Connection>)>> method_
 
 void handle_method(std::string method_name, std::function<std::optional<std::string>(json)> handler) {
 
-  const auto handler_wrapper = [&handler](json json_data, std::shared_ptr<WsClient::Connection> conn) {
+  const auto handler_wrapper = [handler](json json_data, std::shared_ptr<WsClient::Connection> conn) {
     cout << "Calling inner handler!" << endl;
     auto message = handler(json_data);
     if(message != nullopt) {

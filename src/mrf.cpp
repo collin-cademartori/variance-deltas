@@ -35,31 +35,45 @@ int main(int, char* []) {
     mrf, "mu_b[49,39]", { leaves },
     {}, param_vertices,
     *stan_data.samples, stan_data.vars, 0.9);
-  
-  cout << *(*mtree)[root_node].parameters.begin() << endl;
 
-  handle_method("get_tree", [&root_node, &mtree](json _data){
+  handle_method("get_tree", [&](json _data){
     cout << "Sending tree to server..." << endl;
     return std::make_optional(serialize_tree(root_node, *mtree));
   });
 
-  auto& stan_matrix = stan_data.samples;
-
-  handle_method("divide_branch", [&root_node, &mtree, &stan_matrix](json args) {
-    cout << "Dividing branch..."  << endl;
-    cout << args.dump() << endl;
-    size_t node_name = args.at("node_name");
-    cout << "Read in name!" << endl;
+  handle_method("divide_branch", [&root_node, &mtree, &stan_data](json args) {
+    int node_name = args.at("node_name");
     set<string> params_kept;
     for(const string& param: args.at("params_kept")) {
       params_kept.insert(param);
     }
-    cout << "Data prepared!" << endl;
-    //divide_branch(*mtree, root_node, node_name, params_kept, *stan_matrix_ptr, stan_vars);
+    divide_branch(*mtree, root_node, node_name, params_kept, *stan_data.samples, stan_data.vars);
+    return std::make_optional(serialize_tree(root_node, *mtree));
+  });
+
+  handle_method("extrude_branch", [&root_node, &mtree, &stan_data](json args) {
+    int node_name = args.at("node_name");
+    set<string> params_kept;
+    for(const string& param: args.at("params_kept")) {
+      params_kept.insert(param);
+    }
+    extrude_branch(*mtree, root_node, node_name, params_kept, *stan_data.samples, stan_data.vars);
+    return std::make_optional(serialize_tree(root_node, *mtree));
+  });
+
+  handle_method("reset_tree", [&](json args) {
+    auto init_tree = make_tree(
+      mrf, "mu_b[49,39]", { leaves },
+      {}, param_vertices,
+      *stan_data.samples, stan_data.vars, 0.9);
+    mtree = std::move(init_tree.first);
+    root_node = init_tree.second;
     return std::make_optional(serialize_tree(root_node, *mtree));
   });
 
   start_ws_client();
+
+  cout << "WS client start called." << endl;
 
   // map<Node, size_t> tree_index;
   // int vindex = 0;

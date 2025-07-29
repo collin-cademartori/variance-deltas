@@ -19,5 +19,14 @@ namespace markov {
     double y_cut);
 
 
-  void divide_branch(MTree& tree, const Node& root, size_t node_name, vertex_names params_kept, const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars);
+  void divide_branch(
+    MTree& tree, const Node& root,
+    int node_name, vertex_names params_kept, 
+    const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars);
+
+  void extrude_branch(
+    MTree& tree, const Node& root, 
+    int node_name, vertex_names params_kept, 
+    const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars);
+
 }

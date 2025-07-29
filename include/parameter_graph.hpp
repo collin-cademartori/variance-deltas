@@ -19,7 +19,7 @@ struct MarkovNode {
   std::optional<double> ered;
   int depth;
   std::set<int> chain_nums;
-  size_t name;
+  int name;
 };
 
 typedef boost::adjacency_list<boost::listS, boost::listS, boost::directedS, MarkovNode> MTree;

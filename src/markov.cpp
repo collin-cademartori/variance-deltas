@@ -13,6 +13,19 @@ using namespace std;
 using namespace boost;
 using namespace markov;
 
+// STOP GAP SOLUTION
+int max_id = 0;
+map<string, int> id_map;
+int get_id(string set_name) {
+  int id;
+  try {
+    id = id_map.at(set_name);
+  } catch (out_of_range err) {
+    id = ++max_id;
+  }
+  return id;
+}
+
 vertex_names minimal_separator_u(MRF mrf, vertex_names u, vertex_names v, const map<string, Vertex>& param_vertices) {
   // Find vertices in u by name
   set<Vertex> U;
@@ -209,12 +222,6 @@ std::optional<Node> search_children(Node parent_node, vertex_names parameters, c
     }
     branch_it = std::next(branch_it);
   }
-  // for_each(branches.first, branches.second, [tree, &parameters, &found_node](const Branch& branch) {
-  //   Node child_node = target(branch, *tree);
-  //   if((*tree)[child_node].parameters == parameters) {
-  //     found_node = child_node;
-  //   }
-  // });
   return found_node;
 }
 
@@ -243,7 +250,6 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
   double y_cut = 1
 ) {
   int num_leaves = leaves.size();
-  cout << "Number of leaves is " << num_leaves << endl;
   vector<markov_chain> chains(num_leaves);
   vector<markov_chain::iterator> chain_it(num_leaves);
   for(int ci = 0; ci < num_leaves; ++ci) {
@@ -254,10 +260,8 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
   stack<Node> node_stack;
   unique_ptr<MTree> markov_tree = make_unique<MTree>(0);
 
-  auto hf = std::hash<string> {};
-
   vertex_names params = { root };
-  auto name_hash = hf(root);
+  auto name_hash = get_id(root);
   Node root_node = add_vertex({ 
     .name = name_hash,
     .parameters = params,
@@ -282,7 +286,7 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
         std::optional<Node> next_node = search_children(cur_node, chain_parameters, markov_tree);
         if(next_node == nullopt) {
           double ered = sqrt(adj_r_squared(chain_parameters, root, stan_matrix, stan_vars));
-          auto name_hash = hf(std::reduce<vertex_names::iterator, string>(chain_parameters.begin(), chain_parameters.end(), ""));
+          auto name_hash = get_id(std::reduce<vertex_names::iterator, string>(chain_parameters.begin(), chain_parameters.end(), ""));
           Node new_node = add_vertex({ 
             .name = name_hash,
             .parameters = chain_parameters,
@@ -306,11 +310,10 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
 
 void markov::divide_branch(
   MTree& tree, const Node& root, 
-  size_t node_name, vertex_names params_kept, 
+  int node_name, vertex_names params_kept, 
   const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars
 ) {
   cout << "Beginning divide branch..." << endl;
-  auto hf = std::hash<string> {};
 
   std::queue<Node> node_queue {};
   node_queue.push(root);
@@ -334,6 +337,7 @@ void markov::divide_branch(
   cout << "Found child node!" << endl;
 
   if(split_nodes == nullopt) {
+    cout << "Could not locate child node! Cannot divide branch." << endl;
     throw new std::out_of_range("Could not locate child node! Cannot divide branch.");
   } else {
     cout << "Modifying tree..." << endl;
@@ -344,7 +348,7 @@ void markov::divide_branch(
     params_kept.insert(child_params.begin(), child_params.end());
     string root_name = *tree[root].parameters.begin();
     double ered = sqrt(adj_r_squared(params_kept, root_name, stan_matrix, stan_vars));
-    auto name_hash = hf(std::reduce<vertex_names::iterator, string>(params_kept.begin(), params_kept.end(), ""));
+    auto name_hash = get_id(std::reduce<vertex_names::iterator, string>(params_kept.begin(), params_kept.end(), ""));
     Node split_node = add_vertex({ 
       .name = name_hash,
       .parameters = params_kept,
@@ -358,4 +362,53 @@ void markov::divide_branch(
 
     // Fix depth?
   }
+}
+
+void markov::extrude_branch(
+  MTree& tree, const Node& root, 
+  int node_name, vertex_names params_kept, 
+  const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars
+) {
+
+  std::queue<Node> node_queue {};
+  node_queue.push(root);
+  bool not_found = true;
+  std::optional<Node> ex_node = std::nullopt;
+  while(node_queue.size() > 0 && not_found) {
+    Node cur_node = node_queue.front();
+    node_queue.pop();
+
+    auto out_it = out_edges(cur_node, tree);
+    for_each(out_it.first, out_it.second, [&](Branch branch) {
+      Node child_node = target(branch, tree);
+      if(tree[child_node].name == node_name) {
+        not_found = false;
+        ex_node = child_node;
+      } else if(not_found) {
+        node_queue.push(child_node);
+      }
+    });
+  }
+
+  if(ex_node == nullopt) {
+    cout << "Could not locate node! Cannot extrude branch." << endl;
+    throw new std::out_of_range("Could not locate node! Cannot extrude branch.");
+  } else {
+    auto node = ex_node.value();
+
+    string root_name = *tree[root].parameters.begin();
+    double ered = sqrt(adj_r_squared(params_kept, root_name, stan_matrix, stan_vars));
+    auto name_hash = get_id(std::reduce<vertex_names::iterator, string>(params_kept.begin(), params_kept.end(), ""));
+
+    Node new_node = add_vertex({ 
+      .name = name_hash,
+      .parameters = params_kept,
+      .ered = ered,
+      .depth = tree[node].depth + 1,
+      .chain_nums = { }
+    }, tree);
+
+    add_edge(node, new_node, tree);
+  }
+
 }
