@@ -28,7 +28,6 @@
         throw new Error("Indices out of bounds!");
       }
       chosen_indices = new_indices;
-      // chosen_indices = internal_indices;
       error_state = false;
     } catch {
       error_state = true;
@@ -68,7 +67,6 @@
             type="text" class="index_box" bind:value={index_strings[ii]} 
             onkeyup={update_chosen}
             readonly={fixed_indices[ii]}
-            style:caretcolor = "{fixed_indices[ii] ? "transparent" : "black"}"
             class:error_state={error_state}
           />
         {/if}

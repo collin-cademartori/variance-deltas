@@ -9,7 +9,7 @@ export function short_name(
   const name_prefixes = new Set(name_set.map((name) => name.split("[")[0]));
 
   for(let np of name_prefixes) {
-    const cur_names = name_set.filter((name) => name.startsWith(np));
+    const cur_names = name_set.filter((name) => name.split("[")[0] == np);
     const indices = cur_names.map((name) => {
       const np = name.split("[");
       if(np.length == 1) {
@@ -31,7 +31,14 @@ export function short_name(
       np = np.split("_").map((s) => s[0]).join("");
     }
 
-    snames.push(np + "[" + get_index_strs(indices).join(", ") + "]");
+    const index_strs = get_index_strs(indices).join(", ");
+    if (index_strs.length > 12) {
+      snames.push(np + "[...]");
+    } else if (index_strs.length > 0) {
+      snames.push(np + "[" + index_strs + "]");
+    } else {
+      snames.push(np);
+    }
   }
   return(snames.join(", "));
 }
@@ -39,7 +46,7 @@ export function short_name(
 export function by_parameter(param_strings : string[]) {
   const name_prefixes = [...new Set(param_strings.map((name) => name.split("[")[0]))];
   const params_by_name = name_prefixes.map((np) => {
-    const cur_names = param_strings.filter((name) => name.startsWith(np));
+    const cur_names = param_strings.filter((name) => name.split("[")[0] == np);
     const indices = cur_names.map((name) => {
       const np = name.split("[");
       if(np.length == 1) {

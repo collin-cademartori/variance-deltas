@@ -2,8 +2,21 @@
   import { type flat_node, type flat_tree, type flat_branch } from "./tree.ts";
   import { compute_width } from "./compute_width.ts";
 
-  let label_rule_index : number | undefined = undefined;
-  let branch_rule_index : number | undefined= undefined;
+  type label_data_t = {
+    selections: string,
+    action: string
+  }
+
+  // type label_rule_index_t = {
+  //   main: undefined | number,
+  //   alt: undefined | number
+  // }
+
+  // let label_rule_index : label_rule_index_t = {
+  //   main: undefined,
+  //   alt: undefined
+  // }
+  let branch_rule_index : number | undefined = undefined;
 
   function to_style_string(selector : string, styles : object) {
     let sstr = `${selector} { `;
@@ -21,7 +34,8 @@
     }
     const labels = document.getElementsByClassName("label-div");
     for(let li = 0; li < labels.length; ++li) {
-      labels[li].classList.remove("label_selected");
+      labels[li].classList.remove("main_label_selected");
+      labels[li].classList.remove("alt_label_selected");
     }
   }
   
@@ -30,7 +44,7 @@
     x : d3.ScaleLinear<number, number>,
     y : d3.ScaleLinear<number, number>,
     l_height : number,
-    label_handler : (d : flat_node) => object,
+    label_handler : (d : flat_node) => label_data_t,
     branch_handler : (d : flat_branch) => object,
     ss : CSSStyleSheet) {
     const tree_elem = d3.select("#tree_g");
@@ -122,13 +136,24 @@
 
         g.transition().attr("opacity", 1);
 
-        g.append("circle")
-          .attr("r", 5)
-          .attr("cx", (d : flat_node) => x(d.ered))
-          .attr("cy", (d: flat_node) => y(d.x_pos ?? 0))
+        // g.append("circle")
+        //   .attr("r", 5)
+        //   .attr("cx", (d : flat_node) => x(d.ered))
+        //   .attr("cy", (d: flat_node) => y(d.x_pos ?? 0))
+        //   .style("fill", "black")
+        //   //.attr("stroke", "white")
+        //   .style("stroke-width", 2.5);
+
+        g.append("rect")
+          .attr("class", "node_rect")
+          .attr("width", 9)
+          .attr("height", 9)
+          .attr("x", (d : flat_node) => x(d.ered) - 4.5)
+          .attr("y", (d: flat_node) => y(d.x_pos ?? 0) - 4.5)
+          .attr("rx", "1.5")
           .style("fill", "black")
           //.attr("stroke", "white")
-          .style("stroke-width", 2.5);
+          //.style("stroke-width", 2.5);
 
         const fo = g.append("foreignObject")
           .attr("class", "label_fo")
@@ -146,12 +171,15 @@
           .style("border-width", "0.1rem")
           .style("border-color", "black")
           .style("border-style", "solid")
+          .style("border-radius", "0.18rem")
           .style("font-size", "11px")
           .style("user-select", "none")
           .style("width", "fit-content")
           .style("height", "100%")
           .style("opacity", "0.7")
-          .on("mouseover", (ev) => ev.currentTarget.style.opacity = 1)
+          .on("mouseover", (ev) => {
+            ev.currentTarget.style.opacity = 1;
+          })
           .on("mouseleave", (ev) => ev.currentTarget.style.opacity = 0.7)
           .html((d : flat_node) => {
             if(d.shortname == null) {
@@ -162,21 +190,30 @@
           })
           .on("click", (ev, d) => {
             const target_classes = ev.currentTarget.classList;
-            const cur_selected = target_classes.contains("label_selected")
-            const label_styles = label_handler(d);
-            if(Object.keys(label_styles).length === 0) {
-              return;
-            }
-            if(label_rule_index != null) {
-              ss.deleteRule(label_rule_index);
-            }
-            label_rule_index = ss.insertRule(to_style_string(".label_selected", label_styles));
-            const labels = document.getElementsByClassName("label-div");
-            for(let li = 0; li < labels.length; ++li) {
-              labels[li].classList.remove("label_selected");
-            }
-            if(!cur_selected) {
-              target_classes.add("label_selected");
+            const label_data = label_handler(d);
+            if (label_data.action === 'select') {
+              if(label_data.selections != 'main' && label_data.selections != 'alt') {
+                console.error('Invalid selection: ' + label_data.selections);
+                return;
+              }
+              const selected = document.getElementsByClassName(`${label_data.selections}_label_selected`);
+              for(let mi = 0; mi < selected.length; ++mi) {
+                selected[mi].classList.remove(`${label_data.selections}_label_selected`);
+              }
+              target_classes.add(`${label_data.selections}_label_selected`);
+            } else if (label_data.action === 'deselect') {
+              if(label_data.selections === 'main' || label_data.selections === 'both') {
+                const selected_main = document.getElementsByClassName("main_label_selected");
+                for(let mi = 0; mi < selected_main.length; ++mi) {
+                  selected_main[mi].classList.remove('main_label_selected');
+                }
+              }
+              if(label_data.selections === 'alt' || label_data.selections === 'both') {
+                const selected_alt = document.getElementsByClassName("alt_label_selected");
+                for(let ai = 0; ai < selected_alt.length; ++ai) {
+                  selected_alt[ai].classList.remove('alt_label_selected');
+                }
+              }
             }
           });
 
@@ -206,9 +243,12 @@
         return g;
       },
     (update) => {
-      update.select("circle").transition()
-        .attr("cx", (d : flat_node) => x(d.ered))
-        .attr("cy", (d: flat_node) => y(d.x_pos ?? 0));
+      // update.select("circle").transition()
+      //   .attr("cx", (d : flat_node) => x(d.ered))
+      //   .attr("cy", (d: flat_node) => y(d.x_pos ?? 0));
+      update.select(".node_rect").transition()
+        .attr("x", (d : flat_node) => x(d.ered) - 4)
+        .attr("y", (d: flat_node) => y(d.x_pos ?? 0) - 4);
       update.select(".label_fo").transition()
         .attr("x", (d : flat_node) => x(0.003 + d.ered))
         .attr("y", (d: flat_node) => y(d.label_y ?? 0))

@@ -62,7 +62,7 @@ function compute_xs(ft : flat_tree) {
   }
   const num_leaves = test_tree.leaves().length;
   for(const [lindex, leaf] of test_tree.leaves().sort(leaf_sort).entries()) {
-    leaf.data.x_pos = (lindex + 0.1) / ((num_leaves - 1) + 0.2);
+    leaf.data.x_pos = 0.05 + 0.9 * ((lindex + 0.1) / ((num_leaves - 1) + 0.2));
   } 
 
   test_tree.eachAfter((d) => {
@@ -126,8 +126,8 @@ function compute_label_pos(
           }
         }
         if(any_intersect) {
-          console.warn("Label collision! Adjusting y.");
-          check_coords.push([max_height, label_height]); 
+          console.warn(`Label collision with ${label_coords.length} labels when placing ${node.shortname}! Adjusting y.`);
+          // check_coords.push([max_height, label_height]); 
         } else {
           console.info("No collisions, proceeding.");
           viable_y = node.x_pos;
@@ -135,32 +135,53 @@ function compute_label_pos(
       }
 
       if(viable_y == null) {
+        console.log(check_coords);
         let viable_dist = Infinity;
-        let top_y = 0;
+        // let top_y = 0;
         for(let ii = 0; ii < check_coords.length; ++ii) {
           const cur_coord = check_coords[ii];
-          if(cur_coord[0] - top_y > start_coord.y[1]) {
 
-            let pos_dist = Math.abs(cur_coord[0] - start_coord.y[0]);
-            if(pos_dist < viable_dist) {
-              viable_y = cur_coord[0] - start_coord.y[1];
-              viable_dist = pos_dist;
-            }
-    
-            pos_dist = Math.abs(top_y - start_coord.y[0]);
-            if(pos_dist < viable_dist) {
-              viable_y = top_y;
-              viable_dist = pos_dist;
+          if(ii + 1 < check_coords.length && check_coords[ii][0] - check_coords[ii+1][0] > 2 * start_coord.y[1]) {
+            const pos_dist_b = Math.abs((cur_coord[0] + cur_coord[1]) - start_coord.y[0]);
+            if(pos_dist_b < viable_dist) {
+              viable_y = cur_coord[0] + cur_coord[1];
+              viable_dist = pos_dist_b;
             }
           }
-          top_y = cur_coord[0] + cur_coord[1];
+    
+          if(ii > 0 && check_coords[ii - 1][0] - check_coords[ii][0] > 2 * start_coord.y[1]) {
+            const pos_dist_t = Math.abs(cur_coord[0] - cur_coord[1] - start_coord.y[0]);
+            if(pos_dist_t < viable_dist) {
+              viable_y = cur_coord[0] - cur_coord[1];
+              viable_dist = pos_dist_t;
+            }
+          }
+
+          // top_y = cur_coord[0] + cur_coord[1];
+
+          // if(cur_coord[0] - top_y >= start_coord.y[1]) {
+
+          //   let pos_dist = Math.abs(cur_coord[0] - start_coord.y[0]);
+          //   console.log(`Found label below starting position ${pos_dist}`);
+          //   if(pos_dist < viable_dist) {
+          //     viable_y = cur_coord[0] - start_coord.y[1];
+          //     viable_dist = pos_dist;
+          //   }
+    
+          //   pos_dist = Math.abs(top_y - start_coord.y[0]);
+          //   if(pos_dist < viable_dist) {
+          //     viable_y = top_y;
+          //     viable_dist = pos_dist;
+          //   }
+          // }
+          // top_y = cur_coord[0] + cur_coord[1];
         }
       }
 
       if(viable_y >= node.x_pos) {
-        viable_y += 0.015;
+        viable_y += 0.008;
       } else {
-        viable_y -= 0.03;
+        viable_y -= 0.016;
       }
 
       console.log("Setting label_y to ", viable_y);
