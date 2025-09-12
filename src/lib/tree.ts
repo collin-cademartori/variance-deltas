@@ -1,15 +1,16 @@
 import * as d3 from "d3";
 import { short_name } from "./short_names.ts";
 import { compute_width } from "./compute_width.ts";
-import { D } from "../../.svelte-kit/output/server/chunks/index.js";
 
 export type flat_node = {
   name: string,
   parent: string,
   ered: number,
   params: string[],
+  depth? : number,
   sortname?: string,
   shortname?: string,
+  param_names?: string[],
   x_pos?: number,
   label_y?: number
 };
@@ -31,7 +32,8 @@ export function annotate_tree(ft : flat_tree,
 ) {
   console.log("Setting short names.")
   for(const node of ft) {
-    node.shortname = short_name(node.params);
+    node.param_names = short_name(node.params);
+    node.shortname = node.param_names.join(", ");
   }
   console.log("Setting xs.")
   const tree_with_xs = compute_xs(ft);
@@ -77,6 +79,10 @@ function compute_xs(ft : flat_tree) {
         d.data.x_pos = x_tot / children.length;
       }
     }
+
+    if(d.data.depth == null) {
+      d.data.depth = d.ancestors().length;
+    }
   });
 
   const new_ft : flat_tree = [...test_tree].map((n) => n.data);
@@ -84,8 +90,8 @@ function compute_xs(ft : flat_tree) {
   return(new_ft)
 }
 
-function intersect(x1 : [number, number], x2: [number, number]) {
-  if((x2[0] + x2[1]) < x1[0] || x2[0] > (x1[0] + x1[1])) {
+function intersect(x1 : [number, number], x2: [number, number], fudge : number) {
+  if((x2[0] + x2[1]) < x1[0] - fudge || x2[0] > (x1[0] + x1[1]) + fudge) {
     return(false);
   } else {
     return(true);
@@ -101,7 +107,7 @@ function compute_label_pos(
     if(node.x_pos == null || node.shortname == null) {
       throw new Error("Cannot compute label positions before x coordinate and short name determined.");
     } else {
-      const label_width = x_scale.invert(15) + compute_width(node.shortname, x_scale);
+      const label_width = x_scale.invert(15) + compute_width(node.param_names, x_scale);
       console.log("Label is ", node.shortname);
       console.log("X is ", node.ered);
       console.log("Width is ", label_width);
@@ -110,7 +116,7 @@ function compute_label_pos(
         y: [node.x_pos, label_height]
       };
       const check_coords = label_coords
-                             .filter((coord) => intersect(coord.x, start_coord.x))
+                             .filter((coord) => intersect(coord.x, start_coord.x, 0.0))
                              .sort((c1, c2) => c2.y[0] - c1.y[0])
                              .map((coord) => coord.y);
 
@@ -121,61 +127,49 @@ function compute_label_pos(
       } else {
         let any_intersect = false;
         for(const coord_y of check_coords) {
-          if(intersect(start_coord.y, coord_y)) {
+          if(intersect(start_coord.y, coord_y, 0.0)) {
             any_intersect = true;
           }
         }
         if(any_intersect) {
-          console.warn(`Label collision with ${label_coords.length} labels when placing ${node.shortname}! Adjusting y.`);
-          // check_coords.push([max_height, label_height]); 
+          console.warn(`Label collision with ${check_coords.length} labels when placing ${node.shortname}! Adjusting y.`);
         } else {
           console.info("No collisions, proceeding.");
           viable_y = node.x_pos;
         }
       }
 
+      // If default label position results in intersection, adjust position
       if(viable_y == null) {
-        console.log(check_coords);
         let viable_dist = Infinity;
-        // let top_y = 0;
+        // For each label that overlaps start_coord in the x dimension (i.e. each label in the same "column")
+        let move_str = "";
         for(let ii = 0; ii < check_coords.length; ++ii) {
           const cur_coord = check_coords[ii];
 
+          // If there is room between labels to place current label below label ii
           if(ii + 1 < check_coords.length && check_coords[ii][0] - check_coords[ii+1][0] > 2 * start_coord.y[1]) {
-            const pos_dist_b = Math.abs((cur_coord[0] + cur_coord[1]) - start_coord.y[0]);
+            // Determine distance between this below placement and original label coordinates
+            const pos_dist_b = Math.abs((cur_coord[0] - cur_coord[1]) - start_coord.y[0]);
             if(pos_dist_b < viable_dist) {
-              viable_y = cur_coord[0] + cur_coord[1];
+              move_str = "below " + ii;
+              viable_y = cur_coord[0] - cur_coord[1];
               viable_dist = pos_dist_b;
             }
           }
     
+          // If there is room between labels to place current label above label ii
           if(ii > 0 && check_coords[ii - 1][0] - check_coords[ii][0] > 2 * start_coord.y[1]) {
-            const pos_dist_t = Math.abs(cur_coord[0] - cur_coord[1] - start_coord.y[0]);
+            // Determine distance between this above placement and original label coordinates
+            const pos_dist_t = Math.abs(cur_coord[0] + cur_coord[1] - start_coord.y[0]);
             if(pos_dist_t < viable_dist) {
-              viable_y = cur_coord[0] - cur_coord[1];
+              move_str = "above " + ii;
+              viable_y = cur_coord[0] + cur_coord[1];
               viable_dist = pos_dist_t;
             }
           }
-
-          // top_y = cur_coord[0] + cur_coord[1];
-
-          // if(cur_coord[0] - top_y >= start_coord.y[1]) {
-
-          //   let pos_dist = Math.abs(cur_coord[0] - start_coord.y[0]);
-          //   console.log(`Found label below starting position ${pos_dist}`);
-          //   if(pos_dist < viable_dist) {
-          //     viable_y = cur_coord[0] - start_coord.y[1];
-          //     viable_dist = pos_dist;
-          //   }
-    
-          //   pos_dist = Math.abs(top_y - start_coord.y[0]);
-          //   if(pos_dist < viable_dist) {
-          //     viable_y = top_y;
-          //     viable_dist = pos_dist;
-          //   }
-          // }
-          // top_y = cur_coord[0] + cur_coord[1];
         }
+        console.warn(`Moved ${move_str}.`)
       }
 
       if(viable_y >= node.x_pos) {

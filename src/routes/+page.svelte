@@ -6,15 +6,16 @@
   import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge } from "$lib/tree_methods";
   import { draw_tree, reset_styles } from "$lib/draw_tree";
   import { setup_context } from "$lib/compute_width";
+  import { export_svg } from "$lib/export_svg";
 
   import SelectionDialog from "$lib/components/SelectionDialog.svelte";
 
-  const height = 950;
-  const width = 1150;
+  const height = 950; //950
+  const width = 1150; //1150
 
   const x = d3.scaleLinear([0, 1], [0, width]);
   const y = d3.scaleLinear([0, 1], [0, 0.95 * height]);
-  const l_height = 0.025;
+  const l_height = 0.036;
 
   type user_state_t = 'base' | 'extruding' | 'dividing' | 'auto-dividing' | 'merging' | 'auto-merging';
   let user_state : user_state_t = $state('base');
@@ -141,12 +142,26 @@
   <div id="main_view">
       <div id="tree_container">
       <svg id="tree" height={height} width={width + 100}>
+        <rect width="100%" height="100%" fill="white"></rect>
         <g id="tree_g" transform="translate(10 0)"></g>
         <g id="x_axis" transform={`translate(10 ${0.96 * height})`}></g>
       </svg>
     </div>
 
     <div id="control_container">
+      <div id="session_bar">
+        <button onclick={() => {
+          const svg = document.getElementById("tree");
+          const anch = document.createElement("a");
+          if(svg != null) {
+            export_svg(svg as unknown as SVGElement, new OffscreenCanvas(1,1), anch);
+          }
+          document.removeChild(anch);
+        }}>
+          Export Image
+        </button>
+      </div>
+
       <div id="menu_bar">
         <button 
           class:menu_enabled={user_state === 'extruding'}
@@ -257,15 +272,17 @@
 </div>
 
 <style>
-  :global(.main_label_selected) {
-    color: white !important;
-    background-color: black !important;
+  :global(.main_label_selected) {    
+    border-color: rgb(29, 29, 212) !important;
+    background-color: rgb(224, 235, 255) !important;
     opacity: 1 !important;
   }
 
   :global(.alt_label_selected) {
-    color: white !important;
-    background-color: grey !important;
+    /* border-color: rgb(212, 142, 29) !important;
+    background-color: rgb(255, 236, 224) !important; */
+    border-color: rgb(145, 10, 138) !important;
+    background-color: rgb(241, 232, 240) !important;
     opacity: 1 !important;
   }
 
@@ -293,7 +310,7 @@
     appearance: none;
     border: 0.1rem solid black;
     background-color: white;
-    border-radius: 0.1rem;
+    border-radius: 0.2rem;
     padding: 0.2rem 0.4rem 0.2rem 0.4rem;  
     margin: 0.05rem 0 0.05rem 0;
   }
@@ -315,15 +332,15 @@
     border-right: none;
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
-    border-top-left-radius: 0.1rem;
-    border-bottom-left-radius: 0.1rem;
+    border-top-left-radius: 0.2rem;
+    border-bottom-left-radius: 0.2rem;
   }
 
   .button_group > button:last-child {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
-    border-top-right-radius: 0.1rem;
-    border-bottom-right-radius: 0.1rem;
+    border-top-right-radius: 0.2rem;
+    border-bottom-right-radius: 0.2rem;
     border-right: 0.1rem solid black;
   }
 
@@ -342,8 +359,17 @@
   }
 
   .menu_enabled {
-    background-color: black;
-    color: white;
+    /* background-color: black;
+    color: white; */
+    border-color: rgb(29, 29, 212);
+    background-color: rgb(224, 235, 255);
+  }
+
+  .menu_enabled:active {
+    /* background-color: black;
+    color: white; */
+    border-color: rgb(29, 29, 212);
+    background-color: rgb(196, 215, 255);
   }
 
   #tree_container {

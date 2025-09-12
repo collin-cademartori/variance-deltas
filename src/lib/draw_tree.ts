@@ -1,21 +1,11 @@
   import * as d3 from "d3";
   import { type flat_node, type flat_tree, type flat_branch } from "./tree.ts";
-  import { compute_width } from "./compute_width.ts";
 
   type label_data_t = {
     selections: string,
     action: string
   }
 
-  // type label_rule_index_t = {
-  //   main: undefined | number,
-  //   alt: undefined | number
-  // }
-
-  // let label_rule_index : label_rule_index_t = {
-  //   main: undefined,
-  //   alt: undefined
-  // }
   let branch_rule_index : number | undefined = undefined;
 
   function to_style_string(selector : string, styles : object) {
@@ -74,7 +64,7 @@
 
                 g.append("path").attr("d", (d) => link([d.parent, d.child]))
                      .attr("class", "branch_path")
-                     .style("stroke", "black")
+                     .style("stroke", "#444444")
                      .style("stroke-width", 2.5)
                      .style("fill", "none")
                      .attr("id", (d) => `branch-${d.child.shortname}-${d.parent.shortname}`);
@@ -127,22 +117,13 @@
             }
           );
 
-    tree_elem.selectAll(".tree_node")
-      .data(tree, (d) => (d as flat_node).name)
-      .join((enter) => {
+    const tree_nodes = tree_elem.selectAll(".tree_node").data(tree, (d) => (d as flat_node).name);
+    tree_nodes.join((enter) => {
         const g = enter.append("g")
                      .attr("id", (d) => `${d.name}`)
                      .attr("class", "tree_node");
 
         g.transition().attr("opacity", 1);
-
-        // g.append("circle")
-        //   .attr("r", 5)
-        //   .attr("cx", (d : flat_node) => x(d.ered))
-        //   .attr("cy", (d: flat_node) => y(d.x_pos ?? 0))
-        //   .style("fill", "black")
-        //   //.attr("stroke", "white")
-        //   .style("stroke-width", 2.5);
 
         g.append("rect")
           .attr("class", "node_rect")
@@ -151,42 +132,38 @@
           .attr("x", (d : flat_node) => x(d.ered) - 4.5)
           .attr("y", (d: flat_node) => y(d.x_pos ?? 0) - 4.5)
           .attr("rx", "1.5")
-          .style("fill", "black")
-          //.attr("stroke", "white")
-          //.style("stroke-width", 2.5);
+          .style("fill", "#444444")
 
         const fo = g.append("foreignObject")
           .attr("class", "label_fo")
           .attr("x", (d : flat_node) => x(0.003 + d.ered))
           .attr("y", (d: flat_node) => y(d.label_y ?? 0))
           .attr("height", () => y(l_height))
-          .attr("width", (d: flat_node) =>  x(2 * compute_width(d.shortname, x)));
+          .attr("width", "1000px"); //(d: flat_node) =>  x(10 * compute_width(d.param_names, x))
 
         const ld = fo.append("xhtml:div")
           .attr("class", "label-div")
+          .style("display", "flex")
+          .style("flex-direction", "row")
+          // .style("background", "#edededff")
           .style("background", "white")
+          .style("align-items", "center")
           .style("font-family", "sans-serif")
           .style("box-sizing", "border-box")
-          .style("padding", "4px")
           .style("border-width", "0.1rem")
           .style("border-color", "black")
           .style("border-style", "solid")
-          .style("border-radius", "0.18rem")
-          .style("font-size", "11px")
+          // .style("border-radius", "0.18rem")
+          .style("border-radius", "8px")
+          .style("border-top-left-radius", (d) => d.x_pos > d.label_y ? "8px" : "0px")
+          .style("border-bottom-left-radius", (d) => d.x_pos > d.label_y ? "0px" : "8px")
+          .style("font-size", "12px")
+          .style("font-weight", "bold")
           .style("user-select", "none")
           .style("width", "fit-content")
           .style("height", "100%")
-          .style("opacity", "0.7")
           .on("mouseover", (ev) => {
             ev.currentTarget.style.opacity = 1;
-          })
-          .on("mouseleave", (ev) => ev.currentTarget.style.opacity = 0.7)
-          .html((d : flat_node) => {
-            if(d.shortname == null) {
-              throw new Error("Cannot create label, shortname undefined!");
-            } else {
-              return(d.shortname);
-            }
           })
           .on("click", (ev, d) => {
             const target_classes = ev.currentTarget.classList;
@@ -217,44 +194,86 @@
             }
           });
 
-        ld.append("xhtml:div")
-          .style("position", "absolute")
-          .style("width", "7px")
-          .style("height", "5px")
-          .style("bottom", (d : flat_node) => {
-            if(d.x_pos == null || d.label_y == null) {
-              return 0;
-            } else {
-              return d.x_pos > d.label_y ? null : 0
-            }
-          })
-          .style("top", (d : flat_node) => {
-            if(d.x_pos == null || d.label_y == null) {
-              return 0;
-            } else {
-              return d.x_pos > d.label_y ? null : 0
-            }
-          })
-          .style("left", "-2px")
-          .style("background", "black")
-          .style("border-radius", "1.5px")
-          //.style("transform", "rotate(45deg)")
+          ld.append("xhtml:div")
+            .attr("class", "depth_tag")
+            .style("height", "100%")
+            .style("display", "flex")
+            .style("flex-direction", "row")
+            .style("align-items", "center")
+            .style("padding-left", "6px")
+            .style("padding-right", "0px")
+            // .style("border-right", "1px solid #444444")
+            .html((d : flat_node) => d.depth.toString());
+
+          ld.append("xhtml:div")
+            .attr("class", "params_list")
+            .style("height", "100%")
+            .style("display", "flex")
+            .style("flex-direction", "row")
+            .style("gap", "6px")
+            .style("align-items", "center")
+            .style("padding-left", "6px")
+            .style("padding-right", "6px")
+            .style("font-weight", "normal")
           
-        return g;
-      },
+          return g;
+    },
     (update) => {
-      // update.select("circle").transition()
-      //   .attr("cx", (d : flat_node) => x(d.ered))
-      //   .attr("cy", (d: flat_node) => y(d.x_pos ?? 0));
       update.select(".node_rect").transition()
         .attr("x", (d : flat_node) => x(d.ered) - 4)
         .attr("y", (d: flat_node) => y(d.x_pos ?? 0) - 4);
       update.select(".label_fo").transition()
         .attr("x", (d : flat_node) => x(0.003 + d.ered))
-        .attr("y", (d: flat_node) => y(d.label_y ?? 0))
+        .attr("y", (d: flat_node) => y(d.label_y ?? 0));
+      update.select(".label-div")
+        .style("border-top-left-radius", (d) => d.x_pos > d.label_y ? "8px" : "0px")
+        .style("border-bottom-left-radius", (d) => d.x_pos > d.label_y ? "0px" : "8px");
+      update.select(".depth_tag")
+        .html((d : flat_node) => d.depth.toString());
       return update
     },
     (exit) => {
-      exit.transition().attr("opacity", 0).remove()
+      exit.transition().attr("opacity", 0).remove();
     });
+
+    const params_lists = d3.selectAll(".params_list");
+    params_lists.selectAll(".param_name")
+        .data((d : flat_node) => {
+          // console.warn(`Defining nested data for ${d.shortname}`)
+          return(d.param_names);
+        })
+        .join((enter) => {
+          const pdiv = enter.append("div")
+            .attr("class", "param_name")
+            .style("background", "#white")
+            .style("border-radius", "3px")
+            .style("background", "white")
+            .style("border", "1px solid #b0b0b0ff")
+            .style("display", "flex")
+            .style("flex-direction", "row")
+            
+          pdiv.append("div")
+            .style("font-weight", "bold")
+            .style("padding", "5px")
+            .style("height", "100%")
+            .html((d : string) => d.split("[")[0])
+
+          pdiv.append("div")
+            .style("padding", (d : string) => d.split("[").length > 1 ? "5px" : "0px")
+            .style("border-left", "1px solid #c6c6c6ff")
+            .style("visibility", (d : string) => d.split("[").length > 1 ? "visible" : "hidden")
+            .html((d : string) => {
+              const end_str = d.split("[");
+              if(end_str.length > 1) {
+                return(end_str[1].substring(0, end_str[1].length - 1));
+              } else {
+                return("");
+              }
+            })
+
+          return(enter)
+        },
+      (update) => update,
+      (exit) => exit.remove()
+    );
   }

@@ -32,15 +32,15 @@ export function short_name(
     }
 
     const index_strs = get_index_strs(indices).join(", ");
-    if (index_strs.length > 12) {
-      snames.push(np + "[...]");
+    if (index_strs.length > 12) { 
+      snames.push(np + "[⋯]");
     } else if (index_strs.length > 0) {
       snames.push(np + "[" + index_strs + "]");
     } else {
       snames.push(np);
     }
   }
-  return(snames.join(", "));
+  return(snames);
 }
 
 export function by_parameter(param_strings : string[]) {
@@ -86,18 +86,49 @@ export function get_index_strs(indices : number[][], flatten = true) {
   if(var_i.length > 1) {
     // If more than one dimension varies, reduce to raw notation
     if(flatten) {
-      let index_string = indices.reduceRight(
-        (p, n) => "[" + n.join(",") + "]," + p,
-      "");
-      index_string = index_string.substring(0, index_string.length - 1);
-      index_strings[0] = index_string
+      index_strings = indices[0].map((i) => i.toString());
+      const bi = new Array(var_i.length);
+      const ei = new Array(var_i.length);
+
+      let max_indices = 1;
+      for(let vj = 0; vj < var_i.length; ++vj) {
+        const cur_index = var_i[vj];
+        const cur_dim = indices.map((i) => i[cur_index]);
+        const unique_dim = [...new Set(cur_dim)];
+        max_indices = max_indices * unique_dim.length;
+        if(is_seq(cur_dim, false)) {
+          cur_dim.sort((a, b) => a - b);
+          bi[vj] = cur_dim[0];
+          ei[vj] = cur_dim[cur_dim.length - 1];
+        } else {
+          bi[vj] = null;
+          ei[vj] = null;
+        }
+      }
+
+      for(let vj = 0; vj < var_i.length; ++vj) {
+        const cur_index = var_i[vj];
+        if(bi[vj] != null) {
+          if (max_indices == indices.length) {
+            index_strings[cur_index] = bi[vj] + "-" + ei[vj];
+          } else {
+            index_strings[cur_index] = "(" + bi[vj] + "-" + ei[vj] + ")";
+          }
+        } else {
+          index_strings[cur_index] = "⋯";
+        }
+      }
+
+      // let index_string = indices.reduceRight(
+      //   (p, n) => "[" + n.join(",") + "]," + p,
+      // "");
+      // index_string = index_string.substring(0, index_string.length - 1);
+      // index_strings[0] = index_string
     } else {
       index_strings = indices.reduceRight(
         (p, n) => p.map((pv, pi) => pv + ", " + n[pi].toString()),
       rep_array("", index_len));
     }
-    //const sname = np + "[" + index_string + "]";
-    //snames.push(sname);
   } else if(is_seq(indices.map((i) => i[var_i[0]]))) {
     const var_vals = indices.map((i) => i[var_i[0]]).toSorted((a,b) => a - b);
     const br = var_vals[0];
@@ -105,11 +136,6 @@ export function get_index_strs(indices : number[][], flatten = true) {
     index_strings = indices[0].map(
       (iv, j) => j == var_i[0] ? (br + "-" + er) : iv.toString()
     )
-    // const sname = np + "[" + 
-    //   indices[0].map(
-    //     (iv, j) => j == var_i[0] ? (br + "-" + er) : iv.toString()
-    //   ).join(",") + "]";  
-    // snames.push(sname);
   } else {
     const var_vals = indices.map((i) => i[var_i[0]]).toSorted((a,b) => a - b);
     let vv_str = var_vals.join(",");
@@ -119,11 +145,6 @@ export function get_index_strs(indices : number[][], flatten = true) {
     index_strings = indices[0].map(
       (iv, j) => j == var_i[0] ? vv_str : iv.toString()
     )
-    // const sname = np + "[" + 
-    //   indices[0].map(
-    //     (iv, j) => j == var_i[0] ? vv_str : iv.toString()
-    //   ).join(",") + "]";
-    // snames.push(sname);
   }
   return(index_strings);
 }
@@ -169,8 +190,9 @@ function const_arr(arr : number[]) {
   return(arr.reduce((p, n) => p && (n == arr[0]), true));
 }
 
-function is_seq(arr : number[]) {
-  const arrs = arr.sort((a,b) => a - b);
+function is_seq(arr : number[], require_unique = true) {
+  const arr_prime = require_unique ? arr : [... new Set(arr)];
+  const arrs = arr_prime.sort((a,b) => a - b);
   return(arrs.length == (1 + arrs[arrs.length - 1] - arrs[0]) && arrs.length > 1);
 }
 
@@ -179,28 +201,37 @@ function seq_array(lower : number, upper : number) {
 }
 
 const unicode_greek = {
-  'alpha': '\u{03B1}',
-  'beta': '\u{03B2}',
-  'gamma': '\u{03B3}',
-  'delta': '\u{03B4}',
-  'epsilon': '\u{03B5}',
-  'zeta': '\u{03B6}',
-  'theta': '\u{03B8}',
-  'iota': '\u{03B9}',
-  'kappa': '\u{03BA}',
-  'lambda': '\u{03BB}',
-  'mu': '\u{03BC}',
-  'nu': '\u{03BD}',
-  'xi': '\u{03BE}',
-  'omicron': '\u{03BF}',
-  'rho': '\u{03C1}',
-  'sigma': '\u{03C3}',
-  'tau': '\u{03C4}',
-  'upsilon': '\u{03C5}',
-  'phi': '\u{03C6}',
-  'chi': '\u{03C7}',
-  'psi': '\u{03C8}',
-  'omega': '\u{03C9}',
-  'pi': '\u{03C0}',
-  'eta': '\u{03B7}'
+  'causal_effect': '\u{03B4}',
+  'factors_pot': '\u{03D1}',
+  'factors': '\u{03B8}',
+  'frac_var_latent': '\u{03BA}',
+  'factor_loadings': '\u{03BB}',
+  'overall_sd': '\u{03C3}',
 }
+
+// const unicode_greek = {
+//   'alpha': '\u{03B1}',
+//   'beta': '\u{03B2}',
+//   'gamma': '\u{03B3}',
+//   'delta': '\u{03B4}',
+//   'epsilon': '\u{03B5}',
+//   'zeta': '\u{03B6}',
+//   'theta': '\u{03B8}',
+//   'iota': '\u{03B9}',
+//   'kappa': '\u{03BA}',
+//   'lambda': '\u{03BB}',
+//   'mu': '\u{03BC}',
+//   'nu': '\u{03BD}',
+//   'xi': '\u{03BE}',
+//   'omicron': '\u{03BF}',
+//   'rho': '\u{03C1}',
+//   'sigma': '\u{03C3}',
+//   'tau': '\u{03C4}',
+//   'upsilon': '\u{03C5}',
+//   'phi': '\u{03C6}',
+//   'chi': '\u{03C7}',
+//   'psi': '\u{03C8}',
+//   'omega': '\u{03C9}',
+//   'pi': '\u{03C0}',
+//   'eta': '\u{03B7}'
+// }
