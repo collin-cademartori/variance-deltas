@@ -15,7 +15,7 @@
 
   const x = d3.scaleLinear([0, 1], [0, width]);
   const y = d3.scaleLinear([0, 1], [0, 0.95 * height]);
-  const l_height = 0.036;
+  const l_height = 34; //0.036
 
   type user_state_t = 'base' | 'extruding' | 'dividing' | 'auto-dividing' | 'merging' | 'auto-merging';
   let user_state : user_state_t = $state('base');
@@ -53,7 +53,7 @@
     xaxis(svg.select("#x_axis"));
 
     ws.handle_message((data) => {
-      const tree = annotate_tree(data, l_height, height, x);
+      const tree = annotate_tree(data, y.invert(l_height), height, x);
       draw_tree(
         tree, x, y, l_height,
         (d : flat_node) => {

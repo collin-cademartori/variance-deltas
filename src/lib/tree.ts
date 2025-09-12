@@ -30,6 +30,7 @@ export function annotate_tree(ft : flat_tree,
   label_height : number, max_height : number,
   x_scale : d3.ScaleLinear<number, number, never>
 ) {
+  console.log(`Label height is ${label_height}`)
   console.log("Setting short names.")
   for(const node of ft) {
     node.param_names = short_name(node.params);

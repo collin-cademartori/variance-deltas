@@ -138,7 +138,7 @@
           .attr("class", "label_fo")
           .attr("x", (d : flat_node) => x(0.003 + d.ered))
           .attr("y", (d: flat_node) => y(d.label_y ?? 0))
-          .attr("height", () => y(l_height))
+          .attr("height", () => l_height + "px") //y(l_height)
           .attr("width", "1000px"); //(d: flat_node) =>  x(10 * compute_width(d.param_names, x))
 
         const ld = fo.append("xhtml:div")
