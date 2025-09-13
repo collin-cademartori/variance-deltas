@@ -2,45 +2,59 @@
   import { onMount } from "svelte";
   import * as ws from "$lib/websocket";
   import * as d3 from "d3";
-  import { annotate_tree, type flat_node, type flat_branch } from "$lib/tree";
+  import { annotate_tree, type flat_node, type flat_branch, type flat_tree } from "$lib/tree";
   import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge } from "$lib/tree_methods";
   import { draw_tree, reset_styles } from "$lib/draw_tree";
   import { setup_context } from "$lib/compute_width";
   import { export_svg } from "$lib/export_svg";
+  import { SvelteMap } from 'svelte/reactivity';
 
   import SelectionDialog from "$lib/components/SelectionDialog.svelte";
 
-  const height = 950; //950
+  const height = 800; //950
   const width = 1150; //1150
 
-  const x = d3.scaleLinear([0, 1], [0, width]);
+  const x = d3.scaleLinear([0, 1], [0, 0.95 * width]);
   const y = d3.scaleLinear([0, 1], [0, 0.95 * height]);
-  const l_height = 34; //0.036
+  const l_height = 32;
+
+  let tree : flat_tree | undefined = $state(undefined);
 
   type user_state_t = 'base' | 'extruding' | 'dividing' | 'auto-dividing' | 'merging' | 'auto-merging';
+  type selection_type = SvelteMap<string, 'main' | 'alt' | 'del'>;
   let user_state : user_state_t = $state('base');
 
-  let selected_node : flat_node | undefined = $state(undefined);
-  let selected_alt_node : flat_node | undefined = $state(undefined);
   let selected_branch : flat_branch | undefined = $state(undefined);
 
+  let node_selection : selection_type = $state(new SvelteMap());
+  let selected_node = $derived.by(() => {
+    const main_node = node_selection.entries().find(([node_name, sel_channel]) => sel_channel === 'main');
+    if(main_node) {
+      return(tree?.find((node) => node.name === main_node[0]));
+    } else {
+      return(undefined);
+    }
+  });
+
+  let selected_alt_node = $derived.by(() => {
+    const alt_node = node_selection.entries().find(([node_name, sel_channel]) => sel_channel === 'alt');
+    if(alt_node) {
+      return(tree?.find((node) => node.name === alt_node[0]));
+    } else {
+      return(undefined);
+    }
+  });
+
   $effect(() => {
+    node_selection.clear()
     if(user_state === 'base') {
-      selected_node = undefined;
       selected_branch = undefined;
-      selected_alt_node = undefined;
-    } else if (user_state === 'dividing' || user_state === 'auto-dividing') {
-      selected_node = undefined;
-      selected_alt_node = undefined;
     } else if (user_state === 'extruding') {
       selected_branch = undefined;
-      selected_alt_node = undefined;
     } else if (user_state === 'merging') {
       selected_branch = undefined;
     } else if (user_state === 'auto-merging') {
       selected_branch = undefined;
-      selected_branch = undefined;
-      selected_alt_node = undefined;
     }
     reset_styles();
   });
@@ -49,64 +63,43 @@
     setup_context(new OffscreenCanvas(1000, 1000));
 
     const svg = d3.select("#tree");
-    let xaxis = d3.axisBottom(x);
+    let xaxis = d3.axisBottom(x).offset(10).tickPadding(15).tickSize(0);
     xaxis(svg.select("#x_axis"));
 
     ws.handle_message((data) => {
-      const tree = annotate_tree(data, y.invert(l_height), height, x);
+      tree = annotate_tree(data, y.invert(l_height), height, x, y);
       draw_tree(
         tree, x, y, l_height,
         (d : flat_node) => {
           if(user_state === 'extruding') {
-            let action = "";
-            if(selected_node?.name == d.name) {
-              selected_node = undefined;
-              action = "deselect";
+            if(node_selection.get(d.name) === 'main') {
+              node_selection.clear();
+              return({ target: [], channel: 'main' })
             } else {
-              selected_node = d;
-              action = "select";
+              node_selection.clear();
+              node_selection.set(d.name, 'main');
+              return({ target: [d.name], channel: 'main' })
             }
-            return({
-              selections: 'main',
-              action: action,
-              styles: {
-                
-              }
-            });
           } else if (user_state === 'merging') {
-            let selections = "";
-            let action = "";
-            if(selected_node?.name == d.name) {
-              selected_node = undefined;
-              selected_alt_node = undefined;
-              selections = "both";
-              action = "deselect";
-            } else if (selected_alt_node?.name == d.name) {
-              selected_alt_node = undefined;
-              selections = "alt";
-              action = "deselect";
-            } else if (selected_node != null) {
-              selected_alt_node = d;
-              selections = "alt";
-              action = "select";
+            if(node_selection.get(d.name) === 'main') {
+              node_selection.clear();
+              return(null);
+            } else if (node_selection.get(d.name) === 'alt') {
+              node_selection.delete(d.name);
+              return({ target: [], channel: 'alt' });
+            } else if (node_selection.values().some((v) => v == 'main')) {
+              node_selection.entries().forEach(([name, channel]) => {
+                if(channel === 'alt') node_selection.delete(name);
+              });
+              node_selection.set(d.name, 'alt');
+              return({ target: [d.name], channel: 'alt' });
             } else {
-              selected_node = d;
-              selections = "main";
-              action = "select";
+              node_selection.clear();
+              node_selection.set(d.name, 'main');
+              return({ target: [d.name], channel: 'main' });
             }
-            const label_data = {
-              selections: selections,
-              action: action,
-              styles: {
-                "background-color" : selections == "alt" ? "grey" : "black",
-                "color" : "white",
-                "opacity" : 1
-              }
-            }
-            console.log(label_data.action + ": " + label_data.selections);
-            return(label_data);
           } else {
-            return({ selections: "", action: "", styles: {} });
+            return(null);
           }
         },
         (d : flat_branch) => {
@@ -142,14 +135,21 @@
   <div id="main_view">
       <div id="tree_container">
       <svg id="tree" height={height} width={width + 100}>
+        <linearGradient id="grad" x1="0" x2="0" y1="0" y2="0.04">
+          <stop class="stop1" offset="0%" stop-color="white" stop-opacity="0" />
+          <stop class="stop2" offset="30%" stop-color="white"/>
+          <stop class="stop3" offset="100%" stop-color="white"/>
+        </linearGradient>
         <rect width="100%" height="100%" fill="white"></rect>
         <g id="tree_g" transform="translate(10 0)"></g>
-        <g id="x_axis" transform={`translate(10 ${0.96 * height})`}></g>
+        <g id="x_axis" transform={`translate(10 ${0.96 * height})`}>
+          <rect width="100%" height="100%" fill="url(#grad)"></rect>
+        </g>
       </svg>
     </div>
 
     <div id="control_container">
-      <div id="session_bar">
+      <div id="session_bar" class="button_bar">
         <button onclick={() => {
           const svg = document.getElementById("tree");
           const anch = document.createElement("a");
@@ -160,9 +160,17 @@
         }}>
           Export Image
         </button>
+        <div class="button_group">
+          <button>
+            Groups
+          </button>
+          <button>
+            Add Group
+          </button>
+        </div>
       </div>
 
-      <div id="menu_bar">
+      <div id="menu_bar" class="button_bar">
         <button 
           class:menu_enabled={user_state === 'extruding'}
           onclick={() => user_state === 'extruding' ? user_state = 'base' : user_state = 'extruding'}
@@ -300,7 +308,7 @@
     flex-direction: row;
   }
 
-  #menu_bar {
+  .button_bar {
     display: flex;
     flex-direction: row;
     gap: 0.5rem;

@@ -1,10 +1,17 @@
   import * as d3 from "d3";
   import { type flat_node, type flat_tree, type flat_branch } from "./tree.ts";
 
+  // type label_data_t = {
+  //   selections: string,
+  //   action: string
+  // }
+
+  const selection_channels = ['main', 'alt', 'del'] as const;
+
   type label_data_t = {
-    selections: string,
-    action: string
-  }
+    target: string[]
+    channel: typeof selection_channels[number]
+  } | null
 
   let branch_rule_index : number | undefined = undefined;
 
@@ -28,6 +35,8 @@
       labels[li].classList.remove("alt_label_selected");
     }
   }
+
+  let cur_y = 0;
   
   export function draw_tree(
     tree : flat_tree, 
@@ -37,7 +46,25 @@
     label_handler : (d : flat_node) => label_data_t,
     branch_handler : (d : flat_branch) => object,
     ss : CSSStyleSheet) {
+
     const tree_elem = d3.select("#tree_g");
+
+    const max_y = y(tree.map((fn) => fn.x_pos).reduce((p,n) => Math.max(p,n)) - 1) + 45;
+    const pan = d3.zoom();
+
+    pan.on('zoom', (e) => {
+      if(e?.sourceEvent?.wheelDeltaY) {
+        const dy = -1 * e.sourceEvent.wheelDeltaY;
+        const t = e.transform;
+        t.k = 1;
+        t.x = 10;
+        cur_y = Math.min(Math.max(0, cur_y + dy), max_y);
+        t.y = -1 * cur_y;
+        d3.select("#tree_g").attr("transform", t.toString());
+      } 
+    });
+
+    d3.select("#tree").call(pan);
 
     const branch_data = tree.filter((n) => n.parent != "").map((n) => {
       const pn = tree.find((n2) => n2.name === n.parent);
@@ -65,7 +92,7 @@
                 g.append("path").attr("d", (d) => link([d.parent, d.child]))
                      .attr("class", "branch_path")
                      .style("stroke", "#444444")
-                     .style("stroke-width", 2.5)
+                     .style("stroke-width", 2)
                      .style("fill", "none")
                      .attr("id", (d) => `branch-${d.child.shortname}-${d.parent.shortname}`);
 
@@ -142,6 +169,7 @@
           .attr("width", "1000px"); //(d: flat_node) =>  x(10 * compute_width(d.param_names, x))
 
         const ld = fo.append("xhtml:div")
+          .attr("id", (d) => `${d.name}_div`)
           .attr("class", "label-div")
           .style("display", "flex")
           .style("flex-direction", "row")
@@ -166,30 +194,23 @@
             ev.currentTarget.style.opacity = 1;
           })
           .on("click", (ev, d) => {
-            const target_classes = ev.currentTarget.classList;
             const label_data = label_handler(d);
-            if (label_data.action === 'select') {
-              if(label_data.selections != 'main' && label_data.selections != 'alt') {
-                console.error('Invalid selection: ' + label_data.selections);
-                return;
-              }
-              const selected = document.getElementsByClassName(`${label_data.selections}_label_selected`);
-              for(let mi = 0; mi < selected.length; ++mi) {
-                selected[mi].classList.remove(`${label_data.selections}_label_selected`);
-              }
-              target_classes.add(`${label_data.selections}_label_selected`);
-            } else if (label_data.action === 'deselect') {
-              if(label_data.selections === 'main' || label_data.selections === 'both') {
-                const selected_main = document.getElementsByClassName("main_label_selected");
-                for(let mi = 0; mi < selected_main.length; ++mi) {
-                  selected_main[mi].classList.remove('main_label_selected');
+            if(label_data == null) {
+              for(const channel of selection_channels) {
+                const cn = `${channel}_label_selected`;
+                const els = document.getElementsByClassName(cn);
+                for(let ei = 0; ei < els.length; ++ei) {
+                  els[ei].classList.remove(cn);
                 }
               }
-              if(label_data.selections === 'alt' || label_data.selections === 'both') {
-                const selected_alt = document.getElementsByClassName("alt_label_selected");
-                for(let ai = 0; ai < selected_alt.length; ++ai) {
-                  selected_alt[ai].classList.remove('alt_label_selected');
-                }
+            } else {
+              const cn = `${label_data.channel}_label_selected`;
+              const els = document.getElementsByClassName(cn);
+              for(let ei = 0; ei < els.length; ++ei) {
+                els[ei].classList.remove(cn);
+              }
+              for(let ni = 0; ni < label_data.target.length; ++ni) {
+                document.getElementById(`${label_data.target[ni]}_div`).classList.add(cn);
               }
             }
           });
