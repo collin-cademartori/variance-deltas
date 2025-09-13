@@ -1,18 +1,7 @@
   import * as d3 from "d3";
   import { type flat_node, type flat_tree, type flat_branch } from "./tree.ts";
-
-  // type label_data_t = {
-  //   selections: string,
-  //   action: string
-  // }
-
-  const selection_channels = ['main', 'alt', 'del'] as const;
-
-  type label_data_t = {
-    target: string[]
-    channel: typeof selection_channels[number]
-  } | null
-
+  import { type label_data_t, selection_channels } from "./selection.svelte.ts";
+  
   let branch_rule_index : number | undefined = undefined;
 
   function to_style_string(selector : string, styles : object) {

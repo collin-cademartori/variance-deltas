@@ -4,15 +4,16 @@
   import * as d3 from "d3";
   import { annotate_tree, type flat_node, type flat_branch, type flat_tree } from "$lib/tree";
   import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge } from "$lib/tree_methods";
-  import { draw_tree, reset_styles } from "$lib/draw_tree";
+  import { draw_tree } from "$lib/draw_tree";
   import { setup_context } from "$lib/compute_width";
   import { export_svg } from "$lib/export_svg";
-  import { SvelteSet } from 'svelte/reactivity';
+  import { node_selection, clear_selection, branch_selection, clear_branches } from "$lib/selection.svelte";
+  import { user_state } from "$lib/user_state.svelte";
 
   import SelectionDialog from "$lib/components/SelectionDialog.svelte";
 
-  const height = 800; //950
-  const width = 1150; //1150
+  const height = 800;
+  const width = 1150;
 
   const x = d3.scaleLinear([0, 1], [0, 0.95 * width]);
   const y = d3.scaleLinear([0, 1], [0, 0.95 * height]);
@@ -20,35 +21,14 @@
 
   let tree : flat_tree | undefined = $state(undefined);
 
-  type user_state_t = 'base' | 'extruding' | 'dividing' | 'auto-dividing' | 'merging' | 'auto-merging';
-  type selection_type = {
-    'main' : SvelteSet<string>,
-    'alt' : SvelteSet<string>,
-    'del' : SvelteSet<string>
-  }
-  let user_state : user_state_t = $state('base');
-
-  let selected_branch : flat_branch | undefined = $state(undefined);
-
-  let node_selection : selection_type = $state({
-    main: new SvelteSet(), alt: new SvelteSet(), del: new SvelteSet()
-  });
-
-  let selected_node = $derived.by(() => tree?.find((node) => node.name === [...node_selection.main.values()][0]))
-  let selected_alt_node = $derived.by(() => tree?.find((node) => node.name === [...node_selection.alt.values()][0]))
-
-  $effect(() => {
-    for(const channel of Object.values(node_selection)) channel.clear();
-    if(user_state === 'base') {
-      selected_branch = undefined;
-    } else if (user_state === 'extruding') {
-      selected_branch = undefined;
-    } else if (user_state === 'merging') {
-      selected_branch = undefined;
-    } else if (user_state === 'auto-merging') {
-      selected_branch = undefined;
-    }
-    reset_styles();
+  let selected_node = $derived.by(() => tree?.find((node) => node.name === [...node_selection.main.values()][0]));
+  let selected_alt_node = $derived.by(() => tree?.find((node) => node.name === [...node_selection.alt.values()][0]));
+  let selected_branch = $derived.by(() => {
+    const nodes = [...branch_selection.main][0];
+    return({
+      child: tree?.find((node) => node.name === nodes?.[0]),
+      parent: tree?.find((node) => node.name === nodes?.[1])
+    });
   });
 
   onMount(() => {
@@ -63,7 +43,7 @@
       draw_tree(
         tree, x, y, l_height,
         (d : flat_node) => {
-          if(user_state === 'extruding') {
+          if(user_state.state === 'extruding') {
             if(node_selection.main.has(d.name)) {
               node_selection.main.clear();
               return({ target: [], channel: 'main' })
@@ -72,9 +52,9 @@
               node_selection.main.add(d.name);
               return({ target: [d.name], channel: 'main' })
             }
-          } else if (user_state === 'merging') {
+          } else if (user_state.state === 'merging') {
             if(node_selection.main.has(d.name)) {
-              Object.values(node_selection).forEach((channel) => channel.clear());
+              clear_selection();
               return(null);
             } else if (node_selection.alt.has(d.name)) {
               node_selection.alt.clear();
@@ -93,11 +73,12 @@
           }
         },
         (d : flat_branch) => {
-          if(user_state === 'dividing' || user_state === 'auto-dividing') {
-            if(selected_branch?.parent.name == d.parent.name && selected_branch?.child.name == d.child.name) {
-              selected_branch = undefined;
+          if(user_state.state === 'dividing' || user_state.state === 'auto-dividing') {
+            if(selected_branch.parent?.name == d.parent.name && selected_branch.child?.name == d.child.name) {
+              clear_branches();
             } else {
-              selected_branch = d;
+              branch_selection.main.clear();
+              branch_selection.main.add([d.child.name, d.parent.name]);
             }
             return({
               "stroke-dasharray" : "5px, 5px"
@@ -108,8 +89,6 @@
         },
         document.styleSheets[0]
       );
-      console.log("Tree is now:")
-      console.log(tree);
     });
     get_tree([]);
 
@@ -162,35 +141,35 @@
 
       <div id="menu_bar" class="button_bar">
         <button 
-          class:menu_enabled={user_state === 'extruding'}
-          onclick={() => user_state === 'extruding' ? user_state = 'base' : user_state = 'extruding'}
+          class:menu_enabled={user_state.state === 'extruding'}
+          onclick={() => user_state.state === 'extruding' ? user_state.state = 'base' : user_state.state = 'extruding'}
         >
           Extrude
         </button>
         <div class="button_group">
           <button 
-            class:menu_enabled={user_state === 'dividing'}
-            onclick={() => user_state === 'dividing' ? user_state = 'base' : user_state = 'dividing'}
+            class:menu_enabled={user_state.state === 'dividing'}
+            onclick={() => user_state.state === 'dividing' ? user_state.state = 'base' : user_state.state = 'dividing'}
           >
             Divide
           </button>
           <button 
-            class:menu_enabled={user_state === 'auto-dividing'}
-            onclick={() => user_state === 'auto-dividing' ? user_state = 'base' : user_state = 'auto-dividing'}
+            class:menu_enabled={user_state.state === 'auto-dividing'}
+            onclick={() => user_state.state === 'auto-dividing' ? user_state.state = 'base' : user_state.state = 'auto-dividing'}
           >
             Auto-divide
           </button>
         </div>
         <div class="button_group">
           <button 
-            class:menu_enabled={user_state === 'merging'}
-            onclick={() => user_state === 'merging' ? user_state = 'base' : user_state = 'merging'}
+            class:menu_enabled={user_state.state === 'merging'}
+            onclick={() => user_state.state === 'merging' ? user_state.state = 'base' : user_state.state = 'merging'}
           >
             Merge
           </button>
           <button 
-            class:menu_enabled={user_state === 'auto-merging'}
-            onclick={() => user_state === 'auto-merging' ? user_state = 'base' : user_state = 'auto-merging'}
+            class:menu_enabled={user_state.state === 'auto-merging'}
+            onclick={() => user_state.state === 'auto-merging' ? user_state.state = 'base' : user_state.state = 'auto-merging'}
           >
             Auto-merge
           </button>
@@ -198,21 +177,21 @@
       </div>
 
       <div id="instruction_bar">
-        {#if user_state === 'extruding'}
+        {#if user_state.state === 'extruding'}
           <span>Select the node you would like to extrude.</span>
-        {:else if user_state === 'dividing'}
+        {:else if user_state.state === 'dividing'}
           <span>Select the branch you would like to divide.</span>
-        {:else if user_state === 'auto-dividing'}
+        {:else if user_state.state === 'auto-dividing'}
           <span>Select branch you would like to automatically divide.</span>
-        {:else if user_state === 'merging'}
+        {:else if user_state.state === 'merging'}
           <span>Select the nodes you would like merge.</span>
-        {:else if user_state === 'auto-merging'}
+        {:else if user_state.state === 'auto-merging'}
           <span>Press the button to begin auto-merge.</span>
         {/if}
       </div>
 
 
-      {#if user_state === 'extruding' && selected_node != undefined}
+      {#if user_state.state === 'extruding' && selected_node != undefined}
         <SelectionDialog 
           selected={selected_node} 
           button_text={"Extrude"} 
@@ -223,7 +202,7 @@
             })
           } 
         />
-      {:else if user_state === 'dividing' && selected_branch != undefined}
+      {:else if user_state.state === 'dividing' && selected_branch.parent != undefined}
         <SelectionDialog 
           selected={selected_branch.parent} 
           button_text={"Divide"}
@@ -234,7 +213,7 @@
             })
           }
         />
-      {:else if user_state === 'auto-dividing' && selected_branch != undefined}
+      {:else if user_state.state === 'auto-dividing' && selected_branch != undefined}
         <SelectionDialog
           selected={null}
           button_text={"Auto Divide"}
@@ -244,7 +223,7 @@
             })
           }
         />
-      {:else if user_state === 'merging' && selected_node != undefined && selected_alt_node != undefined}
+      {:else if user_state.state === 'merging' && selected_node != undefined && selected_alt_node != undefined}
         <SelectionDialog
           selected={null}
           button_text={"Merge"}
@@ -255,7 +234,7 @@
             })
           }
         />
-      {:else if user_state === 'auto-merging'}
+      {:else if user_state.state === 'auto-merging'}
         <SelectionDialog
           selected={null}
           button_text={"Auto Merge"}
@@ -357,17 +336,19 @@
   }
 
   .menu_enabled {
-    /* background-color: black;
-    color: white; */
-    border-color: rgb(29, 29, 212);
-    background-color: rgb(224, 235, 255);
+    /* border-color: rgb(29, 29, 212);
+    background-color: rgb(224, 235, 255); */
+    border-color: rgb(65, 125, 255);
+    background-color: rgb(65, 125, 255);
+    color: white;
   }
 
   .menu_enabled:active {
-    /* background-color: black;
-    color: white; */
-    border-color: rgb(29, 29, 212);
-    background-color: rgb(196, 215, 255);
+    /* border-color: rgb(29, 29, 212);
+    background-color: rgb(196, 215, 255); */
+    border-color: rgb(108, 154, 255);
+    background-color: rgb(108, 154, 255);
+    color: white;
   }
 
   #tree_container {
