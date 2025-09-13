@@ -7,7 +7,7 @@
   import { draw_tree, reset_styles } from "$lib/draw_tree";
   import { setup_context } from "$lib/compute_width";
   import { export_svg } from "$lib/export_svg";
-  import { SvelteMap } from 'svelte/reactivity';
+  import { SvelteSet } from 'svelte/reactivity';
 
   import SelectionDialog from "$lib/components/SelectionDialog.svelte";
 
@@ -21,32 +21,24 @@
   let tree : flat_tree | undefined = $state(undefined);
 
   type user_state_t = 'base' | 'extruding' | 'dividing' | 'auto-dividing' | 'merging' | 'auto-merging';
-  type selection_type = SvelteMap<string, 'main' | 'alt' | 'del'>;
+  type selection_type = {
+    'main' : SvelteSet<string>,
+    'alt' : SvelteSet<string>,
+    'del' : SvelteSet<string>
+  }
   let user_state : user_state_t = $state('base');
 
   let selected_branch : flat_branch | undefined = $state(undefined);
 
-  let node_selection : selection_type = $state(new SvelteMap());
-  let selected_node = $derived.by(() => {
-    const main_node = node_selection.entries().find(([node_name, sel_channel]) => sel_channel === 'main');
-    if(main_node) {
-      return(tree?.find((node) => node.name === main_node[0]));
-    } else {
-      return(undefined);
-    }
+  let node_selection : selection_type = $state({
+    main: new SvelteSet(), alt: new SvelteSet(), del: new SvelteSet()
   });
 
-  let selected_alt_node = $derived.by(() => {
-    const alt_node = node_selection.entries().find(([node_name, sel_channel]) => sel_channel === 'alt');
-    if(alt_node) {
-      return(tree?.find((node) => node.name === alt_node[0]));
-    } else {
-      return(undefined);
-    }
-  });
+  let selected_node = $derived.by(() => tree?.find((node) => node.name === [...node_selection.main.values()][0]))
+  let selected_alt_node = $derived.by(() => tree?.find((node) => node.name === [...node_selection.alt.values()][0]))
 
   $effect(() => {
-    node_selection.clear()
+    for(const channel of Object.values(node_selection)) channel.clear();
     if(user_state === 'base') {
       selected_branch = undefined;
     } else if (user_state === 'extruding') {
@@ -72,30 +64,28 @@
         tree, x, y, l_height,
         (d : flat_node) => {
           if(user_state === 'extruding') {
-            if(node_selection.get(d.name) === 'main') {
-              node_selection.clear();
+            if(node_selection.main.has(d.name)) {
+              node_selection.main.clear();
               return({ target: [], channel: 'main' })
             } else {
-              node_selection.clear();
-              node_selection.set(d.name, 'main');
+              node_selection.main.clear();
+              node_selection.main.add(d.name);
               return({ target: [d.name], channel: 'main' })
             }
           } else if (user_state === 'merging') {
-            if(node_selection.get(d.name) === 'main') {
-              node_selection.clear();
+            if(node_selection.main.has(d.name)) {
+              Object.values(node_selection).forEach((channel) => channel.clear());
               return(null);
-            } else if (node_selection.get(d.name) === 'alt') {
-              node_selection.delete(d.name);
+            } else if (node_selection.alt.has(d.name)) {
+              node_selection.alt.clear();
               return({ target: [], channel: 'alt' });
-            } else if (node_selection.values().some((v) => v == 'main')) {
-              node_selection.entries().forEach(([name, channel]) => {
-                if(channel === 'alt') node_selection.delete(name);
-              });
-              node_selection.set(d.name, 'alt');
+            } else if (node_selection.main.size > 0) {
+              node_selection.alt.clear();
+              node_selection.alt.add(d.name);
               return({ target: [d.name], channel: 'alt' });
             } else {
-              node_selection.clear();
-              node_selection.set(d.name, 'main');
+              node_selection.main.clear();
+              node_selection.main.add(d.name);
               return({ target: [d.name], channel: 'main' });
             }
           } else {
