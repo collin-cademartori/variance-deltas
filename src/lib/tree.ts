@@ -1,7 +1,6 @@
 import * as d3 from "d3";
 import { short_name } from "./short_names.ts";
 import { compute_width } from "./compute_width.ts";
-import { E } from "../../.svelte-kit/output/server/chunks/index.js";
 
 export type flat_node = {
   name: string,
@@ -28,7 +27,7 @@ type coord = {
 }
 
 export function annotate_tree(ft : flat_tree,
-  label_height : number, max_height : number,
+  label_height : number,
   x_scale : d3.ScaleLinear<number, number, never>,
   y_scale : d3.ScaleLinear<number, number, never>
 ) {
@@ -40,7 +39,7 @@ export function annotate_tree(ft : flat_tree,
   }
   console.log("Setting xs.")
   const tree_with_xs = compute_xs(ft, y_scale);
-  compute_label_pos(tree_with_xs, label_height, max_height, x_scale, y_scale);
+  compute_label_pos(tree_with_xs, label_height, x_scale, y_scale);
   return(tree_with_xs);
 }
 
@@ -70,7 +69,7 @@ function compute_xs(ft : flat_tree, y_scale : d3.ScaleLinear<number, number, nev
   const num_nodes = test_tree.descendants().length;
   for(const [nindex, node] of test_tree.descendants().sort(leaf_sort).entries()) {
     console.warn(`Can't compress past ${y_scale.invert(44)}, but fitting height is ${(0.9 / (num_nodes - 1))}`)
-    node.data.x_pos = 0.05 + nindex * Math.max((0.9 / (num_nodes - 1)), y_scale.invert(44));
+    node.data.x_pos = 0.05 + nindex * 1.1 * y_scale.invert(44); //Math.max((0.9 / (num_nodes - 1)), y_scale.invert(44));
     if(node.data.depth == null) {
        node.data.depth = node.ancestors().length;
     }
@@ -117,9 +116,7 @@ function compute_xs(ft : flat_tree, y_scale : d3.ScaleLinear<number, number, nev
   //   }
   // });
 
-  const new_ft : flat_tree = [...test_tree].map((n) => n.data);
-
-  return(new_ft)
+  return(test_tree)
 }
 
 function intersect(x1 : [number, number], x2: [number, number], fudge : number) {
@@ -143,14 +140,15 @@ function intersect_area(c1: coord, c2: coord) {
 }
 
 function compute_label_pos(
-  ft : flat_tree, 
-  label_height : number, max_height : number,
+  ft : d3.HierarchyNode<flat_node>, 
+  label_height : number,
   x_scale : d3.ScaleLinear<number, number, never>,
   y_scale : d3.ScaleLinear<number, number, never>) {
 
   const label_gap = y_scale.invert(2);
   const label_coords : coord[] = [];
-  for(const node of ft) {
+  for(const desc of ft) {
+    const node = desc.data;
     if(node.x_pos == null || node.shortname == null) {
       throw new Error("Cannot compute label positions before x coordinate and short name determined.");
     } else {

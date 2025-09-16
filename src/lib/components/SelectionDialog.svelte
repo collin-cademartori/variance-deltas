@@ -50,6 +50,7 @@
     gap: 0.5rem;
     padding: 1rem;
     border: 0.1rem solid black;
+    border-radius: 0.2rem;
     width: 16rem;
   }
 

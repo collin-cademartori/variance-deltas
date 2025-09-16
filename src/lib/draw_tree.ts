@@ -22,6 +22,13 @@
     for(let li = 0; li < labels.length; ++li) {
       labels[li].classList.remove("main_label_selected");
       labels[li].classList.remove("alt_label_selected");
+      labels[li].classList.remove("del_label_selected");
+    }
+    const rects = document.getElementsByClassName("node_rect");
+    for(let ri = 0; ri < rects.length; ++ri) {
+      rects[ri].classList.remove("main_rect_selected");
+      rects[ri].classList.remove("alt_rect_selected");
+      rects[ri].classList.remove("del_rect_selected");
     }
   }
 
@@ -71,6 +78,9 @@
       (d) => x(d.ered),
       (d) => y(d.x_pos ?? 0)
     ).curve(d3.curveStepBefore);
+
+    // const tree_layer = tree_elem.append('g');
+    //const select_layer = tree_elem.append('g');
 
     tree_elem.selectAll(".tree_branch")
              .data(branch_data, (d) => `${(d as flat_branch).parent.name}-->${(d as flat_branch).child.name}`)
@@ -129,7 +139,7 @@
               return update;
             },
             (exit) => {
-              exit.transition().attr("opacity", 0).remove()
+              exit.transition().attr("opacity", 0).remove();
             }
           );
 
@@ -142,6 +152,7 @@
         g.transition().attr("opacity", 1);
 
         g.append("rect")
+          .attr("id", (d) => `${d.name}_rect`)
           .attr("class", "node_rect")
           .attr("width", 9)
           .attr("height", 9)
@@ -182,24 +193,35 @@
           .on("mouseover", (ev) => {
             ev.currentTarget.style.opacity = 1;
           })
-          .on("click", (ev, d) => {
+          .on("click", (_ev, d) => {
             const label_data = label_handler(d);
             if(label_data == null) {
               for(const channel of selection_channels) {
                 const cn = `${channel}_label_selected`;
-                const els = document.getElementsByClassName(cn);
+                const els = Array.from(document.getElementsByClassName(cn));
                 for(let ei = 0; ei < els.length; ++ei) {
                   els[ei].classList.remove(cn);
+                }
+                const cnr = `${channel}_rect_selected`;
+                const elsr = Array.from(document.getElementsByClassName(cnr));
+                for(let ei = 0; ei < elsr.length; ++ei) {
+                  elsr[ei].classList.remove(cnr);
                 }
               }
             } else {
               const cn = `${label_data.channel}_label_selected`;
-              const els = document.getElementsByClassName(cn);
+              const cnr = `${label_data.channel}_rect_selected`;
+              const els = Array.from(document.getElementsByClassName(cn));
               for(let ei = 0; ei < els.length; ++ei) {
                 els[ei].classList.remove(cn);
               }
+              const elsr = Array.from(document.getElementsByClassName(cnr));
+              for(let ei = 0; ei < elsr.length; ++ei) {
+                elsr[ei].classList.remove(cnr);
+              }
               for(let ni = 0; ni < label_data.target.length; ++ni) {
                 document.getElementById(`${label_data.target[ni]}_div`).classList.add(cn);
+                document.getElementById(`${label_data.target[ni]}_rect`).classList.add(cnr);
               }
             }
           });
@@ -247,43 +269,45 @@
     });
 
     const params_lists = d3.selectAll(".params_list");
-    params_lists.selectAll(".param_name")
-        .data((d : flat_node) => {
-          // console.warn(`Defining nested data for ${d.shortname}`)
-          return(d.param_names);
-        })
-        .join((enter) => {
-          const pdiv = enter.append("div")
-            .attr("class", "param_name")
-            .style("background", "#white")
-            .style("border-radius", "3px")
-            .style("background", "white")
-            .style("border", "1px solid #b0b0b0ff")
-            .style("display", "flex")
-            .style("flex-direction", "row")
-            
-          pdiv.append("div")
-            .style("font-weight", "bold")
-            .style("padding", "5px")
-            .style("height", "100%")
-            .html((d : string) => d.split("[")[0])
+    if(params_lists.size() > 0) {
+      const param_names = params_lists.selectAll(".param_name"); //<d3.BaseType, HTMLElement>
+      console.log(param_names.nodes());
+      param_names.data((d : flat_node) => {
+            return(d.param_names);
+          })
+          .join((enter) => {
+            const pdiv = enter.append("div")
+              .attr("class", "param_name")
+              .style("background", "#white")
+              .style("border-radius", "3px")
+              .style("background", "white")
+              .style("border", "1px solid #b0b0b0ff")
+              .style("display", "flex")
+              .style("flex-direction", "row")
+              
+            pdiv.append("div")
+              .style("font-weight", "bold")
+              .style("padding", "5px")
+              .style("height", "100%")
+              .html((d : string) => d.split("[")[0])
 
-          pdiv.append("div")
-            .style("padding", (d : string) => d.split("[").length > 1 ? "5px" : "0px")
-            .style("border-left", "1px solid #c6c6c6ff")
-            .style("visibility", (d : string) => d.split("[").length > 1 ? "visible" : "hidden")
-            .html((d : string) => {
-              const end_str = d.split("[");
-              if(end_str.length > 1) {
-                return(end_str[1].substring(0, end_str[1].length - 1));
-              } else {
-                return("");
-              }
-            })
+            pdiv.append("div")
+              .style("padding", (d : string) => d.split("[").length > 1 ? "5px" : "0px")
+              .style("border-left", "1px solid #c6c6c6ff")
+              .style("visibility", (d : string) => d.split("[").length > 1 ? "visible" : "hidden")
+              .html((d : string) => {
+                const end_str = d.split("[");
+                if(end_str.length > 1) {
+                  return(end_str[1].substring(0, end_str[1].length - 1));
+                } else {
+                  return("");
+                }
+              })
 
-          return(enter)
-        },
-      (update) => update,
-      (exit) => exit.remove()
-    );
+            return(pdiv)
+          },
+        (update) => update,
+        (exit) => exit.remove()
+      );
+    }
   }

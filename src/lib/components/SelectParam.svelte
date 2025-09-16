@@ -54,7 +54,9 @@
 </script>
 
 <div id="container">
-  <button id="param_name" class:is_selected={is_selected} onclick={flip_selection}>{name}</button>
+  <button id="param_name" class:is_selected={is_selected} onclick={flip_selection}>
+    <span>{name}</span>
+  </button>
   <div class = "sep"></div>
   <div id="index_inputs">
     {#if is_selected}
@@ -90,23 +92,32 @@
     width: 5rem;
     text-align: left;
     background: white;
-    border: none;
+    border-color: white;
     padding: 0.4rem;
   }
 
+  button > span {
+    display: block;
+    overflow-x: hidden;
+  }
+
   .is_selected {
-    background: black;
-    color: white;
+    /* background: black;
+    color: white; */
+    border-color: rgb(29, 29, 212);
+    background-color: rgb(224, 235, 255);
   }
 
-  .is_selected:hover {
+  /* .is_selected:hover {
     background: black;
     color: white;
-  }
+    border-color: rgb(29, 29, 212);
+    background-color: rgb(196, 215, 255);
+  } */
 
-  button:hover {
+  /* button:hover {
     background: rgb(234, 234, 234);
-  }
+  } */
 
   .bracket {
     font-size: 1.1rem;
@@ -126,20 +137,20 @@
 
   .index_box {
     border: none;
-    border-top: 0.1rem solid grey;
-    border-bottom: 0.1rem solid grey;
+    border-top: 0.2rem solid grey;
+    border-bottom: 0.2rem solid grey;
   }
 
   .index_box:only-child {
-    border-radius: 0.1rem !important;
+    border-radius: 0.2rem !important;
     border: 0.1rem solid grey !important;
   }
 
   .index_box:first-child {
     border: none;
     border-radius: none;
-    border-top-left-radius: 0.1rem;
-    border-bottom-left-radius: 0.1rem;
+    border-top-left-radius: 0.2rem;
+    border-bottom-left-radius: 0.2rem;
     border: 0.1rem solid grey;
     border-right: none;
   }
@@ -147,8 +158,8 @@
   .index_box:last-child {
     border: none;
     border-radius: none;
-    border-top-right-radius: 0.1rem;
-    border-bottom-right-radius: 0.1rem;
+    border-top-right-radius: 0.2rem;
+    border-bottom-right-radius: 0.2rem;
     border: 0.1rem solid grey;
     border-left: none;
   }

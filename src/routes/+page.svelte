@@ -2,15 +2,17 @@
   import { onMount } from "svelte";
   import * as ws from "$lib/websocket";
   import * as d3 from "d3";
-  import { annotate_tree, type flat_node, type flat_branch, type flat_tree } from "$lib/tree";
+  import { type flat_node, type flat_branch, type flat_tree } from "$lib/tree";
   import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge } from "$lib/tree_methods";
-  import { draw_tree } from "$lib/draw_tree";
   import { setup_context } from "$lib/compute_width";
   import { export_svg } from "$lib/export_svg";
-  import { node_selection, clear_selection, branch_selection, clear_branches } from "$lib/selection.svelte";
-  import { user_state } from "$lib/user_state.svelte";
+  import { node_selection, clear_selection, branch_selection, clear_branches, selector } from "$lib/selection.svelte";
+  import { user_state, setup_tree } from "$lib/user_state.svelte";
+  import { make_group, groups } from "$lib/groups";
 
   import SelectionDialog from "$lib/components/SelectionDialog.svelte";
+  import MultiSelectionDialog from "$lib/components/MultiSelectionDialog.svelte";
+  import GroupsDialog from "$lib/components/GroupsDialog.svelte";
 
   const height = 800;
   const width = 1150;
@@ -19,15 +21,13 @@
   const y = d3.scaleLinear([0, 1], [0, 0.95 * height]);
   const l_height = 32;
 
-  let tree : flat_tree | undefined = $state(undefined);
-
-  let selected_node = $derived.by(() => tree?.find((node) => node.name === [...node_selection.main.values()][0]));
-  let selected_alt_node = $derived.by(() => tree?.find((node) => node.name === [...node_selection.alt.values()][0]));
+  let selected_node = $derived.by(() => user_state.tree?.find((node) => node.data.name === [...node_selection.main.values()][0])?.data);
+  let selected_alt_node = $derived.by(() => user_state.tree?.find((node) => node.data.name === [...node_selection.alt.values()][0])?.data);
   let selected_branch = $derived.by(() => {
     const nodes = [...branch_selection.main][0];
     return({
-      child: tree?.find((node) => node.name === nodes?.[0]),
-      parent: tree?.find((node) => node.name === nodes?.[1])
+      child: user_state.tree?.find((node) => node.data.name === nodes?.[0])?.data,
+      parent: user_state.tree?.find((node) => node.data.name === nodes?.[1])?.data
     });
   });
 
@@ -38,57 +38,94 @@
     let xaxis = d3.axisBottom(x).offset(10).tickPadding(15).tickSize(0);
     xaxis(svg.select("#x_axis"));
 
-    ws.handle_message((data) => {
-      tree = annotate_tree(data, y.invert(l_height), height, x, y);
-      draw_tree(
-        tree, x, y, l_height,
-        (d : flat_node) => {
-          if(user_state.state === 'extruding') {
-            if(node_selection.main.has(d.name)) {
-              node_selection.main.clear();
-              return({ target: [], channel: 'main' })
+    setup_tree(
+      x, y, l_height,
+      (d : flat_node) => {
+        if(user_state.state === 'extruding') {
+          if(node_selection.main.has(d.name)) {
+            node_selection.main.clear();
+            return({ target: [], channel: 'main' })
+          } else {
+            node_selection.main.clear();
+            node_selection.main.add(d.name);
+            return({ target: [d.name], channel: 'main' })
+          }
+        } else if (user_state.state === 'merging') {
+          if(node_selection.main.has(d.name)) {
+            clear_selection();
+            return(null);
+          } else if (node_selection.alt.has(d.name)) {
+            node_selection.alt.clear();
+            return({ target: [], channel: 'alt' });
+          } else if (node_selection.main.size > 0) {
+            node_selection.alt.clear();
+            node_selection.alt.add(d.name);
+            return({ target: [d.name], channel: 'alt' });
+          } else {
+            node_selection.main.clear();
+            node_selection.main.add(d.name);
+            return({ target: [d.name], channel: 'main' });
+          }
+        } else if (user_state.state === 'add-group') {
+          const sel_node = user_state.tree?.find((node) => node.data.name === d.name);
+          let sel_names : string[] = [];
+          if(selector.type === "anc") {
+            if(sel_node?.data.name && node_selection.main.has(sel_node?.data.name)) {
+              sel_names = sel_node?.descendants().map((desc) => desc.data.name);
+              sel_names.forEach((node_name) => node_selection.main.delete(node_name));
+              return({
+                target: [...node_selection.main], channel: 'main'
+              });
             } else {
-              node_selection.main.clear();
-              node_selection.main.add(d.name);
-              return({ target: [d.name], channel: 'main' })
+              sel_names = sel_node?.ancestors().map((anc) => anc.data.name) ?? [];
+              sel_names.forEach((name) => node_selection.main.add(name));
+              return({
+                target: [...node_selection.main], channel: 'main'
+              });
             }
-          } else if (user_state.state === 'merging') {
-            if(node_selection.main.has(d.name)) {
-              clear_selection();
-              return(null);
-            } else if (node_selection.alt.has(d.name)) {
-              node_selection.alt.clear();
-              return({ target: [], channel: 'alt' });
-            } else if (node_selection.main.size > 0) {
-              node_selection.alt.clear();
-              node_selection.alt.add(d.name);
-              return({ target: [d.name], channel: 'alt' });
+          } else if(selector.type === "desc") {
+            if(sel_node?.data.name && node_selection.del.has(sel_node?.data.name)) {
+              sel_names = sel_node?.ancestors().map((anc) => anc.data.name);
+              sel_names.forEach((node_name) => node_selection.del.delete(node_name));
+              return({
+                target: [...node_selection.del], channel: 'del'
+              });
             } else {
-              node_selection.main.clear();
-              node_selection.main.add(d.name);
-              return({ target: [d.name], channel: 'main' });
+              sel_names = sel_node?.descendants().map((desc) => desc.data.name) ?? [];
+              sel_names.forEach((name) => node_selection.del.add(name));
+              return({
+                target: [...node_selection.del], channel: 'del'
+              });
             }
           } else {
             return(null);
           }
-        },
-        (d : flat_branch) => {
-          if(user_state.state === 'dividing' || user_state.state === 'auto-dividing') {
-            if(selected_branch.parent?.name == d.parent.name && selected_branch.child?.name == d.child.name) {
-              clear_branches();
-            } else {
-              branch_selection.main.clear();
-              branch_selection.main.add([d.child.name, d.parent.name]);
-            }
-            return({
-              "stroke-dasharray" : "5px, 5px"
-            });
+        } else {
+          return(null);
+        }
+      },
+      (d : flat_branch) => {
+        if(user_state.state === 'dividing' || user_state.state === 'auto-dividing') {
+          if(selected_branch.parent?.name == d.parent.name && selected_branch.child?.name == d.child.name) {
+            clear_branches();
           } else {
-            return({});
+            branch_selection.main.clear();
+            branch_selection.main.add([d.child.name, d.parent.name]);
           }
-        },
-        document.styleSheets[0]
-      );
+          return({
+            "stroke-dasharray" : "5px, 5px"
+          });
+        } else {
+          return({});
+        }
+      }
+    );
+
+    ws.handle_message((data) => {
+      const tree = (d3.stratify<flat_node>()
+                    .id((n : flat_node) => n.name.toString())
+                    .parentId((n : flat_node) => n.parent.toString()))(data);
+      user_state.tree = tree;
     });
     get_tree([]);
 
@@ -130,10 +167,16 @@
           Export Image
         </button>
         <div class="button_group">
-          <button>
+          <button
+            class:menu_enabled={user_state.state === 'groups'}
+            onclick={() => user_state.state === 'groups' ? user_state.state = 'base' : user_state.state = 'groups'}
+          >
             Groups
           </button>
-          <button>
+          <button
+            class:menu_enabled={user_state.state === 'add-group'}
+            onclick={() => user_state.state === 'add-group' ? user_state.state = 'base' : user_state.state = 'add-group'}
+          >
             Add Group
           </button>
         </div>
@@ -190,8 +233,30 @@
         {/if}
       </div>
 
-
-      {#if user_state.state === 'extruding' && selected_node != undefined}
+      {#if user_state.state === 'add-group'}
+        <MultiSelectionDialog 
+          selected={
+            node_selection.main.size > 0 ? 
+            [...node_selection.main].map((name) => user_state.tree?.find((node) => node.data.name === name)?.data) :
+            [...node_selection.del].map((name) => user_state.tree?.find((node) => node.data.name === name)?.data)
+          } 
+          input_text={"Group Name"}
+          button_text={"Create Group"} 
+          button_action={(name, node_names) => {
+            console.log(node_names);  
+            make_group(name, node_names);
+            node_selection.main.clear();
+            node_selection.del.clear();
+            user_state.state = 'groups';
+          }} 
+        />
+      {:else if user_state.state === 'groups'}
+          {#if groups.size > 0}
+            <GroupsDialog />
+          {:else}
+            <span class="placeholder">No groups defined.</span>
+          {/if}
+      {:else if user_state.state === 'extruding' && selected_node != undefined}
         <SelectionDialog 
           selected={selected_node} 
           button_text={"Extrude"} 
@@ -256,10 +321,29 @@
   }
 
   :global(.alt_label_selected) {
-    /* border-color: rgb(212, 142, 29) !important;
-    background-color: rgb(255, 236, 224) !important; */
     border-color: rgb(145, 10, 138) !important;
     background-color: rgb(241, 232, 240) !important;
+    opacity: 1 !important;
+  }
+
+  :global(.del_label_selected) {
+    border-color: rgb(212, 142, 29) !important;
+    background-color: rgb(255, 236, 224) !important;
+    opacity: 1 !important;
+  }
+
+  :global(.main_rect_selected) {    
+    fill: rgb(64, 64, 234) !important;
+    opacity: 1 !important;
+  }
+
+  :global(.alt_rect_selected) {    
+    fill: rgb(145, 10, 138) !important;
+    opacity: 1 !important;
+  }
+
+  :global(.del_rect_selected) {    
+    fill: rgb(212, 142, 29) !important;
     opacity: 1 !important;
   }
 
@@ -277,7 +361,7 @@
     flex-direction: row;
   }
 
-  .button_bar {
+  :global(.button_bar) {
     display: flex;
     flex-direction: row;
     gap: 0.5rem;
@@ -300,12 +384,12 @@
     background-color: rgb(211, 211, 211);
   }
 
-  .button_group {
+  :global(.button_group) {
     display: flex;
     flex-direction: row;
   }
 
-  .button_group > button:first-child {
+  :global(.button_group > button:first-child) {
     border-right: none;
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
@@ -313,7 +397,7 @@
     border-bottom-left-radius: 0.2rem;
   }
 
-  .button_group > button:last-child {
+  :global(.button_group > button:last-child) {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
     border-top-right-radius: 0.2rem;
@@ -321,7 +405,7 @@
     border-right: 0.1rem solid black;
   }
 
-  .button_group > button {
+  :global(.button_group > button) {
     border-radius: 0;
     border-right: none;
   }
@@ -335,20 +419,21 @@
     flex-direction: row;
   }
 
-  .menu_enabled {
-    /* border-color: rgb(29, 29, 212);
-    background-color: rgb(224, 235, 255); */
-    border-color: rgb(65, 125, 255);
+  :global(button.menu_enabled) {
+    color: rgb(0, 0, 136);
+    border-color: rgb(29, 29, 212);
+    background-color: rgb(224, 235, 255);
+    /* border-color: rgb(65, 125, 255);
     background-color: rgb(65, 125, 255);
-    color: white;
+    color: white; */
   }
 
-  .menu_enabled:active {
-    /* border-color: rgb(29, 29, 212);
-    background-color: rgb(196, 215, 255); */
-    border-color: rgb(108, 154, 255);
+  :global(button.menu_enabled:active) {
+    border-color: rgb(29, 29, 212);
+    background-color: rgb(196, 215, 255);
+    /* border-color: rgb(108, 154, 255);
     background-color: rgb(108, 154, 255);
-    color: white;
+    color: white; */
   }
 
   #tree_container {
@@ -363,6 +448,13 @@
     padding-top: 2rem;
     padding-left: 1rem;
     width: 100%;
+  }
+
+  .placeholder {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-style: italic;
+    font-size: 0.8rem;
+    color: rgb(110, 110, 110);
   }
 
   :global(body) {
