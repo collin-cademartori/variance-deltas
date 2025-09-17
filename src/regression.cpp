@@ -51,7 +51,11 @@ MatrixXd predictor_matrix(const MatrixXd& stan_matrix, const std::map<std::strin
   return out_matrix;
 }
 
-double adj_r_squared(set<string> predictor_names, std::string response_name, const MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars) {
+double adj_r_squared(
+  set<string> predictor_names, std::string response_name,
+  const MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars,
+  bool sqrt_scale = true
+) {
 
   int num_observations = stan_matrix.rows();
   VectorXd response = stan_matrix(all, stan_vars.at(response_name));
@@ -65,5 +69,9 @@ double adj_r_squared(set<string> predictor_names, std::string response_name, con
   double SST = (response.array() - response.mean()).matrix().squaredNorm();
   double adj_rsq = (SSR / SST) * ((static_cast<double>(num_observations) - 1) / (static_cast<double>(num_observations) - static_cast<double>(num_predictors) - 1));
 
-  return adj_rsq;
+  if(sqrt_scale) {
+    return sqrt(adj_rsq);
+  } else {
+    return adj_rsq;
+  }
 } 

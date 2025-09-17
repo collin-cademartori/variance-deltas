@@ -26,6 +26,29 @@ int get_id(string set_name) {
   return id;
 }
 
+set<string> set_minus(set<string> pset, set<string> globals) {
+  // for (auto pset_it = pset.begin(); pset_it != pset.end(); std::next(pset_it)){
+  //   if(std::find(globals.begin(), globals.end(), *pset_it) != globals.end()) {
+  //     pset.erase(pset_it);
+  //   }
+  // }
+  for(const string& global_param: globals) {
+    pset.erase(global_param);
+  }
+  return(pset);
+}
+
+void write_set(set<string>& pset) {
+  cout << "{";
+  for(auto pset_it = pset.begin(); pset_it != pset.end(); pset_it = std::next(pset_it)) {
+    cout << *pset_it;
+    if(std::next(pset_it) != pset.end()) {
+      cout << ", ";
+    }
+  }
+  cout << "}";
+}
+
 vertex_names minimal_separator_u(MRF mrf, vertex_names u, vertex_names v, const map<string, Vertex>& param_vertices) {
   // Find vertices in u by name
   set<Vertex> U;
@@ -49,9 +72,13 @@ vertex_names minimal_separator_u(MRF mrf, vertex_names u, vertex_names v, const 
   // Check if u and v are separable. If not, return empty set, else proceed.
   bool separable = true;
   for(const string& v_name: v) {
-    if(NU.find(param_vertices.at(v_name)) != NU.end()) {
-      separable = false;
-      break;
+    try {
+      if(NU.find(param_vertices.at(v_name)) != NU.end()) {
+        separable = false;
+        break;
+      }
+    } catch (std::out_of_range _err) {
+      cout << "Could not locate vertex " << v_name << "!" << endl;
     }
   }
   if(!separable) {
@@ -125,13 +152,45 @@ vertex_names minimal_separator_u(MRF mrf, vertex_names u, vertex_names v, const 
   return separator;
 }
 
-pair<vertex_names, bool> minimal_separator(MRF mrf, vertex_names u, vertex_names v, const map<string, Vertex>& param_vertices) {
+pair<vertex_names, bool> minimal_separator(MRF mrf, vertex_names u, vertex_names v, const map<string, Vertex>& param_vertices,
+                                           std::map<std::string, std::set<std::string>> lik_facs) {
   vertex_names min_u = minimal_separator_u(mrf, u, v, param_vertices);
   if(min_u.size() < 2) {
     return {min_u, false};
   } else {
     vertex_names min_v = minimal_separator_u(mrf, v, u, param_vertices);
-    if(min_u.size() < min_v.size()) {
+
+    cout << "Separators found:" << endl;
+    write_set(min_u);
+    cout << endl;
+    write_set(min_v);
+    cout << endl << endl;
+
+    int u_complexity = 0;
+    int v_complexity = 0;
+    for (const auto& fac : lik_facs) {
+      const std::set<std::string>& fac_set = fac.second;
+      std::set<std::string> fac_int_u {};
+      std::set<std::string> fac_int_v {};
+      std::set_intersection(
+        min_u.begin(), min_u.end(),
+        fac_set.begin(), fac_set.end(),
+        std::inserter(fac_int_u, fac_int_u.begin())
+      );
+      std::set_intersection(
+        min_v.begin(), min_v.end(),
+        fac_set.begin(), fac_set.end(),
+        std::inserter(fac_int_v, fac_int_v.begin())
+      );
+      if(fac_int_u.size() > 0) {
+        u_complexity += 1;
+      }
+      if(fac_int_v.size() > 0) {
+        v_complexity += 1;
+      }
+    }
+
+    if(u_complexity <= v_complexity) {
       return {min_u, false};
     } else {
       return {min_v, true};
@@ -155,7 +214,17 @@ pair<vertex_names, vertex_names> split_chain(markov_chain& chain, const markov_c
   return {start, end};
 }
 
-markov_chain markov::make_chain(MRF mrf, vertex_names source, vertex_names sink, const map<string, Vertex>& param_vertices, double y_cut) {
+markov_chain markov::make_chain(
+  MRF mrf, vertex_names source, vertex_names sink, 
+  vertex_names globals,
+  const map<string, Vertex>& param_vertices,
+  std::map<std::string, std::set<std::string>> lik_facs, double y_cut
+) {
+
+  cout << "Removing globals... ";
+  source = set_minus(source, globals);
+  sink = set_minus(sink, globals);
+  cout << "done." << endl;
 
   set<string> y_names;
   for(auto [param_name, param_vertex]: param_vertices) {
@@ -185,20 +254,48 @@ markov_chain markov::make_chain(MRF mrf, vertex_names source, vertex_names sink,
     cur_start = split.first;
     cur_end = split.second;
 
-    auto separator_data = minimal_separator(mrf, cur_start, cur_end, param_vertices);
+    cout << "Separating:" << endl;
+    write_set(cur_start);
+    cout << endl;
+    write_set(cur_end);
+    cout << endl << endl;
+
+    auto separator_data = minimal_separator(mrf, cur_start, cur_end, param_vertices, lik_facs);
     separator = separator_data.first;
     closer_to_v = separator_data.second;
 
-    set<string> y_int;
-    set_intersection(y_names.begin(), y_names.end(),
-                     separator.begin(), separator.end(),
-                     std::inserter(y_int, y_int.begin()));
-    double y_perc = static_cast<double>(y_int.size()) / static_cast<double>(num_ys);
+    double sep_complexity = 0;
+    for (const auto& fac : lik_facs) {
+      const std::set<std::string>& fac_set = fac.second;
+      std::set<std::string> fac_int {};
+      std::set_intersection(
+        separator.begin(), separator.end(),
+        fac_set.begin(), fac_set.end(),
+        std::inserter(fac_int, fac_int.begin())
+      );
+      if(fac_int.size() > 0) {
+        sep_complexity += 1;
+      }
+    }
+    sep_complexity = sep_complexity / static_cast<double>(lik_facs.size());
 
-    if(separator.size() == 0 || y_perc > y_cut) {
+    // set<string> y_int;
+    // set_intersection(y_names.begin(), y_names.end(),
+    //                  separator.begin(), separator.end(),
+    //                  std::inserter(y_int, y_int.begin()));
+    // double y_perc = static_cast<double>(y_int.size()) / static_cast<double>(num_ys);
+
+    if(separator.size() == 0 || sep_complexity > y_cut) {
+      cout << "-------------------" << endl;
+      cout << "COMPLEXITY EXCEEDED" << endl;
+      cout << "-------------------" << endl;
       separable = false;
     }
 
+  }
+
+  for(auto& link: chain) {
+    link.insert(globals.begin(), globals.end());
   }
 
   return chain;
@@ -247,13 +344,13 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
   const vertex_names& globals, 
   VertexMap& param_vertices,
   const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars,
-  double y_cut = 1
+  std::map<std::string, std::set<std::string>> lik_facs, double y_cut = 1
 ) {
   int num_leaves = leaves.size();
   vector<markov_chain> chains(num_leaves);
   vector<markov_chain::iterator> chain_it(num_leaves);
   for(int ci = 0; ci < num_leaves; ++ci) {
-    chains[ci] = markov::make_chain(mrf, { root }, leaves[ci], param_vertices, y_cut);
+    chains[ci] = markov::make_chain(mrf, { root }, leaves[ci], globals, param_vertices, lik_facs, y_cut);
     chain_it[ci] = chains[ci].begin();
   }
 
@@ -285,7 +382,7 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
 
         std::optional<Node> next_node = search_children(cur_node, chain_parameters, markov_tree);
         if(next_node == nullopt) {
-          double ered = sqrt(adj_r_squared(chain_parameters, root, stan_matrix, stan_vars));
+          double ered = adj_r_squared(chain_parameters, root, stan_matrix, stan_vars);
           auto name_hash = get_id(std::reduce<vertex_names::iterator, string>(chain_parameters.begin(), chain_parameters.end(), ""));
           Node new_node = add_vertex({ 
             .name = name_hash,
@@ -294,7 +391,8 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
             .depth = cur_depth + 1,
             .chain_nums = { ci }
           }, *markov_tree);
-          cout << "Connecting " << print_set((*markov_tree)[cur_node].parameters) << " to " << print_set((*markov_tree)[new_node].parameters) << "." << endl;
+          cout << "Connecting " << print_set((*markov_tree)[cur_node].parameters) 
+               << " to " << print_set((*markov_tree)[new_node].parameters) << "." << endl;
           add_edge(cur_node, new_node, *markov_tree);
           node_stack.push(new_node);
         } else {
@@ -306,6 +404,117 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
   }
 
   return(std::make_pair(std::move(markov_tree), root_node));
+}
+
+Node locate_node(MTree& tree, const Node& root, int node_name) {
+
+  std::queue<Node> node_queue {};
+  node_queue.push(root);
+  bool not_found = true;
+  std::optional<Node> ex_node = std::nullopt;
+  while(node_queue.size() > 0 && not_found) {
+    Node cur_node = node_queue.front();
+    node_queue.pop();
+
+    auto out_it = out_edges(cur_node, tree);
+    for_each(out_it.first, out_it.second, [&](Branch branch) {
+      Node child_node = target(branch, tree);
+      if(tree[child_node].name == node_name) {
+        not_found = false;
+        ex_node = child_node;
+      } else if(not_found) {
+        node_queue.push(child_node);
+      }
+    });
+  }
+
+  if(ex_node == nullopt) {
+    cout << "Could not locate node! Cannot extrude branch." << endl;
+    throw new std::out_of_range("Could not locate node! Cannot extrude branch.");
+  } else {
+    auto node = ex_node.value();
+    return(node);
+  }
+}
+
+std::pair<Node, vector<Node>> locate_node_depth_first(MTree& tree, const Node& root, int node_name) {
+
+  int depth = 0;
+  vector<int> ancestors(2);
+  vector<Node> ancestor_nodes(2);
+  std::stack<std::pair<Node, int>> node_queue {};
+  node_queue.push(std::make_pair(root, 0));
+  bool not_found = true;
+  std::optional<Node> ex_node = std::nullopt;
+  while(node_queue.size() > 0 && not_found) {
+    auto [cur_node, cur_depth] = node_queue.top();
+    node_queue.pop();
+    if(ancestors.size() < cur_depth + 1) {
+      ancestors.resize(cur_depth + 1);
+      ancestor_nodes.resize(cur_depth + 1);
+    }
+    ancestors[cur_depth] = tree[cur_node].name;
+    ancestor_nodes[cur_depth] = cur_node;
+
+    auto out_it = out_edges(cur_node, tree);
+    for_each(out_it.first, out_it.second, [&](Branch branch) {
+      Node child_node = target(branch, tree);
+      if(tree[child_node].name == node_name) {
+        not_found = false;
+        ex_node = child_node;
+        ancestors.resize(cur_depth + 2);
+        ancestor_nodes.resize(cur_depth + 2);
+        ancestors[cur_depth + 1] = tree[child_node].name;
+        ancestor_nodes[cur_depth + 1] = child_node;
+      } else if(not_found) {
+        node_queue.push(std::make_pair(child_node, cur_depth + 1));
+      }
+    });
+  }
+
+  if(ex_node == nullopt) {
+    cout << "Could not locate node! Cannot extrude branch." << endl;
+    throw new std::out_of_range("Could not locate node! Cannot extrude branch.");
+  } else {
+    auto node = ex_node.value();
+    return(std::make_pair(node, ancestor_nodes));
+  }
+}
+
+std::set<vector<Node>> find_leaf_paths(MTree& tree, const Node root) {
+
+  set<vector<Node>> all_ancestors;
+
+  int depth = 0;
+  vector<Node> ancestor_nodes(2);
+  std::stack<std::pair<Node, int>> node_queue {};
+  node_queue.push(std::make_pair(root, 0));
+  while(node_queue.size() > 0) {
+    auto [cur_node, cur_depth] = node_queue.top();
+    node_queue.pop();
+    if(ancestor_nodes.size() < cur_depth + 1) {
+      ancestor_nodes.resize(cur_depth + 1);
+    }
+    ancestor_nodes[cur_depth] = cur_node;
+
+    auto out_it = out_edges(cur_node, tree);
+    for_each(out_it.first, out_it.second, [&](Branch branch) {
+      Node child_node = target(branch, tree);
+      auto child_out = out_edges(child_node, tree);
+      if(child_out.first == child_out.second) {
+        ancestor_nodes.resize(cur_depth + 2);
+        ancestor_nodes[cur_depth + 1] = child_node;
+        vector<Node> leaf_path(ancestor_nodes);
+        all_ancestors.insert(leaf_path);
+      } else {
+        node_queue.push(std::make_pair(child_node, cur_depth + 1));
+      }
+    });
+  }
+
+  cout << "Returning leaf ancestors of length " << to_string(all_ancestors.size()) << "." << endl;
+  return(all_ancestors);
+
 }
 
 void markov::divide_branch(
@@ -334,7 +543,6 @@ void markov::divide_branch(
       }
     });
   }
-  cout << "Found child node!" << endl;
 
   if(split_nodes == nullopt) {
     cout << "Could not locate child node! Cannot divide branch." << endl;
@@ -347,12 +555,88 @@ void markov::divide_branch(
     auto child_params = tree[child_node].parameters;
     params_kept.insert(child_params.begin(), child_params.end());
     string root_name = *tree[root].parameters.begin();
-    double ered = sqrt(adj_r_squared(params_kept, root_name, stan_matrix, stan_vars));
+    double ered = adj_r_squared(params_kept, root_name, stan_matrix, stan_vars);
     auto name_hash = get_id(std::reduce<vertex_names::iterator, string>(params_kept.begin(), params_kept.end(), ""));
     Node split_node = add_vertex({ 
       .name = name_hash,
       .parameters = params_kept,
       .ered = ered,
+      .depth = tree[par_node].depth + 1,
+      .chain_nums = { }
+    }, tree);
+
+    add_edge(par_node, split_node, tree);
+    add_edge(split_node, child_node, tree);
+
+    // Fix depth?
+  }
+}
+
+void markov::auto_divide(
+  MTree& tree, const Node& root, 
+  int node_name,
+  const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars
+) {
+  std::queue<Node> node_queue {};
+  node_queue.push(root);
+  bool not_found = true;
+  std::optional<std::pair<Node, Node>> split_nodes = std::nullopt;
+  while(node_queue.size() > 0 && not_found) {
+    Node cur_node = node_queue.front();
+    node_queue.pop();
+
+    auto out_it = out_edges(cur_node, tree);
+    for_each(out_it.first, out_it.second, [&](Branch branch) {
+      Node child_node = target(branch, tree);
+      if(tree[child_node].name == node_name) {
+        not_found = false;
+        split_nodes = std::make_pair(cur_node, child_node);
+      } else if(not_found) {
+        node_queue.push(child_node);
+      }
+    });
+  }
+
+  if(split_nodes == nullopt) {
+    cout << "Could not locate child node! Cannot divide branch." << endl;
+    throw new std::out_of_range("Could not locate child node! Cannot divide branch.");
+  } else {
+    auto [par_node, child_node] = split_nodes.value();
+    remove_edge(par_node, child_node, tree);
+
+    string root_name = *tree[root].parameters.begin();
+    auto child_params = tree[child_node].parameters;
+
+    auto par_params = tree[par_node].parameters;
+    map<string, set<string>> par_param_prefixes_map;
+    for(auto param: par_params) {
+      auto index_loc = param.find("[");
+      string param_prefix = param.substr(0, index_loc);
+      set<string> param_map;
+      try {
+        par_param_prefixes_map.at(param_prefix).insert(param);
+      } catch (out_of_range _err) {
+        param_map.insert(param);
+        par_param_prefixes_map.insert(make_pair(param_prefix, param_map));
+      }
+    }
+  
+    set<string> best_params;
+    double best_ered = 2;
+    for(auto& [prefix, params]: par_param_prefixes_map) {
+      params.insert(child_params.begin(), child_params.end());
+      double ered = adj_r_squared(params, root_name, stan_matrix, stan_vars);
+      if(ered < best_ered) {
+        best_ered = ered;
+        best_params = params;
+      }
+    }
+
+    auto name_hash = get_id(std::reduce<vertex_names::iterator, string>(best_params.begin(), best_params.end(), ""));
+    Node split_node = add_vertex({ 
+      .name = name_hash,
+      .parameters = best_params,
+      .ered = best_ered,
       .depth = tree[par_node].depth + 1,
       .chain_nums = { }
     }, tree);
@@ -370,45 +654,208 @@ void markov::extrude_branch(
   const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars
 ) {
 
-  std::queue<Node> node_queue {};
-  node_queue.push(root);
-  bool not_found = true;
-  std::optional<Node> ex_node = std::nullopt;
-  while(node_queue.size() > 0 && not_found) {
-    Node cur_node = node_queue.front();
-    node_queue.pop();
+  auto node = locate_node(tree, root, node_name);
 
-    auto out_it = out_edges(cur_node, tree);
-    for_each(out_it.first, out_it.second, [&](Branch branch) {
-      Node child_node = target(branch, tree);
-      if(tree[child_node].name == node_name) {
-        not_found = false;
-        ex_node = child_node;
-      } else if(not_found) {
-        node_queue.push(child_node);
-      }
-    });
-  }
+  string root_name = *tree[root].parameters.begin();
+  double ered = adj_r_squared(params_kept, root_name, stan_matrix, stan_vars);
+  auto name_hash = get_id(std::reduce<vertex_names::iterator, string>(params_kept.begin(), params_kept.end(), ""));
 
-  if(ex_node == nullopt) {
-    cout << "Could not locate node! Cannot extrude branch." << endl;
-    throw new std::out_of_range("Could not locate node! Cannot extrude branch.");
-  } else {
-    auto node = ex_node.value();
+  Node new_node = add_vertex({ 
+    .name = name_hash,
+    .parameters = params_kept,
+    .ered = ered,
+    .depth = tree[node].depth + 1,
+    .chain_nums = { }
+  }, tree);
 
-    string root_name = *tree[root].parameters.begin();
-    double ered = sqrt(adj_r_squared(params_kept, root_name, stan_matrix, stan_vars));
-    auto name_hash = get_id(std::reduce<vertex_names::iterator, string>(params_kept.begin(), params_kept.end(), ""));
+  add_edge(node, new_node, tree);
 
-    Node new_node = add_vertex({ 
-      .name = name_hash,
-      .parameters = params_kept,
-      .ered = ered,
-      .depth = tree[node].depth + 1,
-      .chain_nums = { }
-    }, tree);
-
-    add_edge(node, new_node, tree);
-  }
 
 }
+
+void markov::merge_nodes(
+  MRF mrf, const vertex_names& globals, VertexMap& param_vertices,
+  MTree& tree, const Node& root, 
+  int node_name, int alt_node_name,
+  const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars,
+  std::map<std::string, std::set<std::string>> lik_facs
+) {
+  auto [node, node_anc] = locate_node_depth_first(tree, root, node_name);
+  auto [alt_node, alt_node_anc] = locate_node_depth_first(tree, root, alt_node_name);
+
+  auto anb = alt_node_anc.begin();
+  auto ane = alt_node_anc.end();
+
+  Node parent_node = root;
+  set<string> pre_params;
+
+  for(int ai = node_anc.size(); ai > 0; --ai) {
+    Node anc_node = node_anc[ai - 1];
+    cout << "Checking if " << to_string(tree[anc_node].name) << " is a common parent." << endl;
+    auto find_res = std::find_if(anb, ane, [&tree, &anc_node](Node alt_node){ 
+      return(tree[alt_node].name == tree[anc_node].name); 
+    });
+    if(find_res != ane) {
+      parent_node = anc_node;
+      for(int aj = 0; aj < ai; ++aj){
+        auto node_params = tree[node_anc[aj]].parameters;
+        pre_params.insert(node_params.begin(), node_params.end());
+      }
+      break;
+    }
+  }
+  
+  vertex_names child_params_1 = tree[node].parameters;
+  vertex_names child_params_2 = tree[alt_node].parameters;
+  vertex_names child_params;
+  child_params.insert(child_params_1.begin(), child_params_1.end());
+  child_params.insert(child_params_2.begin(), child_params_2.end());
+
+  auto new_chain = make_chain(mrf, pre_params, child_params, globals, param_vertices, lik_facs, 1);
+
+  string root_param = *tree[root].parameters.begin();
+  Node prev_node = parent_node;
+  std::for_each(std::next(new_chain.begin()), new_chain.end(), [&](vertex_names& param_names) {
+    int name_hash = get_id(std::reduce<vertex_names::iterator, string>(param_names.begin(), param_names.end(), ""));
+    Node new_node = add_vertex({
+      .name = name_hash,
+      .parameters = param_names,
+      .ered = adj_r_squared(param_names, root_param, stan_matrix, stan_vars),
+      .depth = tree[prev_node].depth + 1,
+      .chain_nums = {}
+    }, tree);
+    add_edge(prev_node, new_node, tree);
+    prev_node = new_node;
+  });
+
+  // int copy_hash = get_id(
+  //   std::to_string(tree[node].name) + "__copy"
+  // );
+  // Node node_copy = add_vertex({
+  //   .name = copy_hash,
+  //   .parameters = child_params_1,
+  //   .ered = tree[node].ered,
+  //   .depth = tree[node].depth,
+  //   .chain_nums = {}
+  // }, tree);
+
+  // int alt_copy_hash = get_id(
+  //   std::to_string(tree[alt_node].name) + "__copy"
+  // );
+  // Node alt_node_copy = add_vertex({
+  //   .name = alt_copy_hash,
+  //   .parameters = child_params_2,
+  //   .ered = tree[alt_node].ered,
+  //   .depth = tree[alt_node].depth,
+  //   .chain_nums = {}
+  // }, tree);
+
+  add_edge(prev_node, node, tree);
+  add_edge(prev_node, alt_node, tree);
+  remove_edge(node_anc[node_anc.size() - 2], node, tree);
+  remove_edge(alt_node_anc[alt_node_anc.size() - 2], alt_node, tree);
+}
+
+void markov::auto_merge(
+  MRF mrf, const vertex_names& globals, VertexMap& param_vertices,
+  MTree& tree, const Node& root, 
+  const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars,
+  int merge_depth, std::map<std::string, std::set<std::string>> lik_facs
+) {
+  auto leaf_anc = find_leaf_paths(tree, root);
+  std::map<int, vector<Node>> node_groups;
+  for(const vector<Node> path: leaf_anc) {
+    int max_anc = static_cast<int>(path.size()) - 1;
+    int merge_point = max(max_anc - merge_depth, 0);
+    int merge_name = tree[path[merge_point]].name;
+    if(node_groups.find(merge_name) == node_groups.end()) {
+      vector<Node> map_vec;
+      map_vec.reserve(leaf_anc.size());
+      node_groups.insert(make_pair(merge_name, map_vec));
+    }
+    node_groups.at(merge_name).push_back(path[max_anc]);
+  }
+
+  double best_ered = 2;
+  int best_node = 0;
+  int best_alt_node = 0;
+  string root_param = *tree[root].parameters.begin();
+
+  for(const auto& [merge_key, node_group]: node_groups) {
+    for(size_t ni = 0; ni < (node_group.size() - 1); ++ni) {
+      for(size_t nj = ni+1; nj < node_group.size(); ++nj) {
+        set<string> merge_params;
+        set<string> params_1 = tree[node_group[ni]].parameters;
+        set<string> params_2 = tree[node_group[nj]].parameters;
+        merge_params.insert(params_1.begin(), params_1.end());
+        merge_params.insert(params_2.begin(), params_2.end());
+        double merge_ered = adj_r_squared(merge_params, root_param, stan_matrix, stan_vars);
+        if(merge_ered < best_ered) {
+          best_node = tree[node_group[ni]].name;
+          best_alt_node = tree[node_group[nj]].name;
+          best_ered = merge_ered;
+        }
+      }
+    }
+  }
+
+  cout << "Merging best pair..." << endl;
+  merge_nodes(mrf, globals, param_vertices, tree, root, best_node, best_alt_node, stan_matrix, stan_vars, lik_facs);
+}
+
+void markov::auto_merge2(
+  MRF mrf, const vertex_names& globals, VertexMap& param_vertices,
+  MTree& tree, const Node& root, 
+  const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars,
+  int merge_depth, std::map<std::string, std::set<std::string>> lik_facs
+) {
+
+  string root_param = *tree[root].parameters.begin();
+
+  int best_node = 0;
+  int best_alt_node = 0;
+  double best_rel_ered = 100000;
+  
+  stack<Node> node_stack;
+  node_stack.push(root);
+  while(node_stack.size() > 0) {
+    auto cur_node = node_stack.top();
+    node_stack.pop();
+
+    auto p_params = tree[cur_node].parameters;
+
+    auto branches = out_edges(cur_node, tree);
+    for(auto branch1 = branches.first; branch1 != branches.second; branch1 = std::next(branch1)) {
+      Node child1 = target(*branch1, tree);
+      node_stack.push(child1);
+      for(auto branch2 = std::next(branch1); branch2 != branches.second; branch2 = std::next(branch2)) {
+        Node child2 = target(*branch2, tree);
+        auto c1_params = tree[child1].parameters;
+        auto c2_params = tree[child2].parameters;
+        
+        set<string> c_params;
+        c_params.insert(c1_params.begin(), c1_params.end());
+        c_params.insert(c2_params.begin(), c2_params.end());
+
+        if(!std::includes(c_params.begin(), c_params.end(), p_params.begin(), p_params.end())) {
+          double c1_ered = tree[child1].ered.value();
+          double c2_ered = tree[child2].ered.value();
+          double merge_ered = adj_r_squared(c_params, root_param, stan_matrix, stan_vars);
+          double rel_ered = merge_ered / min(c1_ered, c2_ered);
+          if(rel_ered < best_rel_ered) {
+            best_node = tree[child1].name;
+            best_alt_node = tree[child2].name;
+            best_rel_ered = rel_ered;
+          }
+        }
+      }
+    }
+  }
+
+  if(best_node != best_alt_node) {
+    merge_nodes(mrf, globals, param_vertices, tree, root, best_node, best_alt_node, stan_matrix, stan_vars, lik_facs);
+  } else {
+    cout << "No eligible mergers!" << endl;
+  }
+}
+
