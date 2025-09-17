@@ -2,7 +2,8 @@ import { type flat_tree } from "./tree.ts";
 
 export const ws = new WebSocket("ws://localhost:8000");
 
-const handlers = [];
+const tree_handlers = [];
+const group_handlers = [];
 const queue : string[] = [];
 let connected = false;
 
@@ -14,8 +15,12 @@ function send_message(msg : string) {
   }
 }
 
-export function handle_message(handler : (data : flat_tree) => void) {
-  handlers.push(handler);
+export function handle_message(handler : (tree_data : flat_tree, globals_data : string[], groups_data : object) => void) {
+  tree_handlers.push(handler);
+}
+
+export function handle_groups(handler : (data : object) => void) {
+  group_handlers.push(handler);
 }
 
 export function make_method_caller(method_name : string, arg_keys : string[]) {
@@ -56,9 +61,13 @@ ws.addEventListener("message", (event) => {
   }
   try {
       const pdata = JSON.parse(event.data);
+      console.log(pdata)
       switch(pdata.type) {
         case "tree":
-          handlers.forEach((h) => h(JSON.parse(pdata.tree)));
+          tree_handlers.forEach((h) => h(JSON.parse(pdata.tree), JSON.parse(pdata.globals), JSON.parse(pdata.groups)));
+          break;
+        case "groups":
+          group_handlers.forEach((h) => h(JSON.parse(pdata.groups)));
           break;
         default:
           console.error("Received of unknown type! ", pdata);

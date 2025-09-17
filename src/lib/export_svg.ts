@@ -4,15 +4,16 @@ export function export_svg(svg : SVGElement, cvs : OffscreenCanvas, anchor : HTM
   const img = new Image();
   img.src = uri;
   img.onload = () => {
-    cvs.width = img.naturalWidth;
-    cvs.height = img.naturalHeight;
-    cvs.getContext('2d').drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight);
+    cvs.width = 4 * img.naturalWidth;
+    cvs.height = 4 * img.naturalHeight;
+    const ctx = cvs.getContext('2d');
+    ctx.drawImage(img, 0, 0, 4 * img.naturalWidth, 4 * img.naturalHeight);
     cvs.convertToBlob({
       type: "image/png"
     }).then((blob) => {
       const url = URL.createObjectURL(blob);
       anchor.href = url;
-      anchor.download = "posterior_tree.png"
+      anchor.download = "posterior_tree"
       anchor.click();
     });
   }

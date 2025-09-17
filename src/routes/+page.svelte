@@ -3,23 +3,29 @@
   import * as ws from "$lib/websocket";
   import * as d3 from "d3";
   import { type flat_node, type flat_branch, type flat_tree } from "$lib/tree";
-  import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge } from "$lib/tree_methods";
+  import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge, define_group } from "$lib/tree_methods";
   import { setup_context } from "$lib/compute_width";
-  import { export_svg } from "$lib/export_svg";
   import { node_selection, clear_selection, branch_selection, clear_branches, selector } from "$lib/selection.svelte";
   import { user_state, setup_tree } from "$lib/user_state.svelte";
-  import { make_group, groups } from "$lib/groups";
+  import { groups, handle_groups } from "$lib/groups";
 
   import SelectionDialog from "$lib/components/SelectionDialog.svelte";
   import MultiSelectionDialog from "$lib/components/MultiSelectionDialog.svelte";
   import GroupsDialog from "$lib/components/GroupsDialog.svelte";
+  import ExportDialog from "$lib/components/ExportDialog.svelte";
 
-  const height = 800;
+  let show_export = $state(false);
+
+  $effect(() => {
+    console.log(`Show export is now ${show_export}`)
+  })
+
+  const height = 700;
   const width = 1150;
 
   const x = d3.scaleLinear([0, 1], [0, 0.95 * width]);
   const y = d3.scaleLinear([0, 1], [0, 0.95 * height]);
-  const l_height = 32;
+  const l_height = 36;
 
   let selected_node = $derived.by(() => user_state.tree?.find((node) => node.data.name === [...node_selection.main.values()][0])?.data);
   let selected_alt_node = $derived.by(() => user_state.tree?.find((node) => node.data.name === [...node_selection.alt.values()][0])?.data);
@@ -121,12 +127,15 @@
       }
     );
 
-    ws.handle_message((data) => {
+    ws.handle_message((tree_data, globals_data, groups_data) => {
       const tree = (d3.stratify<flat_node>()
                     .id((n : flat_node) => n.name.toString())
-                    .parentId((n : flat_node) => n.parent.toString()))(data);
+                    .parentId((n : flat_node) => n.parent.toString()))(tree_data);
+      handle_groups(groups_data);
+      globals_data.forEach((global) => user_state.globals.push(global));
       user_state.tree = tree;
     });
+    ws.handle_groups(handle_groups);
     get_tree([]);
 
     document.addEventListener("keydown", (ev) => {
@@ -138,6 +147,8 @@
 
 <div id="v_container">
 
+  <ExportDialog bind:show_dialog={show_export} plot_width={width} {y} />
+
   <div id="main_view">
       <div id="tree_container">
       <svg id="tree" height={height} width={width + 100}>
@@ -146,10 +157,12 @@
           <stop class="stop2" offset="30%" stop-color="white"/>
           <stop class="stop3" offset="100%" stop-color="white"/>
         </linearGradient>
-        <rect width="100%" height="100%" fill="white"></rect>
-        <g id="tree_g" transform="translate(10 0)"></g>
+        <g id="tree_g" transform="translate(10 0)">
+          <rect width="100%" height="100%" fill="white"></rect>
+        </g>
         <g id="x_axis" transform={`translate(10 ${0.96 * height})`}>
           <rect width="100%" height="100%" fill="url(#grad)"></rect>
+          <g id="x_axis"></g>
         </g>
       </svg>
     </div>
@@ -157,12 +170,7 @@
     <div id="control_container">
       <div id="session_bar" class="button_bar">
         <button onclick={() => {
-          const svg = document.getElementById("tree");
-          const anch = document.createElement("a");
-          if(svg != null) {
-            export_svg(svg as unknown as SVGElement, new OffscreenCanvas(1,1), anch);
-          }
-          document.removeChild(anch);
+          show_export = true;
         }}>
           Export Image
         </button>
@@ -200,7 +208,7 @@
             class:menu_enabled={user_state.state === 'auto-dividing'}
             onclick={() => user_state.state === 'auto-dividing' ? user_state.state = 'base' : user_state.state = 'auto-dividing'}
           >
-            Auto-divide
+            Auto
           </button>
         </div>
         <div class="button_group">
@@ -214,7 +222,7 @@
             class:menu_enabled={user_state.state === 'auto-merging'}
             onclick={() => user_state.state === 'auto-merging' ? user_state.state = 'base' : user_state.state = 'auto-merging'}
           >
-            Auto-merge
+            Auto
           </button>
         </div>
       </div>
@@ -243,8 +251,12 @@
           input_text={"Group Name"}
           button_text={"Create Group"} 
           button_action={(name, node_names) => {
-            console.log(node_names);  
-            make_group(name, node_names);
+            // console.log(node_names);  
+            // make_group(name, node_names);
+            define_group({
+              group_name: name,
+              node_names: node_names
+            });
             node_selection.main.clear();
             node_selection.del.clear();
             user_state.state = 'groups';

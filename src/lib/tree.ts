@@ -29,12 +29,14 @@ type coord = {
 export function annotate_tree(ft : flat_tree,
   label_height : number,
   x_scale : d3.ScaleLinear<number, number, never>,
-  y_scale : d3.ScaleLinear<number, number, never>
+  y_scale : d3.ScaleLinear<number, number, never>,
+  globals : string[] | null = null
 ) {
   console.log(`Label height is ${label_height}`)
   console.log("Setting short names.")
   for(const node of ft) {
-    node.param_names = short_name(node.params);
+    const params = globals == null ? node.params : [...node.params].filter((p) => !globals.includes(p));
+    node.param_names = short_name(params);
     node.shortname = node.param_names.join(", ");
   }
   console.log("Setting xs.")

@@ -6,7 +6,6 @@ import { type label_data_t, type branch_data_t, selector } from "./selection.sve
 import { groups } from "./groups.ts";
 import { annotate_tree } from "./tree.ts";
 import { draw_tree } from "./draw_tree.ts";
-import { E } from "../../.svelte-kit/output/server/chunks/index.js";
 
 type user_state_t = 'base' | 'extruding' | 'dividing' | 'auto-dividing' | 'merging' | 'auto-merging' | 'groups' | 'add-group';
 
@@ -18,7 +17,8 @@ type user_state_t = 'base' | 'extruding' | 'dividing' | 'auto-dividing' | 'mergi
 type state_t = {
   state: user_state_t,
   tree: HierarchyNode<flat_node> | undefined,
-  group: string | undefined
+  group: string | undefined,
+  globals: string[]
 };
 
 type numeric_scale = ScaleLinear<number, number, never>;
@@ -59,7 +59,8 @@ export const user_state : state_t = $state({
   set group(group : string | undefined) {
     _group = group;
     _create_tree([..._tree].map((n) => n.data));
-  }
+  },
+  globals: []
 });
 
 export function setup_tree(x: numeric_scale, y: numeric_scale, l_height : number, nh : node_handler, bh : branch_handler) {
@@ -72,7 +73,7 @@ export function setup_tree(x: numeric_scale, y: numeric_scale, l_height : number
       console.warn("NO DATA")
     }
     const ann_tree = annotate_tree(
-      fil_data, y.invert(l_height), x, y
+      fil_data, y.invert(l_height), x, y, user_state.globals
     );
     const ft : flat_tree = [...ann_tree].map((n) => n.data);
     draw_tree(

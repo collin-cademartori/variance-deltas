@@ -1,6 +1,6 @@
 <script lang="ts">
   import { user_state } from "$lib/user_state.svelte";
-  import { groups } from "$lib/groups";
+  import { groups, remove_group } from "$lib/groups";
   let { group_name } : { group_name : string } = $props();
 
   function set_group() {
@@ -11,12 +11,12 @@
     }
   }
 
-  function remove_group() {
-    if(user_state.group == group_name) {
-      user_state.group = undefined;
-    }
-    groups.delete(group_name);
-  }
+  // function remove_group() {
+  //   if(user_state.group == group_name) {
+  //     user_state.group = undefined;
+  //   }
+  //   groups.delete(group_name);
+  // }
 </script>
 
 <div id="item">
@@ -27,7 +27,12 @@
     View
   </button>
   <button
-    onclick={remove_group}
+    onclick={() => {
+      if(user_state.group == group_name) {
+        user_state.group = undefined;
+      }
+      remove_group(group_name);
+    }}
   >
     Del
   </button>

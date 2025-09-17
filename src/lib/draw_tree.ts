@@ -39,28 +39,17 @@
     x : d3.ScaleLinear<number, number>,
     y : d3.ScaleLinear<number, number>,
     l_height : number,
-    label_handler : (d : flat_node) => label_data_t,
-    branch_handler : (d : flat_branch) => object,
-    ss : CSSStyleSheet) {
+    label_handler : (d : flat_node) => label_data_t | null,
+    branch_handler : (d : flat_branch) => object | null,
+    ss : CSSStyleSheet,
+    draw_color : string = "black",
+    draw_static : boolean = false) {
 
-    const tree_elem = d3.select("#tree_g");
+    // Setup data
 
+    const id_mod = draw_static ? "_static" : "";
+    const tree_elem = d3.select("#tree_g" + id_mod);
     const max_y = y(tree.map((fn) => fn.x_pos).reduce((p,n) => Math.max(p,n)) - 1) + 45;
-    const pan = d3.zoom();
-
-    pan.on('zoom', (e) => {
-      if(e?.sourceEvent?.wheelDeltaY) {
-        const dy = -1 * e.sourceEvent.wheelDeltaY;
-        const t = e.transform;
-        t.k = 1;
-        t.x = 10;
-        cur_y = Math.min(Math.max(0, cur_y + dy), max_y);
-        t.y = -1 * cur_y;
-        d3.select("#tree_g").attr("transform", t.toString());
-      } 
-    });
-
-    d3.select("#tree").call(pan);
 
     const branch_data = tree.filter((n) => n.parent != "").map((n) => {
       const pn = tree.find((n2) => n2.name === n.parent);
@@ -79,55 +68,77 @@
       (d) => y(d.x_pos ?? 0)
     ).curve(d3.curveStepBefore);
 
-    // const tree_layer = tree_elem.append('g');
-    //const select_layer = tree_elem.append('g');
+    // Define pan behavior
+    const pan = d3.zoom();
 
+    if(!draw_static) {
+      pan.on('zoom', (e) => {
+        if(e?.sourceEvent?.wheelDeltaY) {
+          const dy = -1 * e.sourceEvent.wheelDeltaY;
+          const t = e.transform;
+          t.k = 1;
+          t.x = 10;
+          cur_y = Math.min(Math.max(0, cur_y + dy), max_y);
+          t.y = -1 * cur_y;
+          d3.select("#tree_g" + id_mod).attr("transform", t.toString());
+        } 
+      });
+
+      d3.select("#tree").call(pan);
+    }
+
+    // Draw branches
     tree_elem.selectAll(".tree_branch")
              .data(branch_data, (d) => `${(d as flat_branch).parent.name}-->${(d as flat_branch).child.name}`)
              .join((enter) => {
                 const g = enter.append("g").attr("class", "tree_branch");
-                g.transition().attr("opacity", 1);
+                if(!draw_static) {
+                  g.transition().attr("opacity", 1);
+                }
 
                 g.append("path").attr("d", (d) => link([d.parent, d.child]))
                      .attr("class", "branch_path")
-                     .style("stroke", "#444444")
+                     .style("stroke", draw_color)
                      .style("stroke-width", 2)
                      .style("fill", "none")
-                     .attr("id", (d) => `branch-${d.child.shortname}-${d.parent.shortname}`);
+                     .attr("id", (d) => `branch-${d.child.shortname}-${d.parent.shortname}${id_mod}`);
 
-                g.append("path").attr("d", (d) => link([d.parent, d.child]))
+                const path_select = g.append("path").attr("d", (d) => link([d.parent, d.child]))
                          .attr("class", "select_path")
                          .style("stroke", "red")
                          .style("stroke-width", 15)
                          .style("fill", "none")
                          .style("opacity", 0)
-                         .on("mouseover", (_ev, d) => {
-                           const vis_path = document.getElementById(`branch-${d.child.shortname}-${d.parent.shortname}`);
-                           vis_path?.setAttribute("stroke", "#0161df");
-                         })
-                         .on("mouseleave", (_ev, d) => {
-                           const vis_path = document.getElementById(`branch-${d.child.shortname}-${d.parent.shortname}`);
-                           vis_path?.setAttribute("stroke", "black");
-                         })
-                         .on("click", (_ev, d) => {
-                            const target_classes = document.getElementById(`branch-${d.child.shortname}-${d.parent.shortname}`).classList;
-                            const cur_selected = target_classes.contains("branch_selected")
-                            const branch_styles = branch_handler(d);
-                            if(Object.keys(branch_styles).length === 0) {
-                              return;
-                            }
-                            if(branch_rule_index != null) {
-                              ss.deleteRule(branch_rule_index);
-                            }
-                            branch_rule_index = ss.insertRule(to_style_string(".branch_selected", branch_styles));
-                            const branches = document.getElementsByClassName("branch_path");
-                            for(let bi = 0; bi < branches.length; ++bi) {
-                              branches[bi].classList.remove("branch_selected");
-                            }
-                            if(!cur_selected) {
-                              target_classes.add("branch_selected");
-                            }
-                         });
+                
+                if(!draw_static) {
+                  path_select.on("mouseover", (_ev, d) => {
+                    const vis_path = document.getElementById(`branch-${d.child.shortname}-${d.parent.shortname}`);
+                    vis_path?.setAttribute("stroke", "#0161df");
+                  })
+                  .on("mouseleave", (_ev, d) => {
+                    const vis_path = document.getElementById(`branch-${d.child.shortname}-${d.parent.shortname}`);
+                    vis_path?.setAttribute("stroke", draw_color);
+                  })
+                  .on("click", (_ev, d) => {
+                    const target_classes = document.getElementById(`branch-${d.child.shortname}-${d.parent.shortname}`).classList;
+                    const cur_selected = target_classes.contains("branch_selected")
+                    const branch_styles = branch_handler(d);
+                    if(Object.keys(branch_styles).length === 0) {
+                      return;
+                    }
+                    if(branch_rule_index != null) {
+                      ss.deleteRule(branch_rule_index);
+                    }
+                    branch_rule_index = ss.insertRule(to_style_string(".branch_selected", branch_styles));
+                    const branches = document.getElementsByClassName("branch_path");
+                    for(let bi = 0; bi < branches.length; ++bi) {
+                      branches[bi].classList.remove("branch_selected");
+                    }
+                    if(!cur_selected) {
+                      target_classes.add("branch_selected");
+                    }
+                  });
+                }
 
                 return g;
              },
@@ -143,23 +154,66 @@
             }
           );
 
-    const tree_nodes = tree_elem.selectAll(".tree_node").data(tree, (d) => (d as flat_node).name);
+    // Draw nodes
+    const tree_nodes = tree_elem.selectAll(".tree_node")
+                                .data(tree, (d) => (d as flat_node).name);
     tree_nodes.join((enter) => {
         const g = enter.append("g")
-                     .attr("id", (d) => `${d.name}`)
+                     .attr("id", (d) => `${d.name}${id_mod}`)
                      .attr("class", "tree_node");
 
-        g.transition().attr("opacity", 1);
+        if(!draw_static) {
+          g.transition().attr("opacity", 1);
+        }
 
         g.append("rect")
-          .attr("id", (d) => `${d.name}_rect`)
+          .attr("id", (d) => `${d.name}_rect${id_mod}`)
           .attr("class", "node_rect")
           .attr("width", 9)
           .attr("height", 9)
           .attr("x", (d : flat_node) => x(d.ered) - 4.5)
           .attr("y", (d: flat_node) => y(d.x_pos ?? 0) - 4.5)
           .attr("rx", "1.5")
-          .style("fill", "#444444")
+          .style("fill", draw_color)
+        
+        return(g);
+    },(update) => {
+      update.select(".node_rect").transition()
+        .attr("x", (d : flat_node) => x(d.ered) - 4)
+        .attr("y", (d: flat_node) => y(d.x_pos ?? 0) - 4);
+      return update
+    },
+    (exit) => {
+      exit.transition().attr("opacity", 0).remove();
+    });
+
+    // Define node labels
+    tree_nodes.join((enter) => {
+        // const g = enter.append("g")
+        //              .attr("id", (d) => `${d.name}${id_mod}`)
+        //              .attr("class", "tree_node");
+
+        // if(!draw_static) {
+        //   g.transition().attr("opacity", 1);
+        // }
+
+        // g.append("rect")
+        //   .attr("id", (d) => `${d.name}_rect${id_mod}`)
+        //   .attr("class", "node_rect")
+        //   .attr("width", 9)
+        //   .attr("height", 9)
+        //   .attr("x", (d : flat_node) => x(d.ered) - 4.5)
+        //   .attr("y", (d: flat_node) => y(d.x_pos ?? 0) - 4.5)
+        //   .attr("rx", "1.5")
+        //   .style("fill", draw_color)
+
+        const g = enter.append("g")
+                     .attr("id", (d) => `${d.name}${id_mod}`)
+                     .attr("class", "tree_label_g");
+
+        if(!draw_static) {
+          g.transition().attr("opacity", 1);
+        }
 
         const fo = g.append("foreignObject")
           .attr("class", "label_fo")
@@ -168,20 +222,22 @@
           .attr("height", () => l_height + "px") //y(l_height)
           .attr("width", "1000px"); //(d: flat_node) =>  x(10 * compute_width(d.param_names, x))
 
-        const ld = fo.append("xhtml:div")
-          .attr("id", (d) => `${d.name}_div`)
+        const ldd = fo.append("xhtml:div")
+                      .style("height", "100%")
+                      .style("padding", "1px");
+
+        const ld = ldd.append("xhtml:div")
+          .attr("id", (d) => `${d.name}_div${id_mod}`)
           .attr("class", "label-div")
           .style("display", "flex")
           .style("flex-direction", "row")
-          // .style("background", "#edededff")
           .style("background", "white")
+          .style("border-color", "black")
           .style("align-items", "center")
           .style("font-family", "sans-serif")
           .style("box-sizing", "border-box")
-          .style("border-width", "0.1rem")
-          .style("border-color", "black")
+          .style("border-width", "0.12rem")
           .style("border-style", "solid")
-          // .style("border-radius", "0.18rem")
           .style("border-radius", "8px")
           .style("border-top-left-radius", (d) => d.x_pos > d.label_y ? "8px" : "0px")
           .style("border-bottom-left-radius", (d) => d.x_pos > d.label_y ? "0px" : "8px")
@@ -189,8 +245,10 @@
           .style("font-weight", "bold")
           .style("user-select", "none")
           .style("width", "fit-content")
-          .style("height", "100%")
-          .on("mouseover", (ev) => {
+          .style("height", (l_height - 2) + "px")
+          
+        if(!draw_static) {
+          ld.on("mouseover", (ev) => {
             ev.currentTarget.style.opacity = 1;
           })
           .on("click", (_ev, d) => {
@@ -225,35 +283,34 @@
               }
             }
           });
+        }
 
-          ld.append("xhtml:div")
-            .attr("class", "depth_tag")
-            .style("height", "100%")
-            .style("display", "flex")
-            .style("flex-direction", "row")
-            .style("align-items", "center")
-            .style("padding-left", "6px")
-            .style("padding-right", "0px")
-            // .style("border-right", "1px solid #444444")
-            .html((d : flat_node) => d.depth.toString());
+        ld.append("xhtml:div")
+          .attr("class", "depth_tag")
+          .style("height", "100%")
+          .style("display", "flex")
+          .style("flex-direction", "row")
+          .style("align-items", "center")
+          .style("padding-left", "6px")
+          .style("padding-right", "0px")
+          .style("font-weight", "normal")
+          // .style("border-right", "1px solid #444444")
+          .html((d : flat_node) => d.depth.toString());
 
-          ld.append("xhtml:div")
-            .attr("class", "params_list")
-            .style("height", "100%")
-            .style("display", "flex")
-            .style("flex-direction", "row")
-            .style("gap", "6px")
-            .style("align-items", "center")
-            .style("padding-left", "6px")
-            .style("padding-right", "6px")
-            .style("font-weight", "normal")
-          
-          return g;
+        ld.append("xhtml:div")
+          .attr("class", "params_list")
+          .style("height", "100%")
+          .style("display", "flex")
+          .style("flex-direction", "row")
+          .style("gap", "6px")
+          .style("align-items", "center")
+          .style("padding-left", "6px")
+          .style("padding-right", "6px")
+          .style("font-weight", "normal")
+        
+        return g;
     },
     (update) => {
-      update.select(".node_rect").transition()
-        .attr("x", (d : flat_node) => x(d.ered) - 4)
-        .attr("y", (d: flat_node) => y(d.x_pos ?? 0) - 4);
       update.select(".label_fo").transition()
         .attr("x", (d : flat_node) => x(0.003 + d.ered))
         .attr("y", (d: flat_node) => y(d.label_y ?? 0));
@@ -268,6 +325,7 @@
       exit.transition().attr("opacity", 0).remove();
     });
 
+    // Fill in node label content
     const params_lists = d3.selectAll(".params_list");
     if(params_lists.size() > 0) {
       const param_names = params_lists.selectAll(".param_name"); //<d3.BaseType, HTMLElement>
@@ -278,10 +336,9 @@
           .join((enter) => {
             const pdiv = enter.append("div")
               .attr("class", "param_name")
-              .style("background", "#white")
               .style("border-radius", "3px")
-              .style("background", "white")
-              .style("border", "1px solid #b0b0b0ff")
+              .style("background", "#ffffffff")
+              .style("border", "1px solid #979797ff")
               .style("display", "flex")
               .style("flex-direction", "row")
               
@@ -293,7 +350,7 @@
 
             pdiv.append("div")
               .style("padding", (d : string) => d.split("[").length > 1 ? "5px" : "0px")
-              .style("border-left", "1px solid #c6c6c6ff")
+              .style("border-left", "1px solid #979797ff")
               .style("visibility", (d : string) => d.split("[").length > 1 ? "visible" : "hidden")
               .html((d : string) => {
                 const end_str = d.split("[");
