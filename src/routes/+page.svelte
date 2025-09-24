@@ -157,9 +157,14 @@
           <stop class="stop2" offset="30%" stop-color="white"/>
           <stop class="stop3" offset="100%" stop-color="white"/>
         </linearGradient>
-        <g id="tree_g" transform="translate(10 0)">
+        
+        <g id="tree_outer" transform="translate(10 0)">
           <rect width="100%" height="100%" fill="white"></rect>
+          <g id="tree_g"></g>
+          <g id="tree_g_selection">
+          </g>
         </g>
+        
         <g id="x_axis" transform={`translate(10 ${0.96 * height})`}>
           <rect width="100%" height="100%" fill="url(#grad)"></rect>
           <g id="x_axis"></g>

@@ -1,11 +1,10 @@
 import { clear_branches, clear_selection } from "./selection.svelte.ts";
-import { reset_styles } from "./draw_tree.ts";
+import { draw_tree, draw_geometry, reset_styles } from "./draw_tree.ts";
 import { stratify, type HierarchyNode, type ScaleLinear } from "d3";
 import { type flat_node, type flat_tree, type flat_branch } from "./tree.ts";
 import { type label_data_t, type branch_data_t, selector } from "./selection.svelte.ts";
 import { groups } from "./groups.ts";
 import { annotate_tree } from "./tree.ts";
-import { draw_tree } from "./draw_tree.ts";
 
 type user_state_t = 'base' | 'extruding' | 'dividing' | 'auto-dividing' | 'merging' | 'auto-merging' | 'groups' | 'add-group';
 
@@ -81,5 +80,10 @@ export function setup_tree(x: numeric_scale, y: numeric_scale, l_height : number
       nh, bh,
       document.styleSheets[0]
     );
+    // draw_geometry(
+    //   ft, "tree_g", x, y,
+    //   () => {return({})}, document.styleSheets[0],
+    //   "blue", true, "_selection"
+    // );
   }
 }

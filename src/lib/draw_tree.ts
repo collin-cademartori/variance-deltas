@@ -1,8 +1,8 @@
-  import * as d3 from "d3";
-  import { type flat_node, type flat_tree, type flat_branch } from "./tree.ts";
-  import { type label_data_t, selection_channels } from "./selection.svelte.ts";
-  
-  let branch_rule_index : number | undefined = undefined;
+import { type flat_node, type flat_tree, type flat_branch } from "./tree.ts";
+import { type label_data_t, selection_channels } from "./selection.svelte.ts";
+import * as d3 from "d3";
+
+let branch_rule_index : number | undefined = undefined;
 
   function to_style_string(selector : string, styles : object) {
     let sstr = `${selector} { `;
@@ -34,22 +34,27 @@
 
   let cur_y = 0;
   
-  export function draw_tree(
-    tree : flat_tree, 
+  export function draw_geometry(
+    tree : flat_tree,
+    draw_group : string, 
     x : d3.ScaleLinear<number, number>,
     y : d3.ScaleLinear<number, number>,
-    l_height : number,
-    label_handler : (d : flat_node) => label_data_t | null,
     branch_handler : (d : flat_branch) => object | null,
     ss : CSSStyleSheet,
     draw_color : string = "black",
-    draw_static : boolean = false) {
+    draw_static : boolean = false,
+    id_mod : string = ""
+  ) {
 
-    // Setup data
+    const tree_elem = d3.select("#" + draw_group + id_mod);
+    if(tree_elem.size() != 1) {
+      console.error("Cannot draw geometry! Selected group does not exist.")
+    }
 
-    const id_mod = draw_static ? "_static" : "";
-    const tree_elem = d3.select("#tree_g" + id_mod);
-    const max_y = y(tree.map((fn) => fn.x_pos).reduce((p,n) => Math.max(p,n)) - 1) + 45;
+    const link = d3.line<flat_node>(
+      (d) => x(d.ered),
+      (d) => y(d.x_pos ?? 0)
+    ).curve(d3.curveStepBefore);
 
     const branch_data = tree.filter((n) => n.parent != "").map((n) => {
       const pn = tree.find((n2) => n2.name === n.parent);
@@ -62,30 +67,6 @@
         throw new Error("Cannot find parent! Branch data failed.")
       }
     });
-
-    const link = d3.line<flat_node>(
-      (d) => x(d.ered),
-      (d) => y(d.x_pos ?? 0)
-    ).curve(d3.curveStepBefore);
-
-    // Define pan behavior
-    const pan = d3.zoom();
-
-    if(!draw_static) {
-      pan.on('zoom', (e) => {
-        if(e?.sourceEvent?.wheelDeltaY) {
-          const dy = -1 * e.sourceEvent.wheelDeltaY;
-          const t = e.transform;
-          t.k = 1;
-          t.x = 10;
-          cur_y = Math.min(Math.max(0, cur_y + dy), max_y);
-          t.y = -1 * cur_y;
-          d3.select("#tree_g" + id_mod).attr("transform", t.toString());
-        } 
-      });
-
-      d3.select("#tree").call(pan);
-    }
 
     // Draw branches
     tree_elem.selectAll(".tree_branch")
@@ -186,30 +167,58 @@
     (exit) => {
       exit.transition().attr("opacity", 0).remove();
     });
+  }
 
+  export function draw_tree(
+    tree : flat_tree, 
+    x : d3.ScaleLinear<number, number>,
+    y : d3.ScaleLinear<number, number>,
+    l_height : number,
+    label_handler : (d : flat_node) => label_data_t | null,
+    branch_handler : (d : flat_branch) => object | null,
+    ss : CSSStyleSheet,
+    draw_color : string = "black",
+    draw_static : boolean = false) {
+
+    // Setup data
+
+    const id_mod = draw_static ? "_static" : "";
+    const tree_elem = d3.select("#tree_g" + id_mod);
+    const max_y = y(tree.map((fn) => fn.x_pos).reduce((p,n) => Math.max(p,n)) - 1) + 45;
+
+    // Define pan behavior
+    const pan = d3.zoom();
+
+    if(!draw_static) {
+      pan.on('zoom', (e) => {
+        if(e?.sourceEvent?.wheelDeltaY) {
+          const dy = -1 * e.sourceEvent.wheelDeltaY;
+          const t = e.transform;
+          t.k = 1;
+          t.x = 10;
+          cur_y = Math.min(Math.max(0, cur_y + dy), max_y);
+          t.y = -1 * cur_y;
+          d3.select("#tree_outer" + id_mod).attr("transform", t.toString());
+        } 
+      });
+
+      d3.select("#tree").call(pan);
+    }
+
+    // Draw tree nodes and branches
+    draw_geometry(
+      tree, "tree_g", x, y, branch_handler, ss, draw_color, draw_static, id_mod
+    );
+
+    // Draw labels
+    const tree_nodes = tree_elem.selectAll(".tree_node_label")
+                                .data(tree, (d) => (d as flat_node).name);
     // Define node labels
     tree_nodes.join((enter) => {
-        // const g = enter.append("g")
-        //              .attr("id", (d) => `${d.name}${id_mod}`)
-        //              .attr("class", "tree_node");
-
-        // if(!draw_static) {
-        //   g.transition().attr("opacity", 1);
-        // }
-
-        // g.append("rect")
-        //   .attr("id", (d) => `${d.name}_rect${id_mod}`)
-        //   .attr("class", "node_rect")
-        //   .attr("width", 9)
-        //   .attr("height", 9)
-        //   .attr("x", (d : flat_node) => x(d.ered) - 4.5)
-        //   .attr("y", (d: flat_node) => y(d.x_pos ?? 0) - 4.5)
-        //   .attr("rx", "1.5")
-        //   .style("fill", draw_color)
 
         const g = enter.append("g")
                      .attr("id", (d) => `${d.name}${id_mod}`)
-                     .attr("class", "tree_label_g");
+                     .attr("class", "tree_node_label");
 
         if(!draw_static) {
           g.transition().attr("opacity", 1);
