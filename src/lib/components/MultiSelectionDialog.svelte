@@ -1,6 +1,6 @@
 <script lang="ts">
   import { type flat_node } from "../tree";
-  import { selector, clear_selection } from "$lib/selection.svelte";
+  import { selector, selection } from "$lib/selection.svelte";
   import { reset_styles } from "$lib/draw_tree";
   import { user_state } from "$lib/user_state.svelte";
 
@@ -39,8 +39,9 @@
   <button 
     disabled={selected == null || selected.length == 0}
     onclick={() => {
-      clear_selection();
-      reset_styles();
+      // clear_selection();
+      // reset_styles();
+      selection.clear();
     }}
   >
     Clear Selection

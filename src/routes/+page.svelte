@@ -5,7 +5,7 @@
   import { type flat_node, type flat_branch, type flat_tree } from "$lib/tree";
   import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge, define_group } from "$lib/tree_methods";
   import { setup_context } from "$lib/compute_width";
-  import { node_selection, clear_selection, branch_selection, clear_branches, selector } from "$lib/selection.svelte";
+  import { selection, clear_branches, selector } from "$lib/selection.svelte";
   import { user_state, setup_tree } from "$lib/user_state.svelte";
   import { groups, handle_groups } from "$lib/groups";
 
@@ -27,14 +27,23 @@
   const y = d3.scaleLinear([0, 1], [0, 0.95 * height]);
   const l_height = 36;
 
-  let selected_node = $derived.by(() => user_state.tree?.find((node) => node.data.name === [...node_selection.main.values()][0])?.data);
-  let selected_alt_node = $derived.by(() => user_state.tree?.find((node) => node.data.name === [...node_selection.alt.values()][0])?.data);
+  let selected_node = $derived.by(() => user_state.tree?.find((node) => node?.data.name === selection.nodes("main")?.[0])?.data);
+  let selected_alt_node = $derived.by(() => user_state.tree?.find((node) => node?.data.name === selection.nodes("alt")?.[0])?.data);
   let selected_branch = $derived.by(() => {
-    const nodes = [...branch_selection.main][0];
-    return({
-      child: user_state.tree?.find((node) => node.data.name === nodes?.[0])?.data,
-      parent: user_state.tree?.find((node) => node.data.name === nodes?.[1])?.data
-    });
+    const node1_name = selection.nodes("main")[0];
+    const node2_name = selection.nodes("main")[1];
+    const node1 = user_state.tree?.find((node) => node?.data.name === node1_name);
+    if(node1?.data.parent == node2_name) {
+      return({
+        child: node1?.data,
+        parent: user_state.tree?.find((node) => node?.data.name === node2_name)?.data
+      });
+    } else {
+      return({
+        child: undefined,
+        parent: undefined
+      });
+    }
   });
 
   onMount(() => {
@@ -48,82 +57,51 @@
       x, y, l_height,
       (d : flat_node) => {
         if(user_state.state === 'extruding') {
-          if(node_selection.main.has(d.name)) {
-            node_selection.main.clear();
-            return({ target: [], channel: 'main' })
+          if(selection.has(d.name, "main")) {
+            selection.clear("main");
           } else {
-            node_selection.main.clear();
-            node_selection.main.add(d.name);
-            return({ target: [d.name], channel: 'main' })
+            selection.set_nodes([d.name], "main");
           }
         } else if (user_state.state === 'merging') {
-          if(node_selection.main.has(d.name)) {
-            clear_selection();
-            return(null);
-          } else if (node_selection.alt.has(d.name)) {
-            node_selection.alt.clear();
-            return({ target: [], channel: 'alt' });
-          } else if (node_selection.main.size > 0) {
-            node_selection.alt.clear();
-            node_selection.alt.add(d.name);
-            return({ target: [d.name], channel: 'alt' });
+          if(selection.has(d.name, "main")) {
+            selection.clear();
+          } else if (selection.has(d.name, "alt")) {
+            selection.clear("alt");
+          } else if (selection.size("main") > 0) {
+            selection.set_nodes([d.name], "alt");
           } else {
-            node_selection.main.clear();
-            node_selection.main.add(d.name);
-            return({ target: [d.name], channel: 'main' });
+            selection.set_nodes([d.name], "main")
           }
         } else if (user_state.state === 'add-group') {
           const sel_node = user_state.tree?.find((node) => node.data.name === d.name);
           let sel_names : string[] = [];
           if(selector.type === "anc") {
-            if(sel_node?.data.name && node_selection.main.has(sel_node?.data.name)) {
+            if(sel_node?.data.name && selection.has(sel_node?.data.name, "main")) {
               sel_names = sel_node?.descendants().map((desc) => desc.data.name);
-              sel_names.forEach((node_name) => node_selection.main.delete(node_name));
-              return({
-                target: [...node_selection.main], channel: 'main'
-              });
+              sel_names.forEach((node_name) => selection.delete(node_name, "main"));
             } else {
               sel_names = sel_node?.ancestors().map((anc) => anc.data.name) ?? [];
-              sel_names.forEach((name) => node_selection.main.add(name));
-              return({
-                target: [...node_selection.main], channel: 'main'
-              });
+              sel_names.forEach((name) => selection.add(name, "main"));
             }
           } else if(selector.type === "desc") {
-            if(sel_node?.data.name && node_selection.del.has(sel_node?.data.name)) {
+            if(sel_node?.data.name && selection.has(sel_node?.data.name, "del")) {
               sel_names = sel_node?.ancestors().map((anc) => anc.data.name);
-              sel_names.forEach((node_name) => node_selection.del.delete(node_name));
-              return({
-                target: [...node_selection.del], channel: 'del'
-              });
+              sel_names.forEach((node_name) => selection.delete(node_name, "del"));
             } else {
               sel_names = sel_node?.descendants().map((desc) => desc.data.name) ?? [];
-              sel_names.forEach((name) => node_selection.del.add(name));
-              return({
-                target: [...node_selection.del], channel: 'del'
-              });
+              sel_names.forEach((name) => selection.add(name, "del"));
             }
-          } else {
-            return(null);
-          }
-        } else {
-          return(null);
-        }
+          } 
+        } 
       },
       (d : flat_branch) => {
         if(user_state.state === 'dividing' || user_state.state === 'auto-dividing') {
-          if(selected_branch.parent?.name == d.parent.name && selected_branch.child?.name == d.child.name) {
-            clear_branches();
+          if(selection.has(d.parent.name, "main") && selection.has(d.child.name, "main")) {
+            selection.clear("main");
           } else {
-            branch_selection.main.clear();
-            branch_selection.main.add([d.child.name, d.parent.name]);
+            selection.set_nodes([d.child.name, d.parent.name], "main");
           }
-          return({
-            "stroke-dasharray" : "5px, 5px"
-          });
-        } else {
-          return({});
-        }
+        } 
       }
     );
 
@@ -161,8 +139,9 @@
         <g id="tree_outer" transform="translate(10 0)">
           <rect width="100%" height="100%" fill="white"></rect>
           <g id="tree_g"></g>
-          <g id="tree_g_selection">
-          </g>
+          <g id="tree_g_del"></g>
+          <g id="tree_g_alt"></g>
+          <g id="tree_g_main"></g>
         </g>
         
         <g id="x_axis" transform={`translate(10 ${0.96 * height})`}>
@@ -249,9 +228,9 @@
       {#if user_state.state === 'add-group'}
         <MultiSelectionDialog 
           selected={
-            node_selection.main.size > 0 ? 
-            [...node_selection.main].map((name) => user_state.tree?.find((node) => node.data.name === name)?.data) :
-            [...node_selection.del].map((name) => user_state.tree?.find((node) => node.data.name === name)?.data)
+            selection.size("main") > 0 ? 
+            selection.nodes("main").map((name) => user_state.tree?.find((node) => node.data.name === name)?.data) :
+            selection.nodes("del").map((name) => user_state.tree?.find((node) => node.data.name === name)?.data)
           } 
           input_text={"Group Name"}
           button_text={"Create Group"} 
@@ -262,8 +241,7 @@
               group_name: name,
               node_names: node_names
             });
-            node_selection.main.clear();
-            node_selection.del.clear();
+            selection.clear();
             user_state.state = 'groups';
           }} 
         />

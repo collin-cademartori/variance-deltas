@@ -1,6 +1,7 @@
 import { type flat_node, type flat_tree, type flat_branch } from "./tree.ts";
-import { type label_data_t, selection_channels } from "./selection.svelte.ts";
+import { selection_channels, selection } from "./selection.svelte.ts";
 import * as d3 from "d3";
+import { normalizeUrl } from "@sveltejs/kit";
 
 let branch_rule_index : number | undefined = undefined;
 
@@ -39,11 +40,13 @@ let branch_rule_index : number | undefined = undefined;
     draw_group : string, 
     x : d3.ScaleLinear<number, number>,
     y : d3.ScaleLinear<number, number>,
-    branch_handler : (d : flat_branch) => object | null,
+    branch_handler : (d : flat_branch) => void,
     ss : CSSStyleSheet,
     draw_color : string = "black",
+    highlight_color : string = "black",
     draw_static : boolean = false,
-    id_mod : string = ""
+    id_mod : string = "",
+    scale = 1
   ) {
 
     const tree_elem = d3.select("#" + draw_group + id_mod);
@@ -64,9 +67,9 @@ let branch_rule_index : number | undefined = undefined;
           parent: pn
         }
       } else {
-        throw new Error("Cannot find parent! Branch data failed.")
+        return null;
       }
-    });
+    }).filter((branch) => branch != null);
 
     // Draw branches
     tree_elem.selectAll(".tree_branch")
@@ -79,8 +82,8 @@ let branch_rule_index : number | undefined = undefined;
 
                 g.append("path").attr("d", (d) => link([d.parent, d.child]))
                      .attr("class", "branch_path")
-                     .style("stroke", draw_color)
-                     .style("stroke-width", 2)
+                     .style("stroke", highlight_color)
+                     .style("stroke-width", Math.pow(scale, 2) * 2)
                      .style("fill", "none")
                      .attr("id", (d) => `branch-${d.child.shortname}-${d.parent.shortname}${id_mod}`);
 
@@ -92,33 +95,26 @@ let branch_rule_index : number | undefined = undefined;
                          .style("opacity", 0)
                 
                 if(!draw_static) {
-                  path_select.on("mouseover", (_ev, d) => {
-                    const vis_path = document.getElementById(`branch-${d.child.shortname}-${d.parent.shortname}`);
-                    vis_path?.setAttribute("stroke", "#0161df");
-                  })
-                  .on("mouseleave", (_ev, d) => {
-                    const vis_path = document.getElementById(`branch-${d.child.shortname}-${d.parent.shortname}`);
-                    vis_path?.setAttribute("stroke", draw_color);
-                  })
-                  .on("click", (_ev, d) => {
-                    const target_classes = document.getElementById(`branch-${d.child.shortname}-${d.parent.shortname}`).classList;
-                    const cur_selected = target_classes.contains("branch_selected")
-                    const branch_styles = branch_handler(d);
-                    if(Object.keys(branch_styles).length === 0) {
-                      return;
-                    }
-                    if(branch_rule_index != null) {
-                      ss.deleteRule(branch_rule_index);
-                    }
-                    branch_rule_index = ss.insertRule(to_style_string(".branch_selected", branch_styles));
-                    const branches = document.getElementsByClassName("branch_path");
-                    for(let bi = 0; bi < branches.length; ++bi) {
-                      branches[bi].classList.remove("branch_selected");
-                    }
-                    if(!cur_selected) {
-                      target_classes.add("branch_selected");
-                    }
+                  path_select.on("click", (_ev, d) => {
+                    branch_handler(d);
                   });
+                  //path_select
+                  // .on("click", (_ev, d) => {
+                  //   const target_classes = document.getElementById(`branch-${d.child.shortname}-${d.parent.shortname}`).classList;
+                  //   const cur_selected = target_classes.contains("branch_selected")
+                  //   const branch_styles = branch_handler(d);
+                  //   if(branch_rule_index != null) {
+                  //     ss.deleteRule(branch_rule_index);
+                  //   }
+                  //   //branch_rule_index = ss.insertRule(to_style_string(".branch_selected", branch_styles));
+                  //   const branches = document.getElementsByClassName("branch_path");
+                  //   for(let bi = 0; bi < branches.length; ++bi) {
+                  //     branches[bi].classList.remove("branch_selected");
+                  //   }
+                  //   if(!cur_selected) {
+                  //     target_classes.add("branch_selected");
+                  //   }
+                  // });
                 }
 
                 return g;
@@ -138,6 +134,7 @@ let branch_rule_index : number | undefined = undefined;
     // Draw nodes
     const tree_nodes = tree_elem.selectAll(".tree_node")
                                 .data(tree, (d) => (d as flat_node).name);
+
     tree_nodes.join((enter) => {
         const g = enter.append("g")
                      .attr("id", (d) => `${d.name}${id_mod}`)
@@ -150,12 +147,14 @@ let branch_rule_index : number | undefined = undefined;
         g.append("rect")
           .attr("id", (d) => `${d.name}_rect${id_mod}`)
           .attr("class", "node_rect")
-          .attr("width", 9)
-          .attr("height", 9)
-          .attr("x", (d : flat_node) => x(d.ered) - 4.5)
-          .attr("y", (d: flat_node) => y(d.x_pos ?? 0) - 4.5)
-          .attr("rx", "1.5")
+          .attr("width", scale * 7)
+          .attr("height", scale * 7)
+          .attr("x", (d : flat_node) => x(d.ered) - (scale * 7) / 2)
+          .attr("y", (d: flat_node) => y(d.x_pos ?? 0) - (scale * 7) / 2)
+          .attr("rx", scale * 1.5)
           .style("fill", draw_color)
+          .style("stroke", highlight_color)
+          .style("stroke-width", scale * 3.5)
         
         return(g);
     },(update) => {
@@ -174,11 +173,56 @@ let branch_rule_index : number | undefined = undefined;
     x : d3.ScaleLinear<number, number>,
     y : d3.ScaleLinear<number, number>,
     l_height : number,
-    label_handler : (d : flat_node) => label_data_t | null,
-    branch_handler : (d : flat_branch) => object | null,
+    label_handler : (d : flat_node) => void,
+    branch_handler : (d : flat_branch) => void,
     ss : CSSStyleSheet,
     draw_color : string = "black",
     draw_static : boolean = false) {
+
+    if(!draw_static){   
+      // const sel_colors = {
+      //   "main" : "#4040ea",
+      //   "alt" : "#c20ca4ff",
+      //   "del" : "#f19513ff"
+      // }
+      const sel_colors = {
+        "main" : "#2a57ecff",
+        "alt" : "#910a8a",
+        "del" : "#d48e1d"
+      }
+
+      selection?.on_change(() => {
+        for(const channel of selection_channels) {
+          const ft = tree.filter((node) => selection.has(node.name, channel));
+          if(ft.length != 0) {
+            console.warn(channel + " is nonempty!");
+          } else {
+            console.warn(channel + " is empty!");
+          }
+          draw_geometry(
+            ft, "tree_g", x, y,
+            () => {}, document.styleSheets[0],
+            sel_colors[channel], sel_colors[channel], true, "_" + channel, 1.15
+          );
+        }
+        // Clear all selection classes
+        for(const channel of selection_channels) {
+          const cn = `${channel}_label_selected`;
+          const els = Array.from(document.getElementsByClassName(cn));
+          for(let ei = 0; ei < els.length; ++ei) {
+            els[ei].classList.remove(cn);
+          }
+        }
+        // Add selection classes for newly selection items
+        for(const channel of selection_channels) {
+          const cn = `${channel}_label_selected`;
+          const sel_nodes = selection.nodes(channel);
+          for(let ni = 0; ni < selection.size(channel); ++ni) {
+            document.getElementById(`${sel_nodes[ni]}_div`).classList.add(cn);
+          }
+        }
+      });
+    }
 
     // Setup data
 
@@ -207,7 +251,7 @@ let branch_rule_index : number | undefined = undefined;
 
     // Draw tree nodes and branches
     draw_geometry(
-      tree, "tree_g", x, y, branch_handler, ss, draw_color, draw_static, id_mod
+      tree, "tree_g", x, y, branch_handler, ss, draw_color, draw_color, draw_static, id_mod
     );
 
     // Draw labels
@@ -252,45 +296,14 @@ let branch_rule_index : number | undefined = undefined;
           .style("border-bottom-left-radius", (d) => d.x_pos > d.label_y ? "0px" : "8px")
           .style("font-size", "12px")
           .style("font-weight", "bold")
-          .style("user-select", "none")
+          // .style("user-select", "none")
           .style("width", "fit-content")
           .style("height", (l_height - 2) + "px")
           
         if(!draw_static) {
-          ld.on("mouseover", (ev) => {
-            ev.currentTarget.style.opacity = 1;
-          })
-          .on("click", (_ev, d) => {
-            const label_data = label_handler(d);
-            if(label_data == null) {
-              for(const channel of selection_channels) {
-                const cn = `${channel}_label_selected`;
-                const els = Array.from(document.getElementsByClassName(cn));
-                for(let ei = 0; ei < els.length; ++ei) {
-                  els[ei].classList.remove(cn);
-                }
-                const cnr = `${channel}_rect_selected`;
-                const elsr = Array.from(document.getElementsByClassName(cnr));
-                for(let ei = 0; ei < elsr.length; ++ei) {
-                  elsr[ei].classList.remove(cnr);
-                }
-              }
-            } else {
-              const cn = `${label_data.channel}_label_selected`;
-              const cnr = `${label_data.channel}_rect_selected`;
-              const els = Array.from(document.getElementsByClassName(cn));
-              for(let ei = 0; ei < els.length; ++ei) {
-                els[ei].classList.remove(cn);
-              }
-              const elsr = Array.from(document.getElementsByClassName(cnr));
-              for(let ei = 0; ei < elsr.length; ++ei) {
-                elsr[ei].classList.remove(cnr);
-              }
-              for(let ni = 0; ni < label_data.target.length; ++ni) {
-                document.getElementById(`${label_data.target[ni]}_div`).classList.add(cn);
-                document.getElementById(`${label_data.target[ni]}_rect`).classList.add(cnr);
-              }
-            }
+          fo.on("mousedown", (_ev, d) => {
+            console.log("IM CLICKED")
+            label_handler(d);
           });
         }
 
@@ -303,6 +316,7 @@ let branch_rule_index : number | undefined = undefined;
           .style("padding-left", "6px")
           .style("padding-right", "0px")
           .style("font-weight", "normal")
+          .style("user-select", "none")
           // .style("border-right", "1px solid #444444")
           .html((d : flat_node) => d.depth.toString());
 
@@ -316,6 +330,7 @@ let branch_rule_index : number | undefined = undefined;
           .style("padding-left", "6px")
           .style("padding-right", "6px")
           .style("font-weight", "normal")
+          .style("user-select", "none")
         
         return g;
     },

@@ -12,9 +12,10 @@ export const selector = $state({
     return(_sel_type);
   },
   set type(st : selector_t["type"]) {
-    clear_selection();
-    clear_branches();
-    reset_styles();
+    // clear_selection();
+    // clear_branches();
+    //reset_styles();
+    selection.clear();
     _sel_type = st;
   }
 });
@@ -41,19 +42,57 @@ export type selection_branch_type = {
   [key in channel_t] : SvelteSet<[string, string]>
 }
 
-export const node_selection : selection_type = $state({
+let _node_handler : () => void = () => {};
+
+const _node_selection : selection_type = $state({
   main: new SvelteSet(), alt: new SvelteSet(), del: new SvelteSet()
 });
 
-export function clear_selection() {
-  for(const channel of Object.values(node_selection)) channel.clear();
+export const selection = {
+  clear: function(channel? : channel_t) {
+    if(channel == null) {
+      for(const channel of Object.values(_node_selection)) channel.clear();
+    } else {
+      _node_selection[channel].clear();
+    }
+    _node_handler();
+  },
+  size: function(channel : channel_t) {
+    return(_node_selection[channel].size);
+  },
+  has: function(name : string, channel : channel_t) {
+    return(_node_selection[channel].has(name));
+  },
+  add: function(name : string, channel : channel_t) {
+    _node_selection[channel].add(name);
+    _node_handler();
+  },
+  delete: function(name : string, channel : channel_t) {
+    _node_selection[channel].delete(name);
+    _node_handler();
+  },
+  nodes: function(channel : channel_t) {
+    return([..._node_selection[channel]]);
+  },
+  set_nodes: function(names : string[], channel : channel_t) {
+    _node_selection[channel].clear();
+    names.map((name) => _node_selection[channel].add(name));
+    _node_handler();
+  },
+  on_change: function(handler : () => void) {
+    _node_handler = handler;
+  }
 }
 
-export const branch_selection : selection_branch_type = $state({
+export function clear_selection() {
+  for(const channel of Object.values(_node_selection)) channel.clear();
+}
+
+const _branch_selection : selection_branch_type = $state({
   main: new SvelteSet(), alt: new SvelteSet(), del: new SvelteSet()
 });
 
 export function clear_branches() {
-  for(const channel of Object.values(branch_selection)) channel.clear();
+  for(const channel of Object.values(_branch_selection)) channel.clear();
 }
 

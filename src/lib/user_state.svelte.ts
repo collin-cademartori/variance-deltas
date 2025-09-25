@@ -1,5 +1,5 @@
-import { clear_branches, clear_selection } from "./selection.svelte.ts";
-import { draw_tree, draw_geometry, reset_styles } from "./draw_tree.ts";
+import { selection } from "./selection.svelte.ts";
+import { draw_tree } from "./draw_tree.ts";
 import { stratify, type HierarchyNode, type ScaleLinear } from "d3";
 import { type flat_node, type flat_tree, type flat_branch } from "./tree.ts";
 import { type label_data_t, type branch_data_t, selector } from "./selection.svelte.ts";
@@ -22,8 +22,8 @@ type state_t = {
 
 type numeric_scale = ScaleLinear<number, number, never>;
 
-type node_handler = (d : flat_node) => label_data_t;
-type branch_handler = (d : flat_branch) => object; // change to branch_data_t
+type node_handler = (d : flat_node) => void;
+type branch_handler = (d : flat_branch) => void; // change to branch_data_t
 
 let _user_state : user_state_t = $state('base');
 let _tree : HierarchyNode<flat_node> | undefined;
@@ -35,9 +35,7 @@ export const user_state : state_t = $state({
     return(_user_state);
   },
   set state(st: user_state_t) {
-    clear_selection();
-    clear_branches();
-    reset_styles();
+    selection.clear();
     if(st === "add-group") {
       selector.type = "anc";
     } else {
@@ -49,6 +47,7 @@ export const user_state : state_t = $state({
     return(_tree);
   },
   set tree(tree : HierarchyNode<flat_node>) {
+    selection.clear();
     _create_tree([...tree].map((n) => n.data));
     _tree = tree;
   },
@@ -57,6 +56,7 @@ export const user_state : state_t = $state({
   },
   set group(group : string | undefined) {
     _group = group;
+    selection.clear();
     _create_tree([..._tree].map((n) => n.data));
   },
   globals: []
