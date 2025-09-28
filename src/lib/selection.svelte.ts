@@ -1,5 +1,4 @@
 import { SvelteSet } from "svelte/reactivity";
-import { reset_styles } from "./draw_tree.ts";
 
 type selector_t = {
   type: 'node' | 'anc' | 'desc';
@@ -12,9 +11,6 @@ export const selector = $state({
     return(_sel_type);
   },
   set type(st : selector_t["type"]) {
-    // clear_selection();
-    // clear_branches();
-    //reset_styles();
     selection.clear();
     _sel_type = st;
   }
@@ -84,15 +80,20 @@ export const selection = {
   }
 }
 
-export function clear_selection() {
-  for(const channel of Object.values(_node_selection)) channel.clear();
-}
+let _hover : string[] = $state([]);
 
-const _branch_selection : selection_branch_type = $state({
-  main: new SvelteSet(), alt: new SvelteSet(), del: new SvelteSet()
-});
+let _hover_handler : () => void = () => {};
 
-export function clear_branches() {
-  for(const channel of Object.values(_branch_selection)) channel.clear();
+export const hover = {
+  set node(node_name : string[]) {
+    _hover = node_name;
+    _hover_handler();
+  },
+  get node() {
+    return _hover;
+  },
+  on_change: function(handler : () => void) {
+    _hover_handler = handler;
+  }
 }
 

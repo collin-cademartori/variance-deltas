@@ -32,14 +32,14 @@ export function annotate_tree(ft : flat_tree,
   y_scale : d3.ScaleLinear<number, number, never>,
   globals : string[] | null = null
 ) {
-  console.log(`Label height is ${label_height}`)
-  console.log("Setting short names.")
   for(const node of ft) {
     const params = globals == null ? node.params : [...node.params].filter((p) => !globals.includes(p));
     node.param_names = short_name(params);
+    if([...node.params].some((p) => !globals.includes(p))) {
+      node.param_names.push("ḡ");
+    }
     node.shortname = node.param_names.join(", ");
   }
-  console.log("Setting xs.")
   const tree_with_xs = compute_xs(ft, y_scale);
   compute_label_pos(tree_with_xs, label_height, x_scale, y_scale);
   return(tree_with_xs);
@@ -68,14 +68,17 @@ function compute_xs(ft : flat_tree, y_scale : d3.ScaleLinear<number, number, nev
   }
 
   // Swap this with the commented section below to get back to normal tree drawing
-  const num_nodes = test_tree.descendants().length;
-  for(const [nindex, node] of test_tree.descendants().sort(leaf_sort).entries()) {
-    console.warn(`Can't compress past ${y_scale.invert(44)}, but fitting height is ${(0.9 / (num_nodes - 1))}`)
-    node.data.x_pos = 0.05 + nindex * 1.1 * y_scale.invert(44); //Math.max((0.9 / (num_nodes - 1)), y_scale.invert(44));
-    if(node.data.depth == null) {
-       node.data.depth = node.ancestors().length;
-    }
-  } 
+  // const num_nodes = test_tree.descendants().length;
+  // for(const [nindex, node] of test_tree.descendants().sort(leaf_sort).entries()) {
+  //   console.warn(`Can't compress past ${y_scale.invert(44)}, but fitting height is ${(0.9 / (num_nodes - 1))}`)
+  //   node.data.x_pos = 0.05 + nindex * 1.1 * y_scale.invert(44); //Math.max((0.9 / (num_nodes - 1)), y_scale.invert(44));
+  //   if(node.data.depth == null) {
+  //      node.data.depth = node.ancestors().length;
+  //   }
+  // } 
+
+  console.log("Computing xs")
+
   // let nindex = 1;
   // test_tree.eachBefore((node) => {
   //   if(node.parent != null && node.parent.children[0].data.name !== node.data.name) {
@@ -95,28 +98,26 @@ function compute_xs(ft : flat_tree, y_scale : d3.ScaleLinear<number, number, nev
   //   }
   // });
 
-  // const num_leaves = test_tree.leaves().length;
-  // for(const [lindex, leaf] of test_tree.leaves().sort(leaf_sort).entries()) {
-  //   leaf.data.x_pos = 0.05 + 0.9 * ((lindex + 0.1) / ((num_leaves - 1) + 0.2));
-  // } 
+  const num_leaves = test_tree.leaves().length;
+  console.log(`Computing positions of ${num_leaves} leaves`);
+  for(const [lindex, leaf] of test_tree.leaves().sort(leaf_sort).entries()) {
+    leaf.data.x_pos = 0.05 + 0.9 * ((lindex + 0.1) / ((num_leaves - 1) + 0.2));
+  } 
 
-  // test_tree.eachAfter((d) => {
-  //   if(d.data.x_pos == null) {
-  //     const children = d.children;
-  //     if(children == null) {
-  //       throw new Error("Found leaf node without x_pos!");
-  //     } else {
-  //       const x_tot = children.reduce((p, n) => 
-  //         p + (n.data.x_pos as number),
-  //       0);
-  //       d.data.x_pos = x_tot / children.length;
-  //     }
-  //   }
+  test_tree.eachAfter((d) => {
+    if(d.children != null) {
+      const children = d.children;
+      console.log(`Found node with ${children.length} children.`)
+      const x_tot = children.reduce((p, n) => 
+        p + (n.data.x_pos as number),
+      0);
+      d.data.x_pos = x_tot / children.length;
+    }
 
-  //   if(d.data.depth == null) {
-  //     d.data.depth = d.ancestors().length;
-  //   }
-  // });
+    if(d.data.depth == null) {
+      d.data.depth = d.ancestors().length;
+    }
+  });
 
   return(test_tree)
 }
@@ -155,9 +156,9 @@ function compute_label_pos(
       throw new Error("Cannot compute label positions before x coordinate and short name determined.");
     } else {
       const label_width = x_scale.invert(15) + compute_width(node.param_names, x_scale);
-      console.log("Label is ", node.shortname);
-      console.log("X is ", node.ered);
-      console.log("Width is ", label_width);
+      // console.log("Label is ", node.shortname);
+      // console.log("X is ", node.ered);
+      // console.log("Width is ", label_width);
       const start_coord : coord = {
         x: [node.ered, label_width],
         y: [node.x_pos + y_scale.invert(4.5) + label_gap, label_height]
@@ -169,7 +170,7 @@ function compute_label_pos(
 
       let viable_y : number | undefined = undefined;
       if(check_coords.length == 0) {
-        console.info("No collisions possible, proceeding.")
+        //console.info("No collisions possible, proceeding.")
         viable_y = start_coord.y[0];
       } else {
         let any_intersect = false;
@@ -179,9 +180,9 @@ function compute_label_pos(
           }
         }
         if(any_intersect) {
-          console.warn(`Label collision with ${check_coords.length} labels when placing ${node.shortname}! Adjusting y.`);
+          //console.warn(`Label collision with ${check_coords.length} labels when placing ${node.shortname}! Adjusting y.`);
         } else {
-          console.info("No collisions, proceeding.");
+          //console.info("No collisions, proceeding.");
           viable_y = start_coord.y[0];
         }
       }
@@ -251,7 +252,7 @@ function compute_label_pos(
 
       // viable_y += 0.003;
 
-      console.log("Setting label_y to ", viable_y);
+      //console.log("Setting label_y to ", viable_y);
       node.label_y = viable_y;
 
       const new_coord = start_coord;

@@ -15,7 +15,7 @@ export function compute_width(text: string[] | undefined, x: d3.ScaleLinear<numb
   if(ctx == null) {
     throw new Error("Cannot compute width of text, rendering context undefined!");
   } else {
-    console.log(text)
+    //console.log(text)
     const text_measures = text.map((txt) => {
       const tm = ctx?.measureText(txt);
       return(tm.actualBoundingBoxLeft + tm.actualBoundingBoxRight + 25)

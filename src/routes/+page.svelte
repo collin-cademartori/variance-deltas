@@ -5,7 +5,7 @@
   import { type flat_node, type flat_branch, type flat_tree } from "$lib/tree";
   import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge, define_group } from "$lib/tree_methods";
   import { setup_context } from "$lib/compute_width";
-  import { selection, clear_branches, selector } from "$lib/selection.svelte";
+  import { selection } from "$lib/selection.svelte";
   import { user_state, setup_tree } from "$lib/user_state.svelte";
   import { groups, handle_groups } from "$lib/groups";
 
@@ -50,67 +50,20 @@
     setup_context(new OffscreenCanvas(1000, 1000));
 
     const svg = d3.select("#tree");
-    let xaxis = d3.axisBottom(x).offset(10).tickPadding(15).tickSize(0);
+    let xaxis = d3.axisBottom(x).offset(2).tickPadding(7).tickSize(4);
     xaxis(svg.select("#x_axis"));
 
     setup_tree(
-      x, y, l_height,
-      (d : flat_node) => {
-        if(user_state.state === 'extruding') {
-          if(selection.has(d.name, "main")) {
-            selection.clear("main");
-          } else {
-            selection.set_nodes([d.name], "main");
-          }
-        } else if (user_state.state === 'merging') {
-          if(selection.has(d.name, "main")) {
-            selection.clear();
-          } else if (selection.has(d.name, "alt")) {
-            selection.clear("alt");
-          } else if (selection.size("main") > 0) {
-            selection.set_nodes([d.name], "alt");
-          } else {
-            selection.set_nodes([d.name], "main")
-          }
-        } else if (user_state.state === 'add-group') {
-          const sel_node = user_state.tree?.find((node) => node.data.name === d.name);
-          let sel_names : string[] = [];
-          if(selector.type === "anc") {
-            if(sel_node?.data.name && selection.has(sel_node?.data.name, "main")) {
-              sel_names = sel_node?.descendants().map((desc) => desc.data.name);
-              sel_names.forEach((node_name) => selection.delete(node_name, "main"));
-            } else {
-              sel_names = sel_node?.ancestors().map((anc) => anc.data.name) ?? [];
-              sel_names.forEach((name) => selection.add(name, "main"));
-            }
-          } else if(selector.type === "desc") {
-            if(sel_node?.data.name && selection.has(sel_node?.data.name, "del")) {
-              sel_names = sel_node?.ancestors().map((anc) => anc.data.name);
-              sel_names.forEach((node_name) => selection.delete(node_name, "del"));
-            } else {
-              sel_names = sel_node?.descendants().map((desc) => desc.data.name) ?? [];
-              sel_names.forEach((name) => selection.add(name, "del"));
-            }
-          } 
-        } 
-      },
-      (d : flat_branch) => {
-        if(user_state.state === 'dividing' || user_state.state === 'auto-dividing') {
-          if(selection.has(d.parent.name, "main") && selection.has(d.child.name, "main")) {
-            selection.clear("main");
-          } else {
-            selection.set_nodes([d.child.name, d.parent.name], "main");
-          }
-        } 
-      }
+      x, y, l_height
     );
 
-    ws.handle_message((tree_data, globals_data, groups_data) => {
+    ws.handle_message((tree_data, globals_data, global_limit, groups_data) => {
       const tree = (d3.stratify<flat_node>()
                     .id((n : flat_node) => n.name.toString())
                     .parentId((n : flat_node) => n.parent.toString()))(tree_data);
       handle_groups(groups_data);
       globals_data.forEach((global) => user_state.globals.push(global));
+      user_state.global_limit = global_limit;
       user_state.tree = tree;
     });
     ws.handle_groups(handle_groups);
@@ -129,24 +82,49 @@
 
   <div id="main_view">
       <div id="tree_container">
-      <svg id="tree" height={height} width={width + 100}>
+      <svg id="tree" height={height + 30} width={width + 100}>
         <linearGradient id="grad" x1="0" x2="0" y1="0" y2="0.04">
           <stop class="stop1" offset="0%" stop-color="white" stop-opacity="0" />
           <stop class="stop2" offset="30%" stop-color="white"/>
           <stop class="stop3" offset="100%" stop-color="white"/>
         </linearGradient>
-        
-        <g id="tree_outer" transform="translate(10 0)">
-          <rect width="100%" height="100%" fill="white"></rect>
-          <g id="tree_g"></g>
-          <g id="tree_g_del"></g>
-          <g id="tree_g_alt"></g>
-          <g id="tree_g_main"></g>
+
+        <rect width="100%" height="100%" fill="white"></rect>
+
+        <g id="vert_line_container" transform="translate(20 0)">
         </g>
         
-        <g id="x_axis" transform={`translate(10 ${0.96 * height})`}>
-          <rect width="100%" height="100%" fill="url(#grad)"></rect>
+        <g id="tree_outer" transform="translate(20 40)">
+          <rect id="global_limit_rect" 
+            y="-10" x="100%" 
+            fill="#eeeeee" stroke="black"
+            opacity="0.3"
+            stroke-dasharray="8 8"
+            stroke-width="1px"
+            height="110%" width="100%">
+          </rect>
+          <g id="tree_layers">
+            <g id="tree_g"></g>
+            <g id="tree_g_del"></g>
+            <g id="tree_g_alt"></g>
+            <g id="tree_g_main"></g>
+          </g>
+        </g>
+
+        <g id="label_layer_container" transform="translate(20 40)">
+          <g id="label_layer"></g>
+        </g>
+        
+        <g id="x_axis_container" transform={`translate(20 ${0.96 * height})`}>
+          <rect width="100%" height="60" fill="url(#grad)"></rect>
           <g id="x_axis"></g>
+        </g>
+
+        <g id="top_bar" transform="translate(20 0)">
+          <rect fill="white" height="40" width="100%" transform="translate(-20 0)"></rect> 
+        </g>
+
+        <g id="highlight_container" transform={`translate(20 ${0.96 * height + 30})`}>
         </g>
       </svg>
     </div>
@@ -312,34 +290,34 @@
   :global(.main_label_selected) {    
     border-color: rgb(29, 29, 212) !important;
     background-color: rgb(224, 235, 255) !important;
-    opacity: 1 !important;
+    transition: all 50ms !important; 
+  }
+
+  :global(.main_label_selected > .params_list div) {    
+    border-color: rgb(29, 29, 212) !important;
+    transition: all 50ms !important; 
   }
 
   :global(.alt_label_selected) {
     border-color: rgb(145, 10, 138) !important;
     background-color: rgb(241, 232, 240) !important;
-    opacity: 1 !important;
+    transition: all 50ms !important; 
+  }
+
+  :global(.alt_label_selected > .params_list div) {    
+    border-color: rgb(145, 10, 138) !important;
+    transition: all 50ms !important; 
   }
 
   :global(.del_label_selected) {
     border-color: rgb(212, 142, 29) !important;
     background-color: rgb(255, 236, 224) !important;
-    opacity: 1 !important;
+    transition: all 50ms !important; 
   }
 
-  :global(.main_rect_selected) {    
-    fill: rgb(64, 64, 234) !important;
-    opacity: 1 !important;
-  }
-
-  :global(.alt_rect_selected) {    
-    fill: rgb(145, 10, 138) !important;
-    opacity: 1 !important;
-  }
-
-  :global(.del_rect_selected) {    
-    fill: rgb(212, 142, 29) !important;
-    opacity: 1 !important;
+  :global(.del_label_selected > .params_list div) {    
+    border-color: rgb(212, 142, 29) !important;
+    transition: all 50ms !important; 
   }
 
   #v_container { 

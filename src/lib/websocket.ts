@@ -15,7 +15,7 @@ function send_message(msg : string) {
   }
 }
 
-export function handle_message(handler : (tree_data : flat_tree, globals_data : string[], groups_data : object) => void) {
+export function handle_message(handler : (tree_data : flat_tree, globals_data : string[], global_limit : number, groups_data : object) => void) {
   tree_handlers.push(handler);
 }
 
@@ -64,7 +64,7 @@ ws.addEventListener("message", (event) => {
       console.log(pdata)
       switch(pdata.type) {
         case "tree":
-          tree_handlers.forEach((h) => h(JSON.parse(pdata.tree), JSON.parse(pdata.globals), JSON.parse(pdata.groups)));
+          tree_handlers.forEach((h) => h(JSON.parse(pdata.tree), JSON.parse(pdata.globals), JSON.parse(pdata.global_limit), JSON.parse(pdata.groups)));
           break;
         case "groups":
           group_handlers.forEach((h) => h(JSON.parse(pdata.groups)));

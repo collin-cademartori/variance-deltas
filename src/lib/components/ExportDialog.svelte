@@ -39,8 +39,8 @@
           flat_tree,
           x,
           y,
-          36, () => null, () => null, document.styleSheets[0],
-          true
+          36, user_state.global_limit, user_state.globals, document.styleSheets[0],
+          "black", true
         );
       }
     } else {
