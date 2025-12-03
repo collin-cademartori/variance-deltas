@@ -41,7 +41,10 @@ dataspec:
   ;
 
 data_dec:
-  | dt = DTYPE; dn = VAR { Ast.Data (dn, dt) }
+  | dt = DTYPE;
+    ils = option(index_list(INDEX));
+    dn = VAR 
+    { Ast.Data (dn, dt, Option.value ils ~default:[]) }
   ;
 
 paramspec:

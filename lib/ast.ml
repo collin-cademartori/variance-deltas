@@ -27,7 +27,7 @@ type param_dec_stmt = Param of string * paramtype * int list
 type datatype = Bool | Int | IArray
 [@@deriving sexp]
 
-type data_dec_stmt = Data of string * datatype
+type data_dec_stmt = Data of string * datatype * int list
 [@@deriving sexp]
 
 type model = {
