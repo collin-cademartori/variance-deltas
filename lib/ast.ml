@@ -21,7 +21,7 @@ type sample_stmt = Dist of string * farg * farg list [@@deriving sexp]
 type paramtype = Real | Array
 [@@deriving sexp]
 
-type param_dec_stmt = Param of string * paramtype
+type param_dec_stmt = Param of string * paramtype * int list
 [@@deriving sexp]
 
 type datatype = Bool | Int | IArray

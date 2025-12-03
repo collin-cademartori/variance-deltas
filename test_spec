@@ -3,11 +3,11 @@ data {
 }
 
 parameters {
-  array theta
+  array[8] theta
   real mu
 }
 
 model {
-  theta ~ normal(mu[1:100], 1.0)
+  theta ~ normal(mu, 1.0)
   mu ~ normal(0.0, 100.0)
 }

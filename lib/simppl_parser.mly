@@ -49,7 +49,10 @@ paramspec:
   ;
 
 param_dec:
-  | pt = PTYPE; pn = VAR { Ast.Param (pn, pt) }
+  | pt = PTYPE; 
+    ils = option(index_list(INDEX));
+    pn = VAR
+    { Ast.Param (pn, pt, Option.value ils ~default:[]) }
   ;
 
 modelspec:
@@ -67,12 +70,12 @@ argslist:
 
 arg:
   | farg = ARG { Ast.Lit farg }
-  | varg = VAR; il = option(index_list) { Ast.Var (varg, Option.value il ~default:[]) }
+  | varg = VAR; il = option(index_list(index_exp)) { Ast.Var (varg, Option.value il ~default:[]) }
   // | varg = VAR { Ast.Var (varg, []) }
   ;
 
-index_list:
-  | LIND; il = separated_list(COMMA, index_exp); RIND { il }
+index_list(exp):
+  | LIND; il = separated_list(COMMA, exp); RIND { il }
   ;
 
 index_exp:
