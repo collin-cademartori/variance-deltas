@@ -1,16 +1,81 @@
 %token TILDE
 %token <string>VAR
+%token <float>ARG 
 %token EOF
+%token LPAREN
+%token RPAREN
+%token COMMA
+%token LBRACK
+%token RBRACK
+%token LIND
+%token RIND
+%token MBD
+%token PBD
+%token DBD
+%token <Ast.paramtype>PTYPE
+%token <Ast.datatype>DTYPE
+%token <int>INDEX
+%token COLON
 
-%start <Ast.fact option> spec
+%start <Ast.model> filespec
 %%
 
-spec:
-  | EOF { None }
-  | v = stmt { Some v }
+block(DEC, spec):
+  | DEC; LBRACK; xs = spec; RBRACK; { xs }
   ;
 
-stmt:
-  | var = VAR; TILDE; dist = VAR
-    { Ast.Dist (dist, var) } 
+filespec:
+  | EOF { { Ast.data_block = []; Ast.params_block = []; Ast.model_block = [] } }
+  | ds = option(block(DBD, dataspec));
+    ps = block(PBD, paramspec);
+    ms = block(MBD, modelspec);
+    {{
+      Ast.data_block = Option.value ds ~default:[];
+      Ast.params_block = ps; 
+      Ast.model_block = ms
+    }}
+  ;
+
+dataspec:
+  | ds = list(data_dec) { ds }
+  ;
+
+data_dec:
+  | dt = DTYPE; dn = VAR { Ast.Data (dn, dt) }
+  ;
+
+paramspec:
+  | ps = nonempty_list(param_dec) { ps }
+  ;
+
+param_dec:
+  | pt = PTYPE; pn = VAR { Ast.Param (pn, pt) }
+  ;
+
+modelspec:
+  | vs = nonempty_list(sampling_stmt) { vs }
+  ;
+
+sampling_stmt:
+  | var = arg; TILDE; dist = VAR; LPAREN; args = argslist; RPAREN
+    { Ast.Dist (dist, var, args ) }
+  ;
+
+argslist:
+  | args = separated_nonempty_list(COMMA, arg) { args }
+  ;
+
+arg:
+  | farg = ARG { Ast.Lit farg }
+  | varg = VAR; il = option(index_list) { Ast.Var (varg, Option.value il ~default:[]) }
+  // | varg = VAR { Ast.Var (varg, []) }
+  ;
+
+index_list:
+  | LIND; il = separated_list(COMMA, index_exp); RIND { il }
+  ;
+
+index_exp:
+  | ind = INDEX { Ast.IndexSet (Ast.LitInt ind) }
+  | ind1 = INDEX; COLON; ind2 = INDEX { Ast.Range (Ast.LitInt ind1, Ast.LitInt ind2) }
   ;

@@ -1,0 +1,13 @@
+data {
+  bool a_flag
+}
+
+parameters {
+  array theta
+  real mu
+}
+
+model {
+  theta ~ normal(mu[1:100], 1.0)
+  mu ~ normal(0.0, 100.0)
+}

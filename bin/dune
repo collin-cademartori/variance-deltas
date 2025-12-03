@@ -1,4 +1,4 @@
 (executable
  (public_name parser-learning)
  (name main)
- (libraries parser_learning base))
+ (libraries parser_learning core))
