@@ -16,7 +16,10 @@ type farg =
   | Var of string * var_index list
   [@@deriving sexp]
 
-type sample_stmt = Dist of string * farg * farg list [@@deriving sexp]
+type sample_stmt = 
+  | Dist of string * farg * farg list
+  | For of string * var_index * sample_stmt list
+  [@@deriving sexp]
 
 type paramtype = Real | Array
 [@@deriving sexp]

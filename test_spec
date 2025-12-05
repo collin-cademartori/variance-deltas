@@ -8,6 +8,8 @@ parameters {
 }
 
 model {
-  theta ~ normal(mu, 1.0)
+  for (i in 1:8) {
+    theta[i] ~ normal(mu, 1.0)
+  }
   mu ~ normal(0.0, 100.0)
 }

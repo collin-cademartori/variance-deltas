@@ -44,6 +44,8 @@ rule read =
   | param_lit { PBD }
   | data_lit { DBD }
   | colon_lit { COLON }
+  | "for" { FOR }
+  | "in" { IN }
   | nat { INDEX (int_of_string (Lexing.lexeme lexbuf))}
   | dec { ARG (float_of_string (Lexing.lexeme lexbuf))}
   | varname { VAR (Lexing.lexeme lexbuf) }

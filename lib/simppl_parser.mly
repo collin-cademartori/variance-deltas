@@ -16,6 +16,8 @@
 %token <Ast.datatype>DTYPE
 %token <int>INDEX
 %token COLON
+%token FOR
+%token IN
 
 %start <Ast.model> filespec
 %%
@@ -65,6 +67,9 @@ modelspec:
 sampling_stmt:
   | var = arg; TILDE; dist = VAR; LPAREN; args = argslist; RPAREN
     { Ast.Dist (dist, var, args ) }
+  | FOR; LPAREN; loop_i = VAR; IN; loop_is = index_exp; RPAREN;
+    LBRACK; loop_spec = modelspec; RBRACK;
+    { Ast.For (loop_i, loop_is, loop_spec) }
   ;
 
 argslist:
@@ -74,7 +79,6 @@ argslist:
 arg:
   | farg = ARG { Ast.Lit farg }
   | varg = VAR; il = option(index_list(index_exp)) { Ast.Var (varg, Option.value il ~default:[]) }
-  // | varg = VAR { Ast.Var (varg, []) }
   ;
 
 index_list(exp):
@@ -84,4 +88,5 @@ index_list(exp):
 index_exp:
   | ind = INDEX { Ast.IndexSet (Ast.LitInt ind) }
   | ind1 = INDEX; COLON; ind2 = INDEX { Ast.Range (Ast.LitInt ind1, Ast.LitInt ind2) }
+  | aind = VAR; { Ast.IndexSet (Ast.VarInt (aind, [])) }
   ;
