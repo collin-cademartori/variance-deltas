@@ -5,8 +5,8 @@ module StaticEnv = struct
     | Int_T
     | Bool_T
     | Float_T
-    | IntArray_T
-    | FloatArray_T
+    | IntArray_T of int
+    | FloatArray_T of int
 
   type t = (string * ppl_type) list
 

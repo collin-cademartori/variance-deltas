@@ -6,7 +6,8 @@ exception TypeError of string
 let rec index_type = function
   | [] -> None
   | Int_T :: xs -> Some (true && Option.value (index_type xs) ~default:true)
-  | IntArray_T :: _ -> Some false
+  | (IntArray_T 1) :: _ -> Some false
+  | (IntArray_T _) :: _ -> raise (TypeError "Only one-dimension integer arrays can be used as indices.")
   | _ :: _ -> raise (TypeError "Indices must be integer or integer arrays.")
 
 let rec typeof_stmt env = function
@@ -14,17 +15,25 @@ let rec typeof_stmt env = function
   | Ast.LitInt _ -> Int_T
   | Ast.Range (x, y) ->
     if(typeof_stmt env x == Int_T && typeof_stmt env y == Int_T) then
-      IntArray_T
+      IntArray_T 1
     else raise (TypeError "Range requires integer limits.")
   | Ast.Var (v, ss) -> let tv = lookup env v in
       match index_type (List.map (fun x -> typeof_stmt env x) ss) with
       | None -> tv
-      | Some false -> if(tv == IntArray_T || tv == FloatArray_T) then tv
-        else raise (TypeError "Indices can only be applied to array types.")
-      | Some true -> match tv with
-        | IntArray_T -> Int_T
-        | FloatArray_T -> Float_T
+      | Some false -> begin match tv with
+        | IntArray_T dim -> if(List.length ss == dim) then tv
+          else raise (TypeError "Incorrect number of dimension specified.")
+        | FloatArray_T dim -> if(List.length ss == dim) then tv
+          else raise (TypeError "Incorrect number of dimension specified.")
         | _ -> raise (TypeError "Indices can only be applied to array types.")
+      end
+      | Some true -> begin match tv with
+        | IntArray_T dim -> if (List.length ss == dim) then Int_T
+          else raise (TypeError "Incorrect number of dimension specified.")
+        | FloatArray_T dim -> if (List.length ss == dim) then Float_T
+          else raise (TypeError "Incorrect number of dimension specified.")
+        | _ -> raise (TypeError "Indices can only be applied to array types.")
+      end
 
 let rec typecheck_s env = function
   | Ast.Dist (_, sub_left, subs_right) -> 
@@ -34,10 +43,10 @@ let rec typecheck_s env = function
       raise (TypeError "Distribution inputs must be of numeric type.")
     else true
   | Ast.For (l_name, sub_loop, sub_inner) -> 
-    if (typeof_stmt env sub_loop == IntArray_T) then
+    if (typeof_stmt env sub_loop == IntArray_T 1) then
       let l_env = extend env l_name Int_T in
         List.for_all (fun x -> typecheck_s l_env x) sub_inner
-    else raise (TypeError "Must loop over integer array-like.")
+    else raise (TypeError "Must loop over one-dimensional integer array-like.")
 
 let add_param_to_env env = function
   | Ast.Param (pn, pt, pi) -> match pi with
@@ -46,11 +55,12 @@ let add_param_to_env env = function
       else raise (TypeError "Array types must be declared with at least one dimension.")
     | _::_ -> if (pt == Ast.Array) then
         if List.for_all (fun st -> typeof_stmt env st == Int_T) pi then
-          extend env pn FloatArray_T
+          extend env pn (FloatArray_T (List.length pi))
         else raise (TypeError "Dimensions must have integer type.")
       else raise (TypeError "Dimensions can only be specified on array types.")
 
 let add_datum_to_env env = function
+
   | Ast.Data (dn, dt, di) -> match di with
     | [] -> if (dt == Ast.Int) then
         extend env dn Int_T
@@ -59,7 +69,7 @@ let add_datum_to_env env = function
       else raise (TypeError "Array types must be declared with at least one dimension.")
     | _::_ -> if (dt == Ast.IArray) then
         if List.for_all (fun st -> typeof_stmt env st == Int_T) di then
-          extend env dn IntArray_T
+          extend env dn (IntArray_T (List.length di))
         else raise (TypeError "Dimensions must have integer type.")
       else raise (TypeError "Dimensions can only be specified on array types.")
 
