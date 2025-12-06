@@ -3,8 +3,8 @@ data {
 }
 
 parameters {
-  array[8] theta  
   real mu
+  array[N] theta  
 }
 
 model {

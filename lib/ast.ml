@@ -32,13 +32,13 @@ type sample_stmt =
 type paramtype = Real | Array
 [@@deriving sexp]
 
-type param_dec_stmt = Param of string * paramtype * int list
+type param_dec_stmt = Param of string * paramtype * stmt list
 [@@deriving sexp]
 
 type datatype = Bool | Int | IArray
 [@@deriving sexp]
 
-type data_dec_stmt = Data of string * datatype * int list
+type data_dec_stmt = Data of string * datatype * stmt list
 [@@deriving sexp]
 
 type model = {

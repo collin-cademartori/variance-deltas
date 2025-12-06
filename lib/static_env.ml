@@ -1,5 +1,5 @@
 module StaticEnv = struct
-  exception LookupError of string * string
+  exception LookupError of string
 
   type ppl_type =
     | Int_T
@@ -14,7 +14,7 @@ module StaticEnv = struct
 
   let lookup env x =
     try List.assoc x env
-    with Not_found -> raise (LookupError ("Variable not found", x))
+    with Not_found -> raise (LookupError x)
 
   let extend env x ty =
       (x, ty) :: env
