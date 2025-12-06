@@ -3,7 +3,7 @@ open! Core
 (* type var = Var of string * int list [@@deriving sexp] *)
 (* type args = Args of float list [@@deriving sexp] *)
 
-type var_index = 
+(* type var_index = 
   | Range of arg * arg
   | IndexSet of arg
 and arg =
@@ -14,11 +14,19 @@ and arg =
 type farg =
   | Lit of float
   | Var of string * var_index list
-  [@@deriving sexp]
+  [@@deriving sexp] *)
+
+type stmt =
+  | Lit of float
+  | LitInt of int
+  | Var of string * stmt list
+  | Range of stmt * stmt
+  (* | IndexSet of stmt *)
+[@@deriving sexp]
 
 type sample_stmt = 
-  | Dist of string * farg * farg list
-  | For of string * var_index * sample_stmt list
+  | Dist of string * stmt * stmt list
+  | For of string * stmt * sample_stmt list
   [@@deriving sexp]
 
 type paramtype = Real | Array

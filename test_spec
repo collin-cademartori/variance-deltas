@@ -1,9 +1,9 @@
 data {
-  bool a_flag
+  int N
 }
 
 parameters {
-  array[8] theta
+  array[8] theta  
   real mu
 }
 

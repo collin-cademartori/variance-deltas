@@ -86,7 +86,7 @@ index_list(exp):
   ;
 
 index_exp:
-  | ind = INDEX { Ast.IndexSet (Ast.LitInt ind) }
+  | ind = INDEX { Ast.LitInt ind }
   | ind1 = INDEX; COLON; ind2 = INDEX { Ast.Range (Ast.LitInt ind1, Ast.LitInt ind2) }
-  | aind = VAR; { Ast.IndexSet (Ast.VarInt (aind, [])) }
+  | aind = VAR; { Ast.Var (aind, []) }
   ;
