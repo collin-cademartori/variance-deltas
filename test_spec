@@ -1,15 +1,16 @@
 data {
   int N
+  int_array[N] is
 }
 
 parameters {
   real mu
-  array[N] theta  
+  array[N] theta
 }
 
 model {
-  for (i in 1:8) {
-    theta[i] ~ normal(mu, 1.0)
+  for (i in 1:N) {
+    theta[is[i]] ~ normal(mu, 1.0)
   }
   mu ~ normal(0.0, 100.0)
 }

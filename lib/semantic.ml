@@ -60,7 +60,6 @@ let add_param_to_env env = function
       else raise (TypeError "Dimensions can only be specified on array types.")
 
 let add_datum_to_env env = function
-
   | Ast.Data (dn, dt, di) -> match di with
     | [] -> if (dt == Ast.Int) then
         extend env dn Int_T

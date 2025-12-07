@@ -1,5 +1,6 @@
 %token TILDE
 %token <string>VAR
+%token <int>INDEX
 %token <float>ARG 
 %token EOF
 %token LPAREN
@@ -14,7 +15,6 @@
 %token DBD
 %token <Ast.paramtype>PTYPE
 %token <Ast.datatype>DTYPE
-%token <int>INDEX
 %token COLON
 %token FOR
 %token IN
@@ -77,6 +77,7 @@ argslist:
   ;
 
 arg:
+  | iarg = INDEX { Ast.LitInt iarg }
   | farg = ARG { Ast.Lit farg }
   | varg = VAR; il = option(index_list(index_exp)) { Ast.Var (varg, Option.value il ~default:[]) }
   ;
@@ -86,7 +87,6 @@ index_list(exp):
   ;
 
 index_exp:
-  | ind = INDEX { Ast.LitInt ind }
-  | ind1 = INDEX; COLON; ind2 = INDEX { Ast.Range (Ast.LitInt ind1, Ast.LitInt ind2) }
-  | aind = VAR; { Ast.Var (aind, []) }
+  | ind1 = arg; COLON; ind2 = arg { Ast.Range (ind1, ind2) }
+  | aind = arg; { aind }
   ;
