@@ -1,11 +1,22 @@
 (menhir
- (modules simppl_parser))
+ (modules simppl_parser)
+ (flags --exn-carries-state))
 
 (ocamllex simppl_lexer)
+
+(rule
+  ; (deps parserMessages.check)
+  (action (with-stdout-to simppl_errors.ml
+    (run menhir
+      %{dep:simppl_parser.mly}
+      --compile-errors %{dep:simppl_errors.messages}
+    )
+  ))
+)
 
 (library
  (name parser_learning)
  (preprocess
   (pps ppx_sexp_conv ppx_yojson_conv))
- (modules ast simppl_parser simppl_lexer semantic static_env interpreter read_data)
- (libraries core owl))
+ (modules ast simppl_parser simppl_lexer semantic static_env interpreter read_data simppl_errors parse_file)
+ (libraries core owl menhirLib))

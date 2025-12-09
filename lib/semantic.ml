@@ -2,13 +2,14 @@ open Static_env.StaticEnv
 open Ast
 
 exception TypeError of string
+exception IndexError of string
 
 let rec index_type = function
   | [] -> None
   | Int_T :: xs -> Some (true && Option.value (index_type xs) ~default:true)
   | (IntArray_T 1) :: _ -> Some false
-  | (IntArray_T _) :: _ -> raise (TypeError "Only one-dimension integer arrays can be used as indices.")
-  | _ :: _ -> raise (TypeError "Indices must be integer or integer arrays.")
+  | (IntArray_T _) :: _ -> raise (IndexError "Only one-dimension integer arrays can be used as indices.")
+  | _ :: _ -> raise (IndexError "Indices must be integer or integer arrays.")
 
 let rec typeof_stmt env = function
   | Ast.Lit _ -> Float_T
@@ -17,8 +18,13 @@ let rec typeof_stmt env = function
     if(typeof_stmt env x == Int_T && typeof_stmt env y == Int_T) then
       IntArray_T 1
     else raise (TypeError "Range requires integer limits.")
-  | Ast.Var (v, ss) -> let tv = lookup env v in
-      match index_type (List.map (fun x -> typeof_stmt env x) ss) with
+  | Ast.Var (v, ss) -> let tv = lookup env v in 
+      let ind_type = 
+        try index_type (List.map (fun x -> typeof_stmt env x) ss) 
+        with IndexError i_err -> 
+          raise (TypeError ("Type error while indexing " ^ v ^ ": " ^ i_err))
+      in
+      match ind_type with
       | None -> tv
       | Some false -> begin match tv with
         | IntArray_T dim -> if(List.length ss == dim) then tv
@@ -78,5 +84,5 @@ let check_model model =
       let model_env = List.fold_left add_param_to_env data_env model.params_block in
         ignore (List.for_all (fun ms -> typecheck_s model_env ms) model.model_block)
   end with
-    | TypeError msg -> print_endline ("Type checking failed with error: " ^ msg)
-    | LookupError var_n -> print_endline ("Type checking failed due to variable not in scope: " ^ var_n)
+    | TypeError msg -> raise (TypeError ("Type checking failed. " ^ msg))
+    | LookupError var_n -> raise (TypeError ("Type checking failed due to variable not in scope: " ^ var_n))
