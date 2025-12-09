@@ -1,3 +1,5 @@
+(* open! Ppx_yojson_conv_lib.Yojson_conv.Primitives *)
+
 module Arr = Owl.Dense.Ndarray.Generic
 
 exception RuntimeError of string
@@ -13,7 +15,7 @@ type param_data = (string * (int list)) list
 
 let index_from_array arr = Arr.init int_kind [|Array.length arr|] (fun i -> arr.(i))
 
-let decr_list lst = List.map (fun i -> i - 1) lst
+(* let decr_list lst = List.map (fun i -> i - 1) lst *)
 
 let append_dim grid new_dim =
   List.concat (List.map (fun x -> List.map (fun y -> x :: y) grid) new_dim)
@@ -37,17 +39,24 @@ let get_fancy_int ind_exts arr = (* let indices = expand_grid ind_exts in *)
 
 let check_index index dims = List.for_all2 (fun i d -> i <= d) index dims
 
-let form_indexed_names vname indices p_data =
+let form_indexed_names vname indices param_ctx =
   let expanded_indices = expand_grid indices in
   List.map (fun index -> 
-    if (check_index index (List.assoc vname p_data)) then
+    if (check_index index (List.assoc vname param_ctx)) then
       let index_name = List.map string_of_int index in vname ^ "[" ^ (String.concat "," index_name) ^ "]"
     else raise (RuntimeError "Parameter index out of bounds.")
   ) expanded_indices
 
+let can_flatten arr = 
+  (Array.fold_left (fun count dim -> if(dim > 1) then count+1 else count) 0 (Arr.shape arr)) <= 1
+
 let to_int_lists index_arrs = List.map
-  (fun i_arr -> if (Arr.num_dims i_arr = 1) then Array.to_list (Arr.to_array i_arr)
-  else raise (RuntimeError "Cannot convert multi-dimensional array to index list.")) 
+  (fun i_arr -> if (can_flatten i_arr) then Array.to_list (Arr.to_array i_arr)
+  else raise (RuntimeError (
+    "Cannot convert multi-dimensional array to index list: " 
+    ^ String.concat ", " (Array.to_list (Array.map string_of_int (Arr.shape i_arr)))
+    (* ^ (string_of_int (Arr.num_dims i_arr)) *)
+  ))) 
   index_arrs
 
 let to_index_list index_arrs = List.map (fun int_l -> Owl_types_common.L int_l) (to_int_lists index_arrs)
@@ -88,37 +97,37 @@ let expand_integer data_env stmt =
   else raise (RuntimeError "Dimension size must be scalar integer.")
     
     
-let eval_stmt p_data data_env = function
+let eval_stmt param_ctx data_env = function
   | Ast.Var (vn, i_stmts) -> begin match i_stmts with
     | [] -> vn :: [] (* This is wrong, need to add all indices for vn *)
     | _::_ -> 
       let indices = List.map (fun i_stmt -> expand_extent data_env i_stmt) i_stmts in
       let index_list = to_int_lists indices in
-      form_indexed_names vn index_list p_data
+      form_indexed_names vn index_list param_ctx
     end
   | _ -> []
 
-let rec eval_sample fg p_data data_env = function
-  | Ast.Dist (dn, v, ps) -> let v_name = eval_stmt p_data data_env v in
-    let p_names = List.concat (List.map (fun st -> eval_stmt p_data data_env st) ps) in
+let rec eval_sample fg param_ctx data_env = function
+  | Ast.Dist (dn, v, ps) -> let v_name = eval_stmt param_ctx data_env v in
+    let p_names = List.concat (List.map (fun st -> eval_stmt param_ctx data_env st) ps) in
       (dn, v_name @ p_names) :: fg
   | Ast.For (l_index, l_extent, l_body) -> 
     let ext_list = Array.to_list (Arr.to_array (expand_extent data_env l_extent)) in
-    let stmt_vals = List.map (fun i_val -> eval_samples_with fg p_data data_env l_index i_val l_body) ext_list in
+    let stmt_vals = List.map (fun i_val -> eval_samples_with fg param_ctx data_env l_index i_val l_body) ext_list in
       (List.concat stmt_vals) @ fg
-and eval_samples_with fg p_data data_env index index_val sstmts = 
+and eval_samples_with fg param_ctx data_env index index_val sstmts = 
   let new_env = ((index, ar_singleton index_val) :: data_env) in
-  List.concat (List.map (fun sstmt -> eval_sample fg p_data new_env sstmt) sstmts)
+  List.concat (List.map (fun sstmt -> eval_sample fg param_ctx new_env sstmt) sstmts)
 
-let eval_param p_data data_env = function
+let eval_param param_ctx data_env = function
   | Ast.Param (pname, _, pis) -> 
     let dims = List.map (fun pi -> expand_integer data_env pi) pis in
-    (pname, dims) :: p_data
+    (pname, dims) :: param_ctx
 
 let eval_params data_env param_block =
   List.fold_left (fun pd param -> eval_param pd data_env param) [] param_block
 
 let eval_model data_env pblock mblock = 
-  let p_data = eval_params data_env pblock in
-  List.fold_left (fun fg ss -> eval_sample fg p_data data_env ss) [] mblock
+  let param_ctx = eval_params data_env pblock in
+  List.fold_left (fun fg ss -> eval_sample fg param_ctx data_env ss) [] mblock
 
