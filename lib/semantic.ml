@@ -58,8 +58,8 @@ let rec typecheck_s env = function
         List.for_all (fun x -> typecheck_s l_env x) sub_inner
     else raise (TypeError ("Must loop over one-dimensional integer array-like.", loc))
 
-let add_param_to_env env = function
-  | Ast.Param (pn, pt, pi, loc) -> match pi with
+let add_param_to_env env param = match param with
+  | Ast.Param (pn, pt, pi, loc) -> try match pi with
     | [] -> if (pt == Ast.Real) then
         extend env pn Float_T
       else raise (TypeError ("Array types must be declared with at least one dimension.", loc))
@@ -68,9 +68,11 @@ let add_param_to_env env = function
           extend env pn (FloatArray_T (List.length pi))
         else raise (TypeError ("Dimensions must have integer type.", loc))
       else raise (TypeError ("Dimensions can only be specified on array types.", loc))
+    with
+      | LookupError msg -> raise (TypeError (msg, loc))
 
-let add_datum_to_env env = function
-  | Ast.Data (dn, dt, di, loc) -> match di with
+let add_datum_to_env env datum = match datum with
+  | Ast.Data (dn, dt, di, loc) -> try match di with
     | [] -> if (dt = Ast.Int) then
         extend env dn Int_T
       else if (dt = Ast.Bool) then
@@ -86,6 +88,8 @@ let add_datum_to_env env = function
           extend env dn atype
         else raise (TypeError ("Dimensions must have integer type.", loc))
       else raise (TypeError ("Dimensions can only be specified on array types.", loc))
+    with
+      | LookupError msg -> raise (TypeError (msg, loc))
 
 let check_model model =
   try begin

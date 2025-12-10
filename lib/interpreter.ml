@@ -56,7 +56,6 @@ let to_int_lists index_arrs = List.map
   else raise (DataError (
     "Cannot convert multi-dimensional array to index list: " 
     ^ String.concat ", " (Array.to_list (Array.map string_of_int (Arr.shape i_arr)))
-    (* ^ (string_of_int (Arr.num_dims i_arr)) *)
   ))) 
   index_arrs
 
@@ -95,7 +94,6 @@ let rec expand_extent data_env = function
       let index_ints = try to_int_lists indices
       with DataError msg -> raise (RuntimeError (msg, loc)) in
         ignore (List.map (fun il -> print_endline (String.concat ", " (List.map (fun i -> string_of_int i) il))) index_ints);
-      (* Arr.print v_array; *)
       raise (RuntimeError ("Womp womp: " ^ s, loc))
     end
 

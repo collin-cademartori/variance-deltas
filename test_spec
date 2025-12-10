@@ -1,7 +1,7 @@
 data {
   int N
   int_array[3,N] ks
-  array[N,3] y
+  array[3,N] y
 }
 
 parameters {

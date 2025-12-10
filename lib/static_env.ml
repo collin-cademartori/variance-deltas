@@ -17,5 +17,8 @@ module StaticEnv = struct
     with Not_found -> raise (LookupError x)
 
   let extend env x ty =
-      (x, ty) :: env
+      let binding = List.assoc_opt x env in
+      match binding with
+        | None -> (x, ty) :: env
+        | Some _ -> raise (LookupError ("Cannot redefine variable " ^ x ^ " after inital definition."))
 end
