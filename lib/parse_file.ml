@@ -51,4 +51,4 @@ let parse_model file_name =
   (* let file = Core.In_channel.create file_name in
     let lbuf = Lexing.from_channel file in *)
       lbuf.lex_curr_p <- { lbuf.lex_curr_p with Lexing.pos_fname = file_name };
-      parse_buf lbuf text
+      (parse_buf lbuf text, text)

@@ -19,7 +19,7 @@
 %token FOR
 %token IN
 
-%start <Ast.model> filespec
+%start <Ast.meta Ast.model> filespec
 %%
 
 block(DEC, spec):
@@ -46,7 +46,7 @@ data_dec:
   | dt = DTYPE;
     ils = option(index_list(index_exp));
     dn = VAR 
-    { Ast.Data (dn, dt, Option.value ils ~default:[]) }
+    { Ast.Data (dn, dt, Option.value ils ~default:[], $loc) }
   ;
 
 paramspec:
@@ -57,7 +57,7 @@ param_dec:
   | pt = PTYPE; 
     ils = option(index_list(index_exp));
     pn = VAR
-    { Ast.Param (pn, pt, Option.value ils ~default:[]) }
+    { Ast.Param (pn, pt, Option.value ils ~default:[], $loc) }
   ;
 
 modelspec:
@@ -66,10 +66,10 @@ modelspec:
 
 sampling_stmt:
   | var = arg; TILDE; dist = VAR; LPAREN; args = argslist; RPAREN
-    { Ast.Dist (dist, var, args ) }
+    { Ast.Dist (dist, var, args, $loc) }
   | FOR; LPAREN; loop_i = VAR; IN; loop_is = index_exp; RPAREN;
     LBRACK; loop_spec = modelspec; RBRACK;
-    { Ast.For (loop_i, loop_is, loop_spec) }
+    { Ast.For (loop_i, loop_is, loop_spec, $loc) }
   ;
 
 argslist:
@@ -77,9 +77,9 @@ argslist:
   ;
 
 arg:
-  | iarg = INDEX { Ast.LitInt iarg }
-  | farg = ARG { Ast.Lit farg }
-  | varg = VAR; il = option(index_list(index_exp)) { Ast.Var (varg, Option.value il ~default:[]) }
+  | iarg = INDEX { Ast.LitInt (iarg, $loc) }
+  | farg = ARG { Ast.Lit (farg, $loc) }
+  | varg = VAR; il = option(index_list(index_exp)) { Ast.Var (varg, Option.value il ~default:[], $loc) }
   ;
 
 index_list(exp):
@@ -87,6 +87,6 @@ index_list(exp):
   ;
 
 index_exp:
-  | ind1 = arg; COLON; ind2 = arg { Ast.Range (ind1, ind2) }
+  | ind1 = arg; COLON; ind2 = arg { Ast.Range (ind1, ind2, $loc) }
   | aind = arg; { aind }
   ;

@@ -1,49 +1,40 @@
 open! Core
+open Lexing
 
-(* type var = Var of string * int list [@@deriving sexp] *)
-(* type args = Args of float list [@@deriving sexp] *)
+type meta = position * position
 
-(* type var_index = 
-  | Range of arg * arg
-  | IndexSet of arg
-and arg =
-  | LitInt of int
-  | VarInt of string * var_index list
-  [@@deriving sexp]
+let sexp_of_meta (st, en) = Sexp.List [
+  Sexp.Atom (string_of_int st.pos_cnum);
+  Sexp.Atom (string_of_int en.pos_cnum)
+]
 
-type farg =
-  | Lit of float
-  | Var of string * var_index list
-  [@@deriving sexp] *)
-
-type stmt =
-  | Lit of float
-  | LitInt of int
-  | Var of string * stmt list
-  | Range of stmt * stmt
-  (* | IndexSet of stmt *)
+type 'm stmt =
+  | Lit of float * 'm
+  | LitInt of int * 'm
+  | Var of string * ('m stmt) list * 'm
+  | Range of ('m stmt) * ('m stmt) * 'm
 [@@deriving sexp]
 
-type sample_stmt = 
-  | Dist of string * stmt * stmt list
-  | For of string * stmt * sample_stmt list
+type 'm sample_stmt = 
+  | Dist of string * ('m stmt) * ('m stmt) list * 'm
+  | For of string * ('m stmt) * ('m sample_stmt) list * 'm
   [@@deriving sexp]
 
 type paramtype = Real | Array
 [@@deriving sexp]
 
-type param_dec_stmt = Param of string * paramtype * stmt list
+type 'm param_dec_stmt = Param of string * paramtype * ('m stmt) list * 'm
 [@@deriving sexp]
 
 type datatype = Bool | Int | IArray
 [@@deriving sexp]
 
-type data_dec_stmt = Data of string * datatype * stmt list
+type 'm data_dec_stmt = Data of string * datatype * ('m stmt) list * 'm
 [@@deriving sexp]
 
-type model = {
-  params_block : param_dec_stmt list;
-  model_block : sample_stmt list;
-  data_block : data_dec_stmt list;
+type 'm model = {
+  params_block : ('m param_dec_stmt) list;
+  model_block : ('m sample_stmt) list;
+  data_block : ('m data_dec_stmt) list;
 }
 [@@deriving sexp]
