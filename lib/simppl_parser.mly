@@ -13,7 +13,7 @@
 %token MBD
 %token PBD
 %token DBD
-%token <Ast.paramtype>PTYPE
+// %token <Ast.paramtype>PTYPE
 %token <Ast.datatype>DTYPE
 %token COLON
 %token FOR
@@ -54,7 +54,7 @@ paramspec:
   ;
 
 param_dec:
-  | pt = PTYPE; 
+  | pt = DTYPE; 
     ils = option(index_list(index_exp));
     pn = VAR
     { Ast.Param (pn, pt, Option.value ils ~default:[], $loc) }

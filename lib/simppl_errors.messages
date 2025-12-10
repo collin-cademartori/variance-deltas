@@ -186,31 +186,31 @@ filespec: PBD LBRACK VAR
 
 All statements in parameter block must begin with a valid type declaration.
 
-filespec: PBD LBRACK PTYPE TILDE
+filespec: PBD LBRACK DTYPE TILDE
 ##
 ## Ends in an error in state: 30.
 ##
-## param_dec -> PTYPE . option(index_list(index_exp)) VAR [ RBRACK PTYPE ]
+## param_dec -> DTYPE . option(index_list(index_exp)) VAR [ RBRACK DTYPE ]
 ##
 ## The known suffix of the stack is as follows:
-## PTYPE
+## DTYPE
 ##
 
 Parameter type must be followed by either a dimension declaration (for array types) or a valid variable name.
 
-filespec: PBD LBRACK PTYPE LIND RIND TILDE
+filespec: PBD LBRACK DTYPE LIND RIND TILDE
 ##
 ## Ends in an error in state: 31.
 ##
-## param_dec -> PTYPE option(index_list(index_exp)) . VAR [ RBRACK PTYPE ]
+## param_dec -> DTYPE option(index_list(index_exp)) . VAR [ RBRACK DTYPE ]
 ##
 ## The known suffix of the stack is as follows:
-## PTYPE option(index_list(index_exp))
+## DTYPE option(index_list(index_exp))
 ##
 
 Parameter type declarations must be followed by a legal variable name.
 
-filespec: PBD LBRACK PTYPE VAR VAR
+filespec: PBD LBRACK DTYPE VAR VAR
 ##
 ## Ends in an error in state: 35.
 ##
@@ -223,7 +223,7 @@ filespec: PBD LBRACK PTYPE VAR VAR
 
 Each parameter declaration must begin with a type declaration and terminate with a single valid variable name.
 
-filespec: PBD LBRACK PTYPE VAR RBRACK VAR
+filespec: PBD LBRACK DTYPE VAR RBRACK VAR
 ##
 ## Ends in an error in state: 38.
 ##
@@ -235,7 +235,7 @@ filespec: PBD LBRACK PTYPE VAR RBRACK VAR
 
 All statements must occur inside of a valid block (e.g. data, parameters, model).
 
-filespec: PBD LBRACK PTYPE VAR RBRACK MBD VAR
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD VAR
 ##
 ## Ends in an error in state: 39.
 ##
@@ -247,7 +247,7 @@ filespec: PBD LBRACK PTYPE VAR RBRACK MBD VAR
 
 Model block must be delimited by brackets, i.e. "model { ... }".
 
-filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK TILDE
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK TILDE
 ##
 ## Ends in an error in state: 40.
 ##
@@ -259,7 +259,7 @@ filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK TILDE
 
 All statements in model block must either be a sampling statement or valid control flow expression (e.g. "for(i in 1:10)...").
 
-filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK FOR VAR
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK FOR VAR
 ##
 ## Ends in an error in state: 41.
 ##
@@ -271,7 +271,7 @@ filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK FOR VAR
 
 For loop extents must be contained within parentheses, e.g. "for (i in 1:10)...".
 
-filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK FOR LPAREN TILDE
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK FOR LPAREN TILDE
 ##
 ## Ends in an error in state: 42.
 ##
@@ -283,7 +283,7 @@ filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK FOR LPAREN TILDE
 
 For loop extents must declare an index variable followed by keyword "in" and a valid index set (e.g. integer array or range), e.g. "for (i in 1:10)...".
 
-filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK FOR LPAREN VAR VAR
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK FOR LPAREN VAR VAR
 ##
 ## Ends in an error in state: 43.
 ##
@@ -295,7 +295,7 @@ filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK FOR LPAREN VAR VAR
 
 For loop indices must be followed by keyword "in" and a valid index set (e.g. integer array or range), e.g. "for (i in 1:10)...".
 
-filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK FOR LPAREN VAR IN TILDE
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK FOR LPAREN VAR IN TILDE
 ##
 ## Ends in an error in state: 44.
 ##
@@ -307,7 +307,7 @@ filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK FOR LPAREN VAR IN TILDE
 
 Expression following "in" in for loop must be valid index set (e.g. integer array or range), e.g. "for (i in 1:10)...".
 
-filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK FOR LPAREN VAR IN ARG RIND
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK FOR LPAREN VAR IN ARG RIND
 ##
 ## Ends in an error in state: 45.
 ##
@@ -325,7 +325,7 @@ filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK FOR LPAREN VAR IN ARG RIND
 
 For loop extents must be contained within parentheses, e.g "for (1 in 1:10)...".
 
-filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK FOR LPAREN VAR IN ARG RPAREN VAR
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK FOR LPAREN VAR IN ARG RPAREN VAR
 ##
 ## Ends in an error in state: 46.
 ##
@@ -337,7 +337,7 @@ filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK FOR LPAREN VAR IN ARG RPAREN VA
 
 Expressions following for loop declaration must be contained within brackets, e.g. "for (i in 1:10) {...}".
 
-filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK FOR LPAREN VAR IN ARG RPAREN LBRACK TILDE
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK FOR LPAREN VAR IN ARG RPAREN LBRACK TILDE
 ##
 ## Ends in an error in state: 47.
 ##
@@ -349,7 +349,7 @@ filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK FOR LPAREN VAR IN ARG RPAREN LB
 
 All statements inside for loop must either be a sampling statement or valid control flow expression (e.g. "for(i in 1:10)...").
 
-filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN TILDE
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN TILDE
 ##
 ## Ends in an error in state: 48.
 ##
@@ -362,7 +362,7 @@ filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN
 
 All statements inside model block must either be a sampling statement or valid control flow expression (e.g. "for(i in 1:10)...").
 
-filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK ARG VAR
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG VAR
 ##
 ## Ends in an error in state: 50.
 ##
@@ -374,7 +374,7 @@ filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK ARG VAR
 
 Sampling statements must begin with a single valid parameter or data expression followed by a tilde (e.g. "theta[1] ~ ...").
 
-filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK ARG TILDE TILDE
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE TILDE
 ##
 ## Ends in an error in state: 51.
 ##
@@ -386,7 +386,7 @@ filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK ARG TILDE TILDE
 
 The tilde ("~") in any sampling statement must be followed by a valid distribution expression, e.g. "normal(mu, sigma)".
 
-filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR VAR
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR VAR
 ##
 ## Ends in an error in state: 52.
 ##
@@ -398,7 +398,7 @@ filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR VAR
 
 The tilde ("~") in any sampling statement must be followed by a single valid distribution expression, e.g. "normal(mu, sigma)".
 
-filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN TILDE
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN TILDE
 ##
 ## Ends in an error in state: 53.
 ##
@@ -410,7 +410,7 @@ filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN TILDE
 
 Distributional inputs must be a comma-separated list of valid expressions involving parameters, data, or constant literals, e.g. "normal(mu, 1)".
 
-filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG VAR
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG VAR
 ##
 ## Ends in an error in state: 57.
 ##
@@ -423,7 +423,7 @@ filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG VAR
 
 Distributional inputs must be a comma-separated list of valid expressions involving parameters, data, or constant literals, e.g. "normal(mu, 1)".
 
-filespec: PBD LBRACK PTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG COMMA TILDE
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG COMMA TILDE
 ##
 ## Ends in an error in state: 58.
 ##

@@ -71,14 +71,19 @@ let add_param_to_env env = function
 
 let add_datum_to_env env = function
   | Ast.Data (dn, dt, di, loc) -> match di with
-    | [] -> if (dt == Ast.Int) then
+    | [] -> if (dt = Ast.Int) then
         extend env dn Int_T
-      else if (dt == Ast.Bool) then
+      else if (dt = Ast.Bool) then
         extend env dn Bool_T
+      else if (dt = Ast.Real) then
+        extend env dn Float_T
       else raise (TypeError ("Array types must be declared with at least one dimension.", loc))
-    | _::_ -> if (dt == Ast.IArray) then
+    | _::_ -> 
+      if (dt == Ast.IArray || dt == Ast.Array) then
         if List.for_all (fun st -> typeof_stmt env st == Int_T) di then
-          extend env dn (IntArray_T (List.length di))
+          let adim = (List.length di) in
+          let atype = if(dt = Ast.IArray) then IntArray_T adim else FloatArray_T adim in
+          extend env dn atype
         else raise (TypeError ("Dimensions must have integer type.", loc))
       else raise (TypeError ("Dimensions can only be specified on array types.", loc))
 

@@ -42,7 +42,8 @@ let check_index index dims = List.for_all2 (fun i d -> i <= d) index dims
 let form_indexed_names vname indices param_ctx =
   let expanded_indices = expand_grid indices in
   List.map (fun index -> 
-    if (check_index index (List.assoc vname param_ctx)) then
+    let param_info = List.assoc vname param_ctx in
+    if (check_index index param_info) then
       let index_name = List.map string_of_int index in vname ^ "[" ^ (String.concat "," index_name) ^ "]"
     else raise (BoundsError "Parameter index out of bounds.")
   ) expanded_indices
@@ -78,20 +79,23 @@ let rec expand_extent data_env = function
   | Ast.Var (vn, i_stmts, loc) -> 
     let indices = List.map (fun i_stmt -> expand_extent data_env i_stmt) i_stmts in
     let index_list = Array.of_list (List.map (fun ind -> Arr.to_array ind) indices) in
-    let v_array = List.assoc vn data_env in try
+    let v_array_opt =  List.assoc vn data_env in try
+      let v_array = Option.get v_array_opt in
       match index_list with
         | [||] -> v_array
         | _ -> try
           get_fancy_int index_list v_array
         with BoundsError msg -> raise (RuntimeError (msg, loc))
-    with Failure s -> begin
+    with 
+    | Invalid_argument _ -> raise (RuntimeError ("Data " ^ vn ^ " not found.", loc))
+    | Failure s -> begin
       print_endline "Tried to index array:";
       print_endline vn;
       print_endline "With indices:";
       let index_ints = try to_int_lists indices
       with DataError msg -> raise (RuntimeError (msg, loc)) in
         ignore (List.map (fun il -> print_endline (String.concat ", " (List.map (fun i -> string_of_int i) il))) index_ints);
-      Arr.print v_array;
+      (* Arr.print v_array; *)
       raise (RuntimeError ("Womp womp: " ^ s, loc))
     end
 
@@ -103,13 +107,15 @@ let expand_integer data_env stmt =
     
 let eval_stmt param_ctx data_env = function
   | Ast.Var (vn, i_stmts, loc) -> begin match i_stmts with
-    | [] -> vn :: [] (* This is wrong, need to add all indices for vn *)
-    | _::_ -> 
-      let indices = List.map (fun i_stmt -> expand_extent data_env i_stmt) i_stmts in
+    | [] -> vn :: [] (* failwith "Currently only support scalar values on left-hand side of sampling statements." *)
+    | _ -> if (List.assoc_opt vn data_env <> None) then []
+      else let indices = List.map (fun i_stmt -> expand_extent data_env i_stmt) i_stmts in
       let index_list = try to_int_lists indices
-      with DataError msg -> raise (RuntimeError (msg, loc)) in
+        with DataError msg -> raise (RuntimeError (msg, loc)) in
       try form_indexed_names vn index_list param_ctx
-      with BoundsError msg -> raise (RuntimeError (msg, loc))
+      with 
+        | BoundsError msg -> raise (RuntimeError (msg, loc))
+        | Not_found -> raise (RuntimeError ("Parameter " ^ vn ^ " not found.", loc))
     end
   | _ -> []
 
@@ -119,10 +125,12 @@ let rec eval_sample fg param_ctx data_env = function
       (dn, v_name @ p_names) :: fg
   | Ast.For (l_index, l_extent, l_body, _) -> 
     let ext_list = Array.to_list (Arr.to_array (expand_extent data_env l_extent)) in
-    let stmt_vals = List.map (fun i_val -> eval_samples_with fg param_ctx data_env l_index i_val l_body) ext_list in
+    let stmt_vals = List.map (fun i_val -> 
+        eval_samples_with fg param_ctx data_env l_index i_val l_body
+      ) ext_list in
       (List.concat stmt_vals) @ fg
 and eval_samples_with fg param_ctx data_env index index_val sstmts = 
-  let new_env = ((index, ar_singleton index_val) :: data_env) in
+  let new_env = ((index, Some (ar_singleton index_val)) :: data_env) in
   List.concat (List.map (fun sstmt -> eval_sample fg param_ctx new_env sstmt) sstmts)
 
 let eval_param param_ctx data_env = function

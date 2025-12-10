@@ -35,8 +35,8 @@ rule read =
   | "}" { RBRACK }
   | "[" { LIND }
   | "]" { RIND }
-  | real_lit { PTYPE Ast.Real }
-  | array_lit { PTYPE Ast.Array }
+  | real_lit { DTYPE Ast.Real }
+  | array_lit { DTYPE Ast.Array }
   | int_lit { DTYPE Ast.Int }
   | iarray_lit { DTYPE Ast.IArray }
   | bool_lit { DTYPE Ast.Bool }

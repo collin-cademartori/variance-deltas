@@ -28,9 +28,10 @@ let () = try
     try begin
       if print_tree then fprintf std_formatter "%a@." Sexp.pp_hum (sexp_of_model sexp_of_meta tree);
       check_model tree;
-      let n_env = (parse_datum data_json [] (List.hd tree.data_block)) in
-      let fake_env = parse_datum data_json n_env (List.nth tree.data_block 1) in
-      let fg = eval_model fake_env tree.params_block tree.model_block in
+      (* let n_env = (parse_datum data_json [] (List.hd tree.data_block)) in
+      let fake_env = parse_datum data_json n_env (List.nth tree.data_block 1) in *)
+      let data_env = parse_data tree.data_block data_json in
+      let fg = eval_model data_env tree.params_block tree.model_block in
         ignore (List.map (fun (_, ps) -> print_endline (String.concat ", " ps)) fg)
     end with
     | TypeError (msg, loc) -> print_err msg loc text

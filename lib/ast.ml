@@ -20,13 +20,13 @@ type 'm sample_stmt =
   | For of string * ('m stmt) * ('m sample_stmt) list * 'm
   [@@deriving sexp]
 
-type paramtype = Real | Array
+(* type paramtype = Real | Array
+[@@deriving sexp] *)
+
+type datatype = Bool | Int | IArray | Real | Array
 [@@deriving sexp]
 
-type 'm param_dec_stmt = Param of string * paramtype * ('m stmt) list * 'm
-[@@deriving sexp]
-
-type datatype = Bool | Int | IArray
+type 'm param_dec_stmt = Param of string * datatype * ('m stmt) list * 'm
 [@@deriving sexp]
 
 type 'm data_dec_stmt = Data of string * datatype * ('m stmt) list * 'm

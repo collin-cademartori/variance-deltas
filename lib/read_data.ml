@@ -40,13 +40,20 @@ let rec to_int_lists n json = if n = 0 then
   else if n > 0 then L (Array.of_list (List.map (fun jl -> to_int_lists (n-1) jl) (to_list json)))
   else raise (ConversionError "Cannot parse integer lists of dimensions less than 1.")
 
-let to_marray dims ints = Arr.init_nd Interpreter.int_kind dims (fun index -> get_from_int_lists (Array.to_list index) ints)
+let to_marray dims ints = if ints = L [||] then None else Some
+ ( Arr.init_nd Interpreter.int_kind dims (fun index -> get_from_int_lists (Array.to_list index) ints))
 
-let read_from_json json d_name d_dims = let is_scalar = Array.length d_dims = 0  in
+let to_lists n_dims json = if (json = `Null) then (L [||]) 
+  else if n_dims = 0 then 
+    to_int_singleton json 
+  else to_int_lists n_dims json
+  
+
+let read_from_json json d_name d_dims = let n_dims  = Array.length d_dims  in
   json 
   |> member d_name
-  |> (if is_scalar then to_int_singleton else to_int_lists (Array.length d_dims))
-  |> to_marray (if is_scalar then [|1|] else d_dims)
+  |> to_lists n_dims
+  |> to_marray (if n_dims = 0 then [|1|] else d_dims)
 
 let parse_datum input_json data_env = function
   | Ast.Data (d_name, _, dis, loc) -> 
@@ -55,3 +62,5 @@ let parse_datum input_json data_env = function
     let datum = try read_from_json input_json d_name dims 
     with ConversionError msg -> raise (DataError (msg, loc)) in
     (d_name, datum) :: data_env
+
+let parse_data dblock json = List.fold_left (fun env ddec -> parse_datum json env ddec) [] dblock

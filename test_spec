@@ -1,19 +1,19 @@
 data {
   int N
   int_array[3,N] ks
+  array[N,3] y
 }
 
 parameters {
   real mu
   array[N] theta
-  array[N,3] y
 }
 
 model {
   for (i in 1:N) {
     theta[i] ~ normal(mu, 1.0)
     for (j in 1:3) {
-      y[ks[j,i],j] ~ normal(theta[i], 2.0)
+      y[j,ks[j,i]] ~ normal(theta[i], 2.0)
     }
   }
   mu ~ normal(0.0, 100.0)
