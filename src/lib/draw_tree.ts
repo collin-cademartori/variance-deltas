@@ -3,6 +3,7 @@ import { selection_channels, selection, selector, hover } from "./selection.svel
 import { user_state } from "./user_state.svelte.ts";
 import { short_name } from "./short_names.ts";
 import * as d3 from "d3";
+import Error$1 from "../../.svelte-kit/output/server/entries/fallbacks/error.svelte.js";
 
   let cur_y = 0;
 
@@ -218,6 +219,7 @@ import * as d3 from "d3";
     l_height : number,
     global_limit : number | undefined,
     global_params : string[],
+    show_globals : boolean = true,
     ss : CSSStyleSheet,
     draw_color : string = "black",
     draw_static : boolean = false,
@@ -294,106 +296,131 @@ import * as d3 from "d3";
       d3.select("#tree").call(pan);
     }
 
+    const limit_data = (global_limit != undefined && show_globals) ? [global_limit] : [];
 
-    if(global_limit != undefined) {
-      // Draw rect for defining global limit
-      const grect = document.getElementById("global_limit_rect" + id_mod);
-      grect.setAttribute("x", x(global_limit).toString());
+    d3.select("#tree_outer").selectAll(".global_limit_rect")
+      .data(limit_data)
+      .join(
+        (enter) => {
+          const grect = enter.append("rect")
+            .attr("class", "global_limit_rect")
+            .attr("x", (d) => x(d))
+            .attr("y", -10)
+            .style("fill", "black")
+            .style("opacity", "10%")
+            // .style("stroke-dasharray", "8 8")
+            // .style("stroke-width", "2px")
+            .attr("height", "110%")
+            .attr("width", "100%");
 
-      // Draw label for global limit cutoff
-      const fo = d3.select("#top_bar").append("foreignObject")
-        .attr("class", "label_fo_global")
-        .attr("x", x(global_limit))
-        .attr("y", 0)
-        .attr("height", () => l_height + "px") //y(l_height)
-        .attr("width", "1000px")
-
-      const ldd = fo.append("xhtml:div")
-                    .style("height", "100%")
-                    .style("padding", "1px");
-
-      const ld = ldd.append("xhtml:div")
-        .attr("id", "global_limit_label")
-        .attr("class", "label-div")
-        .style("display", "flex")
-        .style("flex-direction", "row")
-        .style("background", "white")
-        .style("border-color", "black")
-        .style("align-items", "center")
-        .style("font-family", "sans-serif")
-        .style("box-sizing", "border-box")
-        .style("border-width", "0.12rem")
-        .style("border-style", "solid")
-        .style("border-radius", "8px")
-        .style("border-top-left-radius", "8px")
-        .style("border-bottom-left-radius", "2px")
-        .style("font-size", "12px")
-        .style("font-weight", "bold")
-        .style("width", "fit-content")
-        .style("height", (l_height - 2) + "px")
-
-      ld.append("xhtml:div")
-          .attr("class", "depth_tag")
-          .style("height", "100%")
-          .style("display", "flex")
-          .style("flex-direction", "row")
-          .style("align-items", "center")
-          .style("padding-left", "6px")
-          .style("padding-right", "6px")
-          .style("font-weight", "normal")
-          .style("user-select", "none")
-          .style("border-right", "1px solid #444444")
-          .style("font-weight", "bold")
-          .html("ḡ");
-
-      const plist = ld.append("xhtml:div")
-          .attr("class", "global_params_list")
-          .style("height", "100%")
-          .style("display", "flex")
-          .style("flex-direction", "row")
-          .style("gap", "6px")
-          .style("align-items", "center")
-          .style("padding-left", "6px")
-          .style("padding-right", "6px")
-          .style("font-weight", "normal")
-          .style("user-select", "none")
-          .style("border-color", "blue")
-
-      plist.selectAll(".global_name").data(short_name(global_params), (d : string) => d)
-          .join((enter) => {
-            const pdiv = enter.append("div")
-              .attr("class", "global_name")
-              .style("border-radius", "3px")
-              .style("background", "#ffffffff")
-              .style("border", "1px solid darkgrey")
-              .style("display", "flex")
-              .style("flex-direction", "row")
-              
-            pdiv.append("div")
-              .style("font-weight", "bold")
-              .style("padding", "5px")
-              .style("height", "100%")
-              .html((d : string) => d.split("[")[0])
-
-            pdiv.append("div")
-              .style("padding", (d : string) => d.split("[").length > 1 ? "5px" : "0px")
-              .style("border-left", "1px solid #979797ff")
-              .style("visibility", (d : string) => d.split("[").length > 1 ? "visible" : "hidden")
-              .html((d : string) => {
-                const end_str = d.split("[");
-                if(end_str.length > 1) {
-                  return(end_str[1].substring(0, end_str[1].length - 1));
-                } else {
-                  return("");
-                }
-              })
-
-            return(pdiv)
-          },
+          return grect;
+        },
         (update) => update,
         (exit) => exit.remove()
-      );  
-    }
+      );
+
+    // Draw label for global limit cutoff
+    d3.select("#top_bar" + id_mod).selectAll(".label_fo_global")
+      .data(limit_data)
+      .join(
+        (enter) => {
+          const fo = enter.append("foreignObject")
+            .attr("class", "label_fo_global")
+            .attr("x", (d) => x(d))
+            .attr("y", 0)
+            .attr("height", () => l_height + "px") //y(l_height)
+            .attr("width", "1000px")
+
+          const ldd = fo.append("xhtml:div")
+                        .style("height", "100%")
+                        .style("padding", "1px");
+
+          const ld = ldd.append("xhtml:div")
+            .attr("id", "global_limit_label")
+            .attr("class", "label-div")
+            .style("display", "flex")
+            .style("flex-direction", "row")
+            .style("background", "white")
+            .style("border-color", "black")
+            .style("align-items", "center")
+            .style("font-family", "sans-serif")
+            .style("box-sizing", "border-box")
+            .style("border-width", "0.12rem")
+            .style("border-style", "solid")
+            .style("border-radius", "8px")
+            .style("border-top-left-radius", "8px")
+            .style("border-bottom-left-radius", "2px")
+            .style("font-size", "12px")
+            .style("font-weight", "bold")
+            .style("width", "fit-content")
+            .style("height", (l_height - 2) + "px")
+
+          ld.append("xhtml:div")
+              .attr("class", "global_tag")
+              .style("height", "100%")
+              .style("display", "flex")
+              .style("flex-direction", "row")
+              .style("align-items", "center")
+              .style("padding-left", "6px")
+              .style("padding-right", "6px")
+              .style("font-weight", "normal")
+              .style("user-select", "none")
+              .style("border-right", "1px solid #444444")
+              .style("font-weight", "bold")
+              .html("ḡ");
+
+          const plist = ld.append("xhtml:div")
+              .attr("class", "global_params_list")
+              .style("height", "100%")
+              .style("display", "flex")
+              .style("flex-direction", "row")
+              .style("gap", "6px")
+              .style("align-items", "center")
+              .style("padding-left", "6px")
+              .style("padding-right", "6px")
+              .style("font-weight", "normal")
+              .style("user-select", "none")
+              .style("border-color", "blue")
+
+          plist.selectAll(".global_name").data(short_name(global_params), (d : string) => d)
+              .join((enter) => {
+                const pdiv = enter.append("div")
+                  .attr("class", "global_name")
+                  .style("border-radius", "3px")
+                  .style("background", "#ffffffff")
+                  .style("border", "1px solid darkgrey")
+                  .style("display", "flex")
+                  .style("flex-direction", "row")
+                  
+                pdiv.append("div")
+                  .style("font-weight", "bold")
+                  .style("padding", "5px")
+                  .style("height", "100%")
+                  .html((d : string) => d.split("[")[0])
+
+                pdiv.append("div")
+                  .style("padding", (d : string) => d.split("[").length > 1 ? "5px" : "0px")
+                  .style("border-left", "1px solid #979797ff")
+                  .style("visibility", (d : string) => d.split("[").length > 1 ? "visible" : "hidden")
+                  .html((d : string) => {
+                    const end_str = d.split("[");
+                    if(end_str.length > 1) {
+                      return(end_str[1].substring(0, end_str[1].length - 1));
+                    } else {
+                      return("");
+                    }
+                  })
+
+                return(pdiv)
+              },
+            (update) => update,
+            (exit) => exit.remove()
+          );
+          return fo;
+        },
+        (update) => update,
+        (exit) => exit.remove()
+      );
 
     // Draw tree nodes and branches
     draw_geometry(
@@ -440,7 +467,7 @@ import * as d3 from "d3";
           .style("border-radius", "8px")
           .style("border-top-left-radius", (d) => d.x_pos > d.label_y ? "8px" : "2px")
           .style("border-bottom-left-radius", (d) => d.x_pos > d.label_y ? "2px" : "8px")
-          .style("font-size", "12px")
+          .style("font-size", (1.2 * l_height * 14 / 36) + "px")
           .style("font-weight", "bold")
           .style("width", "fit-content")
           .style("height", (l_height - 2) + "px")
@@ -448,6 +475,12 @@ import * as d3 from "d3";
         if(!draw_static) {
           fo.on("mousedown", (_ev, d) => {
             if(user_state.state === 'extruding') {
+              if(selection.has(d.name, "main")) {
+                selection.clear("main");
+              } else {
+                selection.set_nodes([d.name], "main");
+              }
+            } else if (user_state.state === 'deleting') {
               if(selection.has(d.name, "main")) {
                 selection.clear("main");
               } else {
@@ -555,6 +588,7 @@ import * as d3 from "d3";
               // .style("background", "rgba(250, 250, 250, 0.75)")
               //.style("border", "1px solid #979797ff")
               .style("border", "1px solid darkgrey")
+              //.style("height", "80%")
               .style("display", "flex")
               .style("flex-direction", "row")
               

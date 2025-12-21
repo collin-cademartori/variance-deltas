@@ -5,7 +5,7 @@ import { selector, selection, hover } from "./selection.svelte.ts";
 import { groups } from "./groups.ts";
 import { annotate_tree } from "./tree.ts";
 
-type user_state_t = 'base' | 'extruding' | 'dividing' | 'auto-dividing' | 'merging' | 'auto-merging' | 'groups' | 'add-group';
+type user_state_t = 'base' | 'extruding' | 'dividing' | 'auto-dividing' | 'merging' | 'auto-merging' | 'groups' | 'add-group' | 'settings' | 'deleting';
 
 // type node_group_t = {
 //   name : string,
@@ -17,7 +17,9 @@ type state_t = {
   tree: HierarchyNode<flat_node> | undefined,
   group: string | undefined,
   globals: string[],
-  global_limit: number | undefined
+  global_limit: number | undefined,
+  layout_format: 'long' | 'normal',
+  show_globals: boolean
 };
 
 type numeric_scale = ScaleLinear<number, number, never>;
@@ -28,6 +30,8 @@ type branch_handler = (d : flat_branch) => void; // change to branch_data_t
 let _user_state : user_state_t = $state('base');
 let _tree : HierarchyNode<flat_node> | undefined;
 let _group : string | undefined = $state(undefined);
+let _layout_format : 'long' | 'normal' = $state('normal');
+let _show_globals : boolean = true;
 let _create_tree : (data : flat_tree) => void;
 
 export const user_state : state_t = $state({ 
@@ -46,7 +50,7 @@ export const user_state : state_t = $state({
   },
   get tree() {
     return(_tree);
-  },
+  },  
   set tree(tree : HierarchyNode<flat_node>) {
     selection.clear();
     _create_tree([...tree].map((n) => n.data));
@@ -61,7 +65,21 @@ export const user_state : state_t = $state({
     _create_tree([..._tree].map((n) => n.data));
   },
   globals: [],
-  global_limit: undefined
+  global_limit: undefined,
+  get layout_format() {
+    return(_layout_format);
+  },
+  set layout_format(fmt : 'long' | 'normal') {
+    _layout_format = fmt;
+    _create_tree([..._tree].map((n) => n.data));
+  },
+  get show_globals() {
+    return(_show_globals);
+  },
+  set show_globals(show: boolean) {
+    _show_globals = show;
+    _create_tree([..._tree].map((n) => n.data));
+  },
 });
 
 export function setup_tree(x: numeric_scale, y: numeric_scale, l_height : number) {
@@ -74,11 +92,11 @@ export function setup_tree(x: numeric_scale, y: numeric_scale, l_height : number
       console.warn("NO DATA")
     }
     const ann_tree = annotate_tree(
-      fil_data, y.invert(l_height), x, y, user_state.globals
+      fil_data, l_height, x, y, user_state.globals, user_state.layout_format, user_state.show_globals
     );
     const ft : flat_tree = [...ann_tree].map((n) => n.data);
     draw_tree(
-      ft, x, y, l_height, user_state.global_limit, user_state.globals,
+      ft, x, y, l_height, user_state.global_limit, user_state.globals, user_state.show_globals,
       document.styleSheets[0]
     );
     // draw_geometry(

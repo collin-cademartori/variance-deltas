@@ -16,7 +16,7 @@
     if(svg_snapshot != null) {
       export_svg(svg_snapshot as unknown as SVGElement, new OffscreenCanvas(1,1), anch);
     }
-    document.removeChild(anch);
+    anch.remove();
   }
   
   $effect(() => {
@@ -29,17 +29,18 @@
           .map((node) => node.data)
           .filter((node) => cur_group ? cur_group.has(node.name) : true);
         const max_y = flat_tree.map((tnode) => tnode.x_pos).reduce((p,n) => Math.max(p ?? 0, n ?? 0)) ?? 0;
-        const snapshot_height = y(max_y ?? 0) + y(0.1) + 36;
+        const snapshot_height = y(max_y ?? 0) + y(0.1) + 2 * 36;
         svg_snapshot?.setAttribute('height', snapshot_height.toString());
-        xaxis_g.setAttribute('transform', `translate(10 ${0.95 * snapshot_height})`);
+        xaxis_g.setAttribute('transform', `translate(10 ${snapshot_height - 30})`);
         const x = scaleLinear([0, 1], [0, 0.95 * plot_width]);
         const xaxis = axisBottom(x).offset(10).tickPadding(15).tickSize(0);
         xaxis(select("#x_axis_static"));
+        select("#x_axis_static").attr("font-size", (50 * (12 / 36)) + "px");
         draw_tree(
           flat_tree,
           x,
           y,
-          36, user_state.global_limit, user_state.globals, document.styleSheets[0],
+          50, user_state.global_limit, user_state.globals, user_state.show_globals, document.styleSheets[0],
           "black", true
         );
       }
@@ -78,13 +79,47 @@
 
     <div id="snapshot_container">
       {#if show_dialog}
-        <svg id="tree_static" width={plot_width + 100} bind:this={svg_snapshot}>
+        <!-- <svg id="tree_static" width={plot_width + 100} bind:this={svg_snapshot}>
           <rect width="100%" height="100%" fill="white"></rect>
           <g id="tree_g_static" transform="translate(10 0)">
             <rect width="100%" height="100%" fill="white"></rect>
           </g>
           <g id="x_axis" bind:this={xaxis_g}>
             <g id="x_axis_static"></g>
+          </g>
+        </svg> -->
+        <svg id="tree_static" width={plot_width + 200} bind:this={svg_snapshot}>
+
+          <rect width="100%" height="100%" fill="white"></rect>
+          
+          <g id="tree_outer_static" transform="translate(20 40)">
+            <rect id="global_limit_rect_static" 
+              y="-10" x="100%" 
+              fill="#eeeeee" stroke="black"
+              opacity="0.3"
+              stroke-dasharray="8 8"
+              stroke-width="1px"
+              height="110%" width="100%">
+            </rect>
+            <g id="tree_layers_static">
+              <g id="tree_g_static"></g>
+              <g id="tree_g_del_static"></g>
+              <g id="tree_g_alt_static"></g>
+              <g id="tree_g_main_static"></g>
+            </g>
+          </g>
+
+          <g id="label_layer_container_static" transform="translate(20 40)">
+            <g id="label_layer"></g>
+          </g>
+          
+          <g id="x_axis_container" bind:this={xaxis_g}>
+            <rect width="100%" height="60" fill="white"></rect>
+            <g id="x_axis_static"></g>
+          </g>
+
+          <g id="top_bar_static" transform="translate(20 0)">
+            <rect fill="white" height="40" width="100%" transform="translate(-20 0)"></rect> 
           </g>
         </svg>
       {/if}

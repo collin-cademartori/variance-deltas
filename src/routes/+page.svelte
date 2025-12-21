@@ -3,7 +3,7 @@
   import * as ws from "$lib/websocket";
   import * as d3 from "d3";
   import { type flat_node, type flat_branch, type flat_tree } from "$lib/tree";
-  import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge, define_group } from "$lib/tree_methods";
+  import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge, define_group, delete_node } from "$lib/tree_methods";
   import { setup_context } from "$lib/compute_width";
   import { selection } from "$lib/selection.svelte";
   import { user_state, setup_tree } from "$lib/user_state.svelte";
@@ -13,6 +13,7 @@
   import MultiSelectionDialog from "$lib/components/MultiSelectionDialog.svelte";
   import GroupsDialog from "$lib/components/GroupsDialog.svelte";
   import ExportDialog from "$lib/components/ExportDialog.svelte";
+  import SettingsDialog from "$lib/components/SettingsDialog.svelte";
 
   let show_export = $state(false);
 
@@ -25,7 +26,8 @@
 
   const x = d3.scaleLinear([0, 1], [0, 0.95 * width]);
   const y = d3.scaleLinear([0, 1], [0, 0.95 * height]);
-  const l_height = 36;
+  // const l_height = 36;
+  const l_height = 50;
 
   let selected_node = $derived.by(() => user_state.tree?.find((node) => node?.data.name === selection.nodes("main")?.[0])?.data);
   let selected_alt_node = $derived.by(() => user_state.tree?.find((node) => node?.data.name === selection.nodes("alt")?.[0])?.data);
@@ -52,6 +54,7 @@
     const svg = d3.select("#tree");
     let xaxis = d3.axisBottom(x).offset(2).tickPadding(7).tickSize(4);
     xaxis(svg.select("#x_axis"));
+    svg.select("#x_axis").attr("font-size", (l_height * (12 / 36)) + "px");
 
     setup_tree(
       x, y, l_height
@@ -95,14 +98,14 @@
         </g>
         
         <g id="tree_outer" transform="translate(20 40)">
-          <rect id="global_limit_rect" 
+          <!-- <rect id="global_limit_rect" 
             y="-10" x="100%" 
             fill="#eeeeee" stroke="black"
             opacity="0.3"
             stroke-dasharray="8 8"
             stroke-width="1px"
             height="110%" width="100%">
-          </rect>
+          </rect> -->
           <g id="tree_layers">
             <g id="tree_g"></g>
             <g id="tree_g_del"></g>
@@ -131,9 +134,11 @@
 
     <div id="control_container">
       <div id="session_bar" class="button_bar">
-        <button onclick={() => {
-          show_export = true;
-        }}>
+        <button 
+          onclick={() => {
+            show_export = true;
+          }}
+        >
           Export Image
         </button>
         <div class="button_group">
@@ -150,6 +155,13 @@
             Add Group
           </button>
         </div>
+
+        <button
+          class:menu_enabled={user_state.state === 'settings'}
+          onclick={() => user_state.state === 'settings' ? user_state.state = 'base' : user_state.state = 'settings'}
+        >
+          Settings
+        </button>
       </div>
 
       <div id="menu_bar" class="button_bar">
@@ -187,11 +199,19 @@
             Auto
           </button>
         </div>
+        <button 
+          class:menu_enabled={user_state.state === 'deleting'}
+          onclick={() => user_state.state === 'deleting' ? user_state.state = 'base' : user_state.state = 'deleting'}
+        >
+          Delete
+        </button>
       </div>
 
       <div id="instruction_bar">
         {#if user_state.state === 'extruding'}
           <span>Select the node you would like to extrude.</span>
+        {:else if user_state.state === 'deleting'}
+          <span>Select the node you would like to delete.</span>
         {:else if user_state.state === 'dividing'}
           <span>Select the branch you would like to divide.</span>
         {:else if user_state.state === 'auto-dividing'}
@@ -240,6 +260,16 @@
             })
           } 
         />
+      {:else if user_state.state === 'deleting' && selected_node != undefined}
+        <SelectionDialog 
+          selected={null} 
+          button_text={"Delete"} 
+          button_action={
+            (params) => delete_node({ 
+              node_name : parseInt((selected_node as flat_node).name),
+            })
+          } 
+        />
       {:else if user_state.state === 'dividing' && selected_branch.parent != undefined}
         <SelectionDialog 
           selected={selected_branch.parent} 
@@ -280,6 +310,8 @@
             () => auto_merge({})
           }
         />
+      {:else if user_state.state === 'settings'}
+        <SettingsDialog />
       {/if}
     </div>
   </div>

@@ -201,13 +201,21 @@ function seq_array(lower : number, upper : number) {
 }
 
 const unicode_greek = {
-  'causal_effect': '\u{03B4}',
-  'factors_pot': '\u{03D1}',
-  'factors': '\u{03B8}',
-  'frac_var_latent': '\u{03BA}',
-  'factor_loadings': '\u{03BB}',
-  'overall_sd': '\u{03C3}',
+  'theta': '\u{03B8}',
+  'mu': '\u{03BC}',
+  'y_pot': '\u{1EF9}'
 }
+
+
+// const unicode_greek = {
+//   'causal_effect': '\u{03B4}',
+//   'factors_pot': '\u{03D1}',
+//   'factors': '\u{03B8}',
+//   'frac_var_latent': '\u{03BA}',
+//   'factor_loadings': '\u{03BB}',
+//   'overall_sd': '\u{03C3}',
+//   'y_pot': '\u{1EF9}'
+// }
 
 // const unicode_greek = {
 //   'alpha': '\u{03B1}',
