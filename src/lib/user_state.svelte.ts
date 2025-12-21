@@ -28,6 +28,7 @@ type node_handler = (d : flat_node) => void;
 type branch_handler = (d : flat_branch) => void; // change to branch_data_t
 
 let _user_state : user_state_t = $state('base');
+let _names : Map<string, string> = $state(new Map());
 let _tree : HierarchyNode<flat_node> | undefined;
 let _group : string | undefined = $state(undefined);
 let _layout_format : 'long' | 'normal' = $state('normal');
@@ -80,6 +81,12 @@ export const user_state : state_t = $state({
     _show_globals = show;
     _create_tree([..._tree].map((n) => n.data));
   },
+  get names() {
+    return(_names);
+  },
+  set names(new_names : Map<string, string>) {
+    _names = new_names;
+  }
 });
 
 export function setup_tree(x: numeric_scale, y: numeric_scale, l_height : number) {

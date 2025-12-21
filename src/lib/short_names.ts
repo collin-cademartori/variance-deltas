@@ -1,5 +1,3 @@
-// short_name(["mu_b[1,1,2]", "mu_b[1,2,2]", "mu_b[1,3,3]","gamma[1]", "gamma[2]"])
-
 export function short_name(
   name_set : string[],
   convert_greek : boolean = true,
