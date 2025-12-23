@@ -1,9 +1,20 @@
 <script lang="ts">
+  import NameEditor from "./NameEditor.svelte";
   import { user_state } from "$lib/user_state.svelte";
+  import { SvelteMap } from "svelte/reactivity";
+
+  type ptype = {
+    fullname : string,
+    name_type : 'short' | 'latex',
+    nameformula: string,
+    dispname: string
+  }
 
   let { show_dialog = $bindable() } : { show_dialog : boolean } = $props();
 
   let dialog : HTMLDialogElement;
+
+  let names : Array<ptype> = $state([]);
   
   $effect(() => {
     if(show_dialog) {
@@ -11,7 +22,32 @@
     } else {
       dialog.close();
     }
-  })
+  });
+
+  function close_dialog() {
+    user_state.names = new SvelteMap(names.map((namedata) => {
+      return([namedata.fullname, {
+        type: namedata.name_type,
+        name: namedata.nameformula,
+        formatted_name: namedata.dispname
+      }]);
+    }))
+    show_dialog = false;
+  }
+
+  function reset_names() {
+    names.length = 0;
+    [...user_state.names.entries()].forEach(([fname, name_data]) => { 
+        names.push({
+          fullname: fname,
+          name_type: name_data.type,
+          dispname: name_data.formatted_name,
+          nameformula: name_data.name
+        });
+    });
+  }
+
+  reset_names();
 </script>
 
 <dialog id="names_dialog" bind:this={dialog}>
@@ -24,16 +60,24 @@
       </div>
       <button 
         id="close_button"
-        onclick={() => {
-          show_dialog = false;
-        }}
+        onclick={reset_names}
+      >
+        Reset
+      </button>
+      <button 
+        id="close_button"
+        onclick={close_dialog}
       >
         Close
       </button>
     </div>
 
     <div id="editor_container">
-
+      {#each names as name, i}
+        {#if name.fullname != "__globals__"}
+          <NameEditor bind:name={names[i]}/>
+        {/if}
+      {/each}
     </div>
   </div>
 </dialog>
@@ -41,10 +85,11 @@
 <style>
 
   #names_dialog {
-    height: 85%;
-    width: 75%;
     background: white;
     overflow-y: hidden;
+    border: 0.15rem solid black;
+    border-radius: 0.2rem;
+    box-shadow: rgb(57, 57, 57) 0 1px 25px;
   }
 
   #dialog_div {
@@ -56,9 +101,9 @@
   }
 
   #editor_container {
-    overflow-y: scroll;
+    overflow-y: auto;
     height: 100%;
-    border: 1px solid darkgrey;
+    border: 1px solid lightgrey;
   } 
 
   #names_bar {

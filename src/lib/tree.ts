@@ -1,6 +1,8 @@
 import * as d3 from "d3";
-import { short_name } from "./short_names.ts";
+import { type name_t } from "./names.ts";
 import { compute_width } from "./compute_width.ts";
+import { short_name } from "./short_names.ts";
+import { SvelteMap } from "svelte/reactivity";
 
 export type flat_node = {
   name: string,
@@ -26,7 +28,9 @@ type coord = {
   y: [number, number]
 }
 
-export function annotate_tree(ft : flat_tree,
+export function annotate_tree(
+  ft : flat_tree,
+  names: SvelteMap<string, name_t>,
   label_height : number,
   x_scale : d3.ScaleLinear<number, number, never>,
   y_scale : d3.ScaleLinear<number, number, never>,
@@ -36,10 +40,11 @@ export function annotate_tree(ft : flat_tree,
 ) {
   for(const node of ft) {
     const params = globals == null ? node.params : [...node.params].filter((p) => !globals.includes(p));
-    node.param_names = short_name(params);
+    // node.param_names = params.map((fullname) => names.get(fullname.split("[")[0]).formatted_name ?? fullname);
     if([...node.params].some((p) => !globals.includes(p)) && show_globals) {  
-      node.param_names.push("ḡ");
+      params.push("__globals__");
     }
+    node.param_names = short_name(params, names);
     node.shortname = node.param_names.join(", ");
   }
   const tree_with_xs = compute_xs(ft, y_scale, layout_format, false, label_height + 8);
@@ -98,7 +103,6 @@ function compute_xs(
     test_tree.eachAfter((d) => {
       if(d.children != null) {
         const children = d.children;
-        console.log(`Found node with ${children.length} children.`)
         const x_tot = children.reduce((p, n) => 
           p + (n.data.x_pos as number),
         0);

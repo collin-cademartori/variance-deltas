@@ -2,8 +2,8 @@ import { type flat_node, type flat_tree, type flat_branch } from "./tree.ts";
 import { selection_channels, selection, selector, hover } from "./selection.svelte.ts";
 import { user_state } from "./user_state.svelte.ts";
 import { short_name } from "./short_names.ts";
+import { global_latex } from "./names.ts"
 import * as d3 from "d3";
-import Error$1 from "../../.svelte-kit/output/server/entries/fallbacks/error.svelte.js";
 
   let cur_y = 0;
 
@@ -54,7 +54,7 @@ import Error$1 from "../../.svelte-kit/output/server/entries/fallbacks/error.sve
                           .style("border-width", "0.12rem")
                           .style("border-style", "solid")
                           .style("border-radius", "4px")
-                          .style("font-size", "12px")
+                          // .style("font-size", "2px")
                           .style("padding", "4px")
                           .html((d) => {
                             const ered_round = Math.round(1000 * d.ered) / 1000;
@@ -367,7 +367,7 @@ import Error$1 from "../../.svelte-kit/output/server/entries/fallbacks/error.sve
               .style("user-select", "none")
               .style("border-right", "1px solid #444444")
               .style("font-weight", "bold")
-              .html("ḡ");
+              .html(global_latex);
 
           const plist = ld.append("xhtml:div")
               .attr("class", "global_params_list")
@@ -382,13 +382,13 @@ import Error$1 from "../../.svelte-kit/output/server/entries/fallbacks/error.sve
               .style("user-select", "none")
               .style("border-color", "blue")
 
-          plist.selectAll(".global_name").data(short_name(global_params), (d : string) => d)
+          plist.selectAll(".global_name").data(short_name(global_params, user_state.names), (d : string) => d)
               .join((enter) => {
                 const pdiv = enter.append("div")
                   .attr("class", "global_name")
                   .style("border-radius", "3px")
                   .style("background", "#ffffffff")
-                  .style("border", "1px solid darkgrey")
+                  .style("border", "1px solid #3b3b3bff")
                   .style("display", "flex")
                   .style("flex-direction", "row")
                   
@@ -400,7 +400,7 @@ import Error$1 from "../../.svelte-kit/output/server/entries/fallbacks/error.sve
 
                 pdiv.append("div")
                   .style("padding", (d : string) => d.split("[").length > 1 ? "5px" : "0px")
-                  .style("border-left", "1px solid #979797ff")
+                  .style("border-left", "1px solid #3b3b3bff")
                   .style("visibility", (d : string) => d.split("[").length > 1 ? "visible" : "hidden")
                   .html((d : string) => {
                     const end_str = d.split("[");
@@ -434,7 +434,10 @@ import Error$1 from "../../.svelte-kit/output/server/entries/fallbacks/error.sve
     tree_nodes.join((enter) => {
 
         const g = enter.append("g")
-                     .attr("id", (d) => `${d.name}${id_mod}`)
+                     .attr("id", (d) => {
+                        console.log(`New node label for ${d.name}`);
+                        return(`${d.name}${id_mod}`)
+                      })
                      .attr("class", "tree_node_label");
 
         if(!draw_static) {
@@ -457,7 +460,7 @@ import Error$1 from "../../.svelte-kit/output/server/entries/fallbacks/error.sve
           .attr("class", "label-div")
           .style("display", "flex")
           .style("flex-direction", "row")
-          .style("background", "white")
+          .style("background", "#fcfcfcff")
           .style("border-color", "black")
           .style("align-items", "center")
           .style("font-family", "sans-serif")
@@ -539,6 +542,7 @@ import Error$1 from "../../.svelte-kit/output/server/entries/fallbacks/error.sve
           .style("padding-left", "6px")
           .style("padding-right", "0px")
           .style("font-weight", "normal")
+          .style("font-size", "0.7em")
           .style("user-select", "none")
           // .style("border-right", "1px solid #444444")
           .html((d : flat_node) => d.depth.toString());
@@ -566,7 +570,11 @@ import Error$1 from "../../.svelte-kit/output/server/entries/fallbacks/error.sve
         .style("border-top-left-radius", (d) => d.x_pos > d.label_y ? "8px" : "2px")
         .style("border-bottom-left-radius", (d) => d.x_pos > d.label_y ? "2px" : "8px");
       update.select(".depth_tag")
-        .html((d : flat_node) => d.depth.toString());
+        .html((d : flat_node) => {
+          console.log(`Updating node label for ${d.name}`);
+          return(d.depth.toString())
+      });
+      update.selectAll(".param_name").remove();
       return update
     },
     (exit) => {
@@ -579,30 +587,49 @@ import Error$1 from "../../.svelte-kit/output/server/entries/fallbacks/error.sve
       const param_names = params_lists.selectAll(".param_name"); //<d3.BaseType, HTMLElement>
       param_names.data((d : flat_node) => {
             return(d.param_names);
-          })
+          }, (d : flat_node) => d.param_names?.join(",") ?? "none")
           .join((enter) => {
+            // console.log("Creating label data:")
             const pdiv = enter.append("div")
               .attr("class", "param_name")
               .style("border-radius", "3px")
               .style("background", "#ffffffff")
               // .style("background", "rgba(250, 250, 250, 0.75)")
               //.style("border", "1px solid #979797ff")
-              .style("border", "1px solid darkgrey")
-              //.style("height", "80%")
+              // .style("border", "1px solid darkgrey")
+              .style("border", "1px solid #3b3b3bff")
+              .style("height", "70%")
               .style("display", "flex")
               .style("flex-direction", "row")
+              .style("overflow-y", "hidden")
               
             pdiv.append("div")
+              .attr("class", "pname_div")
               .style("font-weight", "bold")
-              .style("padding", "5px")
+              .style("padding-left", "8px")
+              .style("padding-right", "8px")
+              // .style("padding-top", "3px")
+              // .style("padding-bottom", "3px")
               .style("height", "100%")
+              .style("display", "flex")
+              .style("flex-direction", "row")
+              .style("align-items", "center")
               .html((d : string) => d.split("[")[0])
 
             pdiv.append("div")
-              .style("padding", (d : string) => d.split("[").length > 1 ? "5px" : "0px")
+              .attr("class", "pindex_div")
+              .style("display", "flex")
+              .style("flex-direction", "row")
+              .style("align-items", "center")
+              .style("padding-left", (d : string) => d.split("[").length > 1 ? "8px" : "0px")
+              .style("padding-right", (d : string) => d.split("[").length > 1 ? "8px" : "0px")
               .style("border-left", "1px solid #979797ff")
               .style("visibility", (d : string) => d.split("[").length > 1 ? "visible" : "hidden")
+              .style("font-size", "0.7em")
+              .style("font-family", "Verdana")
+              // .style("font-weight", "bold")
               .html((d : string) => {
+                // console.log(d)
                 const end_str = d.split("[");
                 if(end_str.length > 1) {
                   return(end_str[1].substring(0, end_str[1].length - 1));
@@ -610,11 +637,22 @@ import Error$1 from "../../.svelte-kit/output/server/entries/fallbacks/error.sve
                   return("");
                 }
               })
-
             return(pdiv)
           },
-        (update) => update,
-        (exit) => exit.remove()
+        (update) => {
+          // console.log("Updating label data:")
+          update.select("pname_div")
+            .html((d : string) => {
+              // console.log(d)
+              return(d.split("[")[0])
+            })
+          return(update)
+        },
+        (exit) => {
+          exit.remove()
+        }
       );
+    } else {
+      console.error("No parameter lists found during tree construction!")
     }
   }

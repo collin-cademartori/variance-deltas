@@ -996,6 +996,7 @@
         "npm:@sveltejs/vite-plugin-svelte@6",
         "npm:@types/d3@^7.4.3",
         "npm:d3@^7.9.0",
+        "npm:katex@~0.16.27",
         "npm:svelte-check@4",
         "npm:svelte@5",
         "npm:typescript@5",

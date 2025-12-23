@@ -1,7 +1,11 @@
+import { SvelteMap } from 'svelte/reactivity';
+import { type name_t } from './names.ts';
+
 export function short_name(
   name_set : string[],
-  convert_greek : boolean = true,
-  shorten_prefixes : boolean = true
+  names: SvelteMap<string, name_t>,
+  convert_greek : boolean = false,
+  shorten_prefixes : boolean = false
 ) {
   const snames : string[] = [];
   const name_prefixes = new Set(name_set.map((name) => name.split("[")[0]));
@@ -19,15 +23,18 @@ export function short_name(
       }
     });
 
-    if(convert_greek) {
-      for(const [gl, gu] of Object.entries(unicode_greek)) {
-        np = np.replaceAll(gl, gu);
-      }
-    }
+    // if(convert_greek) {
+    //   for(const [gl, gu] of Object.entries(unicode_greek)) {
+    //     np = np.replaceAll(gl, gu);
+    //   }
+    // }
 
-    if(shorten_prefixes) {
-      np = np.split("_").map((s) => s[0]).join("");
-    }
+    // if(shorten_prefixes) {
+    //   np = np.split("_").map((s) => s[0]).join("");
+    // }
+
+    np = names.get(np).formatted_name ?? np;
+    // np = katex.renderToString(np, { output: 'html' });
 
     const index_strs = get_index_strs(indices).join(", ");
     if (index_strs.length > 12) { 
@@ -198,11 +205,13 @@ function seq_array(lower : number, upper : number) {
   return([...(new Array(upper - lower + 1)).keys().map((k) => k + lower)]);
 }
 
-const unicode_greek = {
-  'theta': '\u{03B8}',
-  'mu': '\u{03BC}',
-  'y_pot': '\u{1EF9}'
-}
+const unicode_greek = {};
+
+// const unicode_greek = {
+//   'theta': '\u{03B8}',
+//   'mu': '\u{03BC}',
+//   'y_pot': '\u{1EF9}'
+// }
 
 
 // const unicode_greek = {

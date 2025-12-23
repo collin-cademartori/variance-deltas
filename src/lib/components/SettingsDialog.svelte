@@ -44,14 +44,6 @@
     >
       Edit Names
     </button>
-  <!-- <div class="button_group" id="layout_type">
-    <button 
-      class:menu_enabled={user_state.show_globals === true}
-      onclick={() => user_state.show_globals = true}
-    >
-      Edit 
-    </button>
-  </div> -->
 </div>
 
 <NamesDialog bind:show_dialog={show_names}/>

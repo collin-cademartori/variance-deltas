@@ -134,6 +134,9 @@
     width: 75%;
     background: white;
     overflow-y: hidden;
+    border: 0.15rem solid black;
+    border-radius: 0.2rem;
+    box-shadow: rgb(57, 57, 57) 0 1px 25px;
   }
 
   #dialog_div {

@@ -1,3 +1,7 @@
+<svelte:head>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.27/dist/katex.min.css" integrity="sha384-Pu5+C18nP5dwykLJOhd2U4Xen7rjScHN/qusop27hdd2drI+lL5KvX7YntvT8yew" crossorigin="anonymous">
+</svelte:head>
+
 <script lang="ts">
   import { onMount } from "svelte";
   import * as ws from "$lib/websocket";
@@ -6,7 +10,7 @@
   import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge, define_group, delete_node } from "$lib/tree_methods";
   import { setup_context } from "$lib/compute_width";
   import { selection } from "$lib/selection.svelte";
-  import { user_state, setup_tree } from "$lib/user_state.svelte";
+  import { user_state, setup_tree, update_names } from "$lib/user_state.svelte";
   import { groups, handle_groups } from "$lib/groups";
 
   import SelectionDialog from "$lib/components/SelectionDialog.svelte";
@@ -16,10 +20,6 @@
   import SettingsDialog from "$lib/components/SettingsDialog.svelte";
 
   let show_export = $state(false);
-
-  $effect(() => {
-    console.log(`Show export is now ${show_export}`)
-  })
 
   const height = 700;
   const width = 1150;
@@ -61,6 +61,8 @@
     );
 
     ws.handle_message((tree_data, globals_data, global_limit, groups_data) => {
+      const pnames = new Set([...tree_data].map((node) => node.params.map((n) => n.split("[")[0])).flat());
+      update_names(pnames);
       const tree = (d3.stratify<flat_node>()
                     .id((n : flat_node) => n.name.toString())
                     .parentId((n : flat_node) => n.parent.toString()))(tree_data);
@@ -319,6 +321,11 @@
 </div>
 
 <style>
+
+  :global(.katex) {
+    font-size: 1em;
+  }
+
   :global(.main_label_selected) {    
     border-color: rgb(29, 29, 212) !important;
     background-color: rgb(224, 235, 255) !important;
