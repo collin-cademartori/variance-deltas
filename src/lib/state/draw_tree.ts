@@ -1,14 +1,13 @@
 import type { flat_node, flat_tree, flat_branch } from "./types.ts";
-import { selection_channels, selection, selector, hover } from "./selection.svelte.ts";
-import { user_state } from "./user_state.svelte.ts";
+import type { SvelteMap } from "svelte/reactivity";
+import type { render_config, global_data, coordinates, event_handlers } from "./draw_data.ts";
 import { short_name } from "./short_names.ts";
-import { global_latex } from "./names.ts"
-import type { render_config, global_data, coordinates } from "./draw_data.ts";
+import { global_latex, type name_t } from "./names.ts"
 import * as d3 from "d3";
 
 let cur_y = 0;
 
-function draw_highlight(
+export function draw_highlight(
   tree : flat_tree,
   x : d3.ScaleLinear<number, number>,
   config: render_config
@@ -97,6 +96,7 @@ export function draw_geometry(
   config: render_config,
   id_mod : string = "",
   scale = 1,
+  handlers: event_handlers
 ) {
 
   const tree_elem = d3.select("#" + draw_group + id_mod);
@@ -145,15 +145,7 @@ export function draw_geometry(
                         .style("opacity", 0)
               
               if(!config.draw_static) {
-                path_select.on("mousedown", (_ev, d) => {
-                  if(user_state.state === 'dividing' || user_state.state === 'auto-dividing') {
-                    if(selection.has(d.parent.name, "main") && selection.has(d.child.name, "main")) {
-                      selection.clear("main");
-                    } else {
-                      selection.set_nodes([d.child.name, d.parent.name], "main");
-                    }
-                  } 
-                });
+                path_select.on("mousedown", (_ev, d) => handlers.branch_select(d));
               }
 
               return g;
@@ -211,46 +203,9 @@ export function draw_tree(
   tree : flat_tree, 
   coord: coordinates,
   global: global_data,
-  config: render_config) {
-
-  if(!config.draw_static){   
-    const sel_colors = {
-      "main" : "#2a57ecff",
-      "alt" : "#910a8a",
-      "del" : "#d48e1d"
-    }
-
-    selection?.on_change(() => {
-      for(const channel of selection_channels) {
-        const ft = tree.filter((node) => selection.has(node.name, channel));
-        draw_geometry(
-          ft, "tree_g", coord,
-          config, "_" + channel, 1.15
-        );
-      }
-      // Clear all selection classes
-      for(const channel of selection_channels) {
-        const cn = `${channel}_label_selected`;
-        const els = Array.from(document.getElementsByClassName(cn));
-        for(let ei = 0; ei < els.length; ++ei) {
-          els[ei].classList.remove(cn);
-        }
-      }
-      // Add selection classes for newly selection items
-      for(const channel of selection_channels) {
-        const cn = `${channel}_label_selected`;
-        const sel_nodes = selection.nodes(channel);
-        for(let ni = 0; ni < selection.size(channel); ++ni) {
-          document.getElementById(`${sel_nodes[ni]}_div`).classList.add(cn);
-        }
-      }
-    });
-  }
-
-  hover.on_change(() => {
-    const ft = tree.filter((node) => hover.node.includes(node.name));
-    draw_highlight(ft, coord.x, config);
-  });
+  config: render_config,
+  handlers: event_handlers,
+  names: SvelteMap<string, name_t>) {
 
   // Setup data
 
@@ -364,7 +319,7 @@ export function draw_tree(
             .style("user-select", "none")
             .style("border-color", "blue")
 
-        plist.selectAll(".global_name").data(short_name(global.params, user_state.names), (d : string) => d)
+        plist.selectAll(".global_name").data(short_name(global.params, names), (d : string) => d)
             .join((enter) => {
               const pdiv = enter.append("div")
                 .attr("class", "global_name")
@@ -406,7 +361,7 @@ export function draw_tree(
 
   // Draw tree nodes and branches
   draw_geometry(
-    tree, "tree_g", coord, config, id_mod, 1
+    tree, "tree_g", coord, config, id_mod, 1, handlers
   );
 
   // Draw labels
@@ -458,61 +413,11 @@ export function draw_tree(
         .style("height", (config.label_height - 2) + "px")
         
       if(!config.draw_static) {
-        fo.on("mousedown", (_ev, d) => {
-          if(user_state.state === 'extruding') {
-            if(selection.has(d.name, "main")) {
-              selection.clear("main");
-            } else {
-              selection.set_nodes([d.name], "main");
-            }
-          } else if (user_state.state === 'deleting') {
-            if(selection.has(d.name, "main")) {
-              selection.clear("main");
-            } else {
-              selection.set_nodes([d.name], "main");
-            }
-          } else if (user_state.state === 'merging') {
-            if(selection.has(d.name, "main")) {
-              selection.clear();
-            } else if (selection.has(d.name, "alt")) {
-              selection.clear("alt");
-            } else if (selection.size("main") > 0) {
-              selection.set_nodes([d.name], "alt");
-            } else {
-              selection.set_nodes([d.name], "main")
-            }
-          } else if (user_state.state === 'add-group') {
-            const sel_node = user_state.tree?.find((node) => node.data.name === d.name);
-            let sel_names : string[] = [];
-            if(selector.type === "anc") {
-              if(sel_node?.data.name && selection.has(sel_node?.data.name, "main")) {
-                sel_names = sel_node?.descendants().map((desc) => desc.data.name);
-                sel_names.forEach((node_name) => selection.delete(node_name, "main"));
-              } else {
-                sel_names = sel_node?.ancestors().map((anc) => anc.data.name) ?? [];
-                sel_names.forEach((name) => selection.add(name, "main"));
-              }
-            } else if(selector.type === "desc") {
-              if(sel_node?.data.name && selection.has(sel_node?.data.name, "del")) {
-                sel_names = sel_node?.ancestors().map((anc) => anc.data.name);
-                sel_names.forEach((node_name) => selection.delete(node_name, "del"));
-              } else {
-                sel_names = sel_node?.descendants().map((desc) => desc.data.name) ?? [];
-                sel_names.forEach((name) => selection.add(name, "del"));
-              }
-            } 
-          } 
-        });
+        fo.on("mousedown", (_ev, d) => handlers.node_select(d));
 
-        ld.on("mouseover", (_ev, d) => {
-          if(user_state.state === "base") {
-            hover.node = [d.name];
-          }
-        });
+        ld.on("mouseover", (_ev, d) => handlers.node_hover(d));
 
-        ld.on("mouseleave", () => {
-          hover.node = [];
-        });
+        ld.on("mouseleave", (_ev, d) => handlers.node_unhover(d));
       }
 
       ld.append("xhtml:div")

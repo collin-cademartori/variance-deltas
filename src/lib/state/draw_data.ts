@@ -1,3 +1,5 @@
+import type { flat_node } from "./types.ts";
+
 export type render_config = {
   label_height: number,
   show_globals: boolean,
@@ -16,6 +18,18 @@ export type coordinates = {
 export type global_data = {
   limit : number | undefined,
   params : string[],
+}
+
+export type branch_datum = {
+  child: flat_node,
+  parent: flat_node
+}
+
+export type event_handlers = {
+  branch_select: (d: branch_datum) => void,
+  node_select: (d: flat_node) => void,
+  node_hover: (d: flat_node) => void,
+  node_unhover: (d: flat_node) => void
 }
 
 type partial_config = Partial<render_config>
