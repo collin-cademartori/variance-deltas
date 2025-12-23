@@ -431,7 +431,7 @@ import * as d3 from "d3";
     const tree_nodes = d3.select("#label_layer").selectAll(".tree_node_label")
                                 .data(tree, (d) => (d as flat_node).name);
     // Define node labels
-    tree_nodes.join((enter) => {
+    const label_selection = tree_nodes.join((enter) => {
 
         const g = enter.append("g")
                      .attr("id", (d) => {
@@ -574,7 +574,7 @@ import * as d3 from "d3";
           console.log(`Updating node label for ${d.name}`);
           return(d.depth.toString())
       });
-      update.selectAll(".param_name").remove();
+      // update.selectAll(".param_name").remove();
       return update
     },
     (exit) => {
@@ -582,12 +582,13 @@ import * as d3 from "d3";
     });
 
     // Fill in node label content
-    const params_lists = d3.selectAll(".params_list");
+    // const params_lists = d3.selectAll(".params_list");
+    const params_lists = label_selection.select(".params_list");
     if(params_lists.size() > 0) {
-      const param_names = params_lists.selectAll(".param_name"); //<d3.BaseType, HTMLElement>
-      param_names.data((d : flat_node) => {
+      params_lists.selectAll(".param_name") //<d3.BaseType, HTMLElement>
+      .data((d : flat_node) => {
             return(d.param_names);
-          }, (d : flat_node) => d.param_names?.join(",") ?? "none")
+          }, (d : flat_node) => d.param_names?.join(",") ?? "none") //(d : flat_node) => d.param_names?.join(",") ?? "none"
           .join((enter) => {
             // console.log("Creating label data:")
             const pdiv = enter.append("div")
@@ -641,7 +642,7 @@ import * as d3 from "d3";
           },
         (update) => {
           // console.log("Updating label data:")
-          update.select("pname_div")
+          update.select(".pname_div")
             .html((d : string) => {
               // console.log(d)
               return(d.split("[")[0])
