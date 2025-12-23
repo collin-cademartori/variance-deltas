@@ -1,5 +1,5 @@
 import { SvelteMap } from "svelte/reactivity";
-import { delete_group } from "./tree_methods.ts";
+import { delete_group } from "../tree_methods.ts";
 
 export const groups : Map<string, Set<string>> = new SvelteMap();
 

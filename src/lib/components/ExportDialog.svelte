@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { user_state } from "$lib/user_state.svelte";
+  import { user_state } from "$lib/state/user_state.svelte";
   import { export_svg } from "$lib/export_svg";
-  import { draw_tree } from "$lib/draw_tree";
-  import { groups } from "$lib/groups";
+  import { draw_tree } from "$lib/state/draw_tree";
+  import { groups } from "$lib/state/groups";
   import { scaleLinear, axisBottom, select } from "d3";
 
   let { show_dialog = $bindable(), plot_width, y } : { show_dialog : boolean, plot_width : number, y : d3.ScaleLinear<number, number, never> } = $props();

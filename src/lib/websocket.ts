@@ -1,4 +1,4 @@
-import { type flat_tree } from "./tree.ts";
+import { type flat_tree } from "./state/types.ts";
 
 export const ws = new WebSocket("ws://localhost:8000");
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import NameEditor from "./NameEditor.svelte";
-  import { user_state } from "$lib/user_state.svelte";
+  import { user_state } from "$lib/state/user_state.svelte";
   import { SvelteMap } from "svelte/reactivity";
 
   type ptype = {

@@ -1,11 +1,12 @@
 import { draw_tree } from "./draw_tree.ts";
 import { stratify, type HierarchyNode, type ScaleLinear } from "d3";
-import { type flat_node, type flat_tree, type flat_branch } from "./tree.ts";
+import type { flat_node, flat_tree } from "./types.ts";
 import { selector, selection, hover } from "./selection.svelte.ts";
 import { groups } from "./groups.ts";
 import { annotate_tree } from "./tree.ts";
 import { type name_t, make_short, global_latex } from "./names.ts";
 import { SvelteMap } from "svelte/reactivity";
+import { type coordinates, make_config } from "./draw_data.ts";
 
 type user_state_t = 'base' | 'extruding' | 'dividing' | 'auto-dividing' | 'merging' | 'auto-merging' | 'groups' | 'add-group' | 'settings' | 'deleting';
 
@@ -21,9 +22,6 @@ type state_t = {
 };
 
 type numeric_scale = ScaleLinear<number, number, never>;
-
-type node_handler = (d : flat_node) => void;
-type branch_handler = (d : flat_branch) => void; // change to branch_data_t
 
 const session_id = "1234";
 
@@ -145,27 +143,23 @@ export function update_names(names: Set<string>) {
   })
 }
 
-export function setup_tree(x: numeric_scale, y: numeric_scale, l_height : number) {
+export function setup_tree(coord: coordinates, l_height : number) {
   _create_tree = function(data : flat_tree) {
     _tree = (stratify<flat_node>()
               .id((n : flat_node) => n.name.toString())
               .parentId((n : flat_node) => n.parent.toString()))(data);
     const fil_data = _group == undefined ? data : data.filter((node) => groups.get(user_state.group)?.has(node.name));
-    if(fil_data.length == 0) {
-      console.warn("NO DATA")
+    const global_data = {
+      limit: user_state.global_limit,
+      params: user_state.globals
     }
-    const ann_tree = annotate_tree(
-      fil_data, user_state.names, l_height, x, y, user_state.globals, user_state.layout_format, user_state.show_globals
-    );
+    const render_config = make_config({
+      label_height: l_height,
+      show_globals: user_state.show_globals,
+      format: user_state.layout_format
+    });
+    const ann_tree = annotate_tree(fil_data, user_state.names, coord, global_data, render_config);
     const ft : flat_tree = [...ann_tree].map((n) => n.data);
-    draw_tree(
-      ft, x, y, l_height, user_state.global_limit, user_state.globals, user_state.show_globals,
-      document.styleSheets[0]
-    );
-    // draw_geometry(
-    //   ft, "tree_g", x, y,
-    //   () => {return({})}, document.styleSheets[0],
-    //   "blue", true, "_selection"
-    // );
+    draw_tree(ft, coord, global_data, render_config);
   }
 }

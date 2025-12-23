@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { user_state } from "$lib/user_state.svelte";
-  import { groups, remove_group } from "$lib/groups";
+  import { user_state } from "$lib/state/user_state.svelte";
+  import { groups, remove_group } from "$lib/state/groups";
   let { group_name } : { group_name : string } = $props();
 
   function set_group() {

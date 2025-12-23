@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { type flat_node } from "../tree";
-  import { selector, selection } from "$lib/selection.svelte";
-  import { user_state } from "$lib/user_state.svelte";
+  import { type flat_node } from "../state/types";
+  import { selector, selection } from "$lib/state/selection.svelte";
+  import { user_state } from "$lib/state/user_state.svelte";
 
   type props_t = { 
     selected : Array<flat_node | undefined> | null,

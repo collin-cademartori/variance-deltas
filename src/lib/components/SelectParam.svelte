@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { parse_index_strs, get_index_strs, rep_array } from "$lib/short_names";
+  import { parse_index_strs, get_index_strs, rep_array } from "$lib/state/short_names";
 
   type props_t = { 
     name: string,

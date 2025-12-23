@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { groups } from "$lib/groups";
+  import { groups } from "$lib/state/groups";
   import GroupItem from "./GroupItem.svelte";
 </script>
 

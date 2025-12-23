@@ -4,24 +4,8 @@ import { compute_width } from "./compute_width.ts";
 import { short_name } from "./short_names.ts";
 import { SvelteMap } from "svelte/reactivity";
 
-export type flat_node = {
-  name: string,
-  parent: string,
-  ered: number,
-  params: string[],
-  depth? : number,
-  sortname?: string,
-  shortname?: string,
-  param_names?: string[],
-  x_pos?: number,
-  label_y?: number
-};
-export type flat_branch = {
-  child: flat_node,
-  parent: flat_node
-}
-export type flat_tree = Array<flat_node>;
-export type tree_node = d3.HierarchyNode<flat_node>;
+import type { flat_node, flat_tree, tree_node } from "./types.ts";
+import type { coordinates, global_data, render_config } from "./draw_data.ts";
 
 type coord = {
   x: [number, number],
@@ -31,25 +15,22 @@ type coord = {
 export function annotate_tree(
   ft : flat_tree,
   names: SvelteMap<string, name_t>,
-  label_height : number,
-  x_scale : d3.ScaleLinear<number, number, never>,
-  y_scale : d3.ScaleLinear<number, number, never>,
-  globals : string[] | null = null,
-  layout_format : 'normal' | 'long' = 'normal',
-  show_globals : boolean = true
+  coord: coordinates,
+  global: global_data,
+  config: render_config
 ) {
   for(const node of ft) {
-    const params = globals == null ? node.params : [...node.params].filter((p) => !globals.includes(p));
+    const params = global.params == null ? node.params : [...node.params].filter((p) => !global.params.includes(p));
     // node.param_names = params.map((fullname) => names.get(fullname.split("[")[0]).formatted_name ?? fullname);
-    if([...node.params].some((p) => !globals.includes(p)) && show_globals) {  
+    if([...node.params].some((p) => !global.params.includes(p)) && config.show_globals) {  
       params.push("__globals__");
     }
     node.param_names = short_name(params, names);
     node.shortname = node.param_names.join(", ");
   }
-  const tree_with_xs = compute_xs(ft, y_scale, layout_format, false, label_height + 8);
-  const label_height_y = y_scale.invert(label_height);
-  compute_label_pos(tree_with_xs, label_height_y, x_scale, y_scale);
+  const tree_with_xs = compute_xs(ft, coord.y, config.format, false, config.label_height + 8);
+  const label_height_y = coord.y.invert(config.label_height);
+  compute_label_pos(tree_with_xs, label_height_y, coord.x, coord.y);
   return(tree_with_xs);
 }
 

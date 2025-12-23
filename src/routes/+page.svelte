@@ -6,12 +6,12 @@
   import { onMount } from "svelte";
   import * as ws from "$lib/websocket";
   import * as d3 from "d3";
-  import { type flat_node, type flat_branch, type flat_tree } from "$lib/tree";
+  import type { flat_node, flat_branch } from "$lib/state/types";
   import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge, define_group, delete_node } from "$lib/tree_methods";
-  import { setup_context } from "$lib/compute_width";
-  import { selection } from "$lib/selection.svelte";
-  import { user_state, setup_tree, update_names } from "$lib/user_state.svelte";
-  import { groups, handle_groups } from "$lib/groups";
+  import { setup_context } from "$lib/state/compute_width";
+  import { selection } from "$lib/state/selection.svelte";
+  import { user_state, setup_tree, update_names } from "$lib/state/user_state.svelte";
+  import { groups, handle_groups } from "$lib/state/groups";
 
   import SelectionDialog from "$lib/components/SelectionDialog.svelte";
   import MultiSelectionDialog from "$lib/components/MultiSelectionDialog.svelte";
@@ -56,9 +56,7 @@
     xaxis(svg.select("#x_axis"));
     svg.select("#x_axis").attr("font-size", (l_height * (12 / 36)) + "px");
 
-    setup_tree(
-      x, y, l_height
-    );
+    setup_tree({x: x, y: y}, l_height);
 
     ws.handle_message((tree_data, globals_data, global_limit, groups_data) => {
       const pnames = new Set([...tree_data].map((node) => node.params.map((n) => n.split("[")[0])).flat());

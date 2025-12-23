@@ -1,6 +1,6 @@
 <script lang="ts">
   import NamesDialog from "./NamesDialog.svelte";
-  import { user_state } from "$lib/user_state.svelte";
+  import { user_state } from "$lib/state/user_state.svelte";
 
   let show_names = $state(false)
 </script>
