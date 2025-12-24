@@ -19,7 +19,8 @@ type state_t = {
   global_limit: number | undefined,
   layout_format: 'long' | 'normal',
   show_globals: boolean,
-  names: SvelteMap<string, name_t>
+  names: SvelteMap<string, name_t>,
+  svg_height: number
 };
 
 const session_id = "1234";
@@ -34,6 +35,7 @@ let _tree : HierarchyNode<flat_node> | undefined;
 let _group : string | undefined = $state(restore_state_string(session_id, "group", undefined));
 let _layout_format : 'long' | 'normal' = $state(restore_state_string(session_id, "layout_format", 'normal') as 'long' | 'normal');
 let _show_globals : boolean = $state(restore_state_bool(session_id, "show_globals", true));
+let _svg_height = $state(0);
 let _create_tree : (data : flat_tree) => void;
 
 export const user_state : state_t = $state({ 
@@ -92,6 +94,9 @@ export const user_state : state_t = $state({
     _names = new_names;
     store_state(session_id, "names", new_names)
     _create_tree([..._tree].map((n) => n.data));
+  },
+  get svg_height() {
+    return(_svg_height)
   }
 });
 
@@ -185,11 +190,11 @@ export function setup_tree(coord: coordinates, l_height : number) {
     });
     const ann_tree = annotate_tree(fil_data, user_state.names, coord, global_data, render_config);
     const ft : flat_tree = [...ann_tree].map((n) => n.data);
-    draw_tree(ft, coord, global_data, render_config, handlers, user_state.names);
+    _svg_height = draw_tree(ft, coord, global_data, render_config, handlers, user_state.names);
 
     hover.on_change(() => {
       const filt_tree = data.filter((node) => hover.node.includes(node.name));
-      draw_highlight(filt_tree, coord.x, render_config);
+      draw_highlight(filt_tree, coord.x, render_config, user_state.svg_height);
     });
 
     if(!render_config.draw_static){   

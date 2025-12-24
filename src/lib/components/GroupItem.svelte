@@ -1,6 +1,7 @@
 <script lang="ts">
   import { user_state } from "$lib/state/user_state.svelte";
-  import { groups, remove_group } from "$lib/state/groups";
+  import { remove_group } from "$lib/state/groups";
+  
   let { group_name } : { group_name : string } = $props();
 
   function set_group() {
@@ -10,13 +11,6 @@
       user_state.group = group_name;
     }
   }
-
-  // function remove_group() {
-  //   if(user_state.group == group_name) {
-  //     user_state.group = undefined;
-  //   }
-  //   groups.delete(group_name);
-  // }
 </script>
 
 <div id="item">

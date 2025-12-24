@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type flat_node } from "../state/types";
+  import type { flat_node } from "../state/types";
   import { selector, selection } from "$lib/state/selection.svelte";
   import { user_state } from "$lib/state/user_state.svelte";
 

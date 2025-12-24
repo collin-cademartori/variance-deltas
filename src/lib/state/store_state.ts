@@ -1,4 +1,5 @@
 import { SvelteMap } from "svelte/reactivity";
+import { type name_t } from "./names.ts";
 
 export function store_state(sid : string, state_prefix : string, state : boolean | string | object) {
   const item_key = `${sid}-${state_prefix}`;

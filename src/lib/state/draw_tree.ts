@@ -5,90 +5,91 @@ import { short_name } from "./short_names.ts";
 import { global_latex, type name_t } from "./names.ts"
 import * as d3 from "d3";
 
-let cur_y = 0;
-
+// Draw node details on hover
 export function draw_highlight(
   tree : flat_tree,
   x : d3.ScaleLinear<number, number>,
-  config: render_config
+  config : render_config,
+  svg_height : number
 ) {
-  d3.select("#highlight_container").selectAll(".highlight_box")
+  d3.select("#highlight_container")
+    .selectAll(".highlight_box")
+    .data(tree, (d : flat_node) => d.name)
+    .join(
+      (enter) => {
+        const g = enter.append("g")
+                        .attr("class", "highlight_box");
+
+        g.append("line")
+          .attr("x1", (d) => x(d.ered))
+          .attr("y1", -10)
+          .attr("x2", (d) => x(d.ered))
+          .attr("y2", 5)
+          .style("stroke", "#2a57ecff")
+
+        const fo = g.append("foreignObject")
+          .attr("x", (d) => {
+            const ered_round = Math.round(100 * d.ered) / 100;
+            const off = ered_round.toString().length > 1 ? 45/2 : 20/2;
+            return(x(d.ered) - off);
+          })
+          .attr("y", 3)
+          .attr("height", "40px")
+          .attr("width", (d) => {
+            const ered_round = Math.round(100 * d.ered) / 100;
+            return(ered_round.toString().length > 1 ? "45px" : "20px");
+          });
+
+        fo.append("xhtml:div")
+          .attr("width", "")
+          .attr("height", (config.label_height - 2) + "px")
+          .style("display", "flex")
+          .style("flex-direction", "row")
+          .style("background", "white")
+          .style("border-color", "#2a57ecff")
+          .style("align-items", "center")
+          .style("justify-content", "center")
+          .style("font-family", "sans-serif")
+          .style("box-sizing", "border-box")
+          .style("border-width", "0.12rem")
+          .style("border-style", "solid")
+          .style("border-radius", "4px")
+          .style("padding", "4px")
+          .html((d) => {
+            const ered_round = Math.round(1000 * d.ered) / 1000;
+            return(ered_round.toString());
+          });
+
+        g.transition().duration(config.transition_dur/ 4).attr("opacity", 1);
+        return(g);
+      },
+      (update) => update,
+      (exit) => exit.transition().duration(config.transition_dur / 4).attr("opacity", 0).remove()
+    );
+
+    d3.select("#vert_line_container").selectAll(".vline")
       .data(tree, (d : flat_node) => d.name)
       .join(
         (enter) => {
-          const g = enter.append("g")
-                          .attr("class", "highlight_box");
+          const g = enter.append("g").attr("class", "vline")
 
           g.append("line")
-            .attr("x1", (d) => x(d.ered))
-            .attr("y1", -10)
-            .attr("x2", (d) => x(d.ered))
-            .attr("y2", 5)
-            .style("stroke", "#2a57ecff")
+          .attr("x1", (d) => x(d.ered))
+          .attr("y1", 0)
+          .attr("x2", (d) => x(d.ered))
+          .attr("y2", 1.2 * svg_height)
+          .style("stroke", "#2a57ecff")
 
-          const fo = g.append("foreignObject")
-                          .attr("x", (d) => {
-                            const ered_round = Math.round(100 * d.ered) / 100;
-                            const off = ered_round.toString().length > 1 ? 45/2 : 20/2;
-                            return(x(d.ered) - off);
-                          })
-                          .attr("y", 3)
-                          .attr("height", "40px")
-                          .attr("width", (d) => {
-                            const ered_round = Math.round(100 * d.ered) / 100;
-                            return(ered_round.toString().length > 1 ? "45px" : "20px");
-                          });
+          g.transition().duration(config.transition_dur / 4).attr("opacity", 1);
 
-          fo.append("xhtml:div")
-                        .attr("width", "")
-                        .attr("height", (config.label_height - 2) + "px")
-                        .style("display", "flex")
-                        .style("flex-direction", "row")
-                        .style("background", "white")
-                        .style("border-color", "#2a57ecff")
-                        .style("align-items", "center")
-                        .style("justify-content", "center")
-                        .style("font-family", "sans-serif")
-                        .style("box-sizing", "border-box")
-                        .style("border-width", "0.12rem")
-                        .style("border-style", "solid")
-                        .style("border-radius", "4px")
-                        // .style("font-size", "2px")
-                        .style("padding", "4px")
-                        .html((d) => {
-                          const ered_round = Math.round(1000 * d.ered) / 1000;
-                          return(ered_round.toString());
-                        });
-
-          g.transition().duration(config.transition_dur/ 4).attr("opacity", 1);
-          return(g);
+          return(g)
         },
         (update) => update,
         (exit) => exit.transition().duration(config.transition_dur / 4).attr("opacity", 0).remove()
       );
-
-    d3.select("#vert_line_container").selectAll(".vline")
-        .data(tree, (d : flat_node) => d.name)
-        .join(
-          (enter) => {
-            const g = enter.append("g").attr("class", "vline")
-
-            g.append("line")
-            .attr("x1", (d) => x(d.ered))
-            .attr("y1", 0)
-            .attr("x2", (d) => x(d.ered))
-            .attr("y2", 1000)
-            .style("stroke", "#2a57ecff")
-
-            g.transition().duration(config.transition_dur / 4).attr("opacity", 1);
-
-            return(g)
-          },
-          (update) => update,
-          (exit) => exit.transition().duration(config.transition_dur / 4).attr("opacity", 0).remove()
-        );
 }
 
+// Draw tree nodes and branches
 export function draw_geometry(
   tree : flat_tree,
   draw_group : string, 
@@ -100,9 +101,6 @@ export function draw_geometry(
 ) {
 
   const tree_elem = d3.select("#" + draw_group + id_mod);
-  if(tree_elem.size() != 1) {
-    console.error("Cannot draw geometry! Selected group does not exist.")
-  }
 
   const link = d3.line<flat_node>(
     (d) => coord.x(d.ered),
@@ -111,65 +109,63 @@ export function draw_geometry(
 
   const branch_data = tree.filter((n) => n.parent != "").map((n) => {
     const pn = tree.find((n2) => n2.name === n.parent);
-    if(pn != null) {
-      return {
-        child: n,
-        parent: pn
-      }
-    } else {
-      return null;
-    }
+    return pn == null ? null : {child: n, parent: pn};
   }).filter((branch) => branch != null);
 
   // Draw branches
   tree_elem.selectAll(".tree_branch")
-            .data(branch_data, (d) => `${(d as flat_branch).parent.name}-->${(d as flat_branch).child.name}`)
-            .join((enter) => {
-              const g = enter.append("g").attr("class", "tree_branch");
-              if(!config.draw_static) {
-                g.transition().duration(config.transition_dur).attr("opacity", 1);
-              }
+    .data(
+      branch_data,
+      (d: flat_branch) => `${d.parent.name}-->${d.child.name}`
+    )
+    .join(
+      (enter) => {
+        const g = enter.append("g").attr("class", "tree_branch");
+        if(!config.draw_static) {
+          g.transition().duration(config.transition_dur).attr("opacity", 1);
+        }
 
-              g.append("path").attr("d", (d) => link([d.parent, d.child]))
-                    .attr("class", "branch_path")
-                    .style("stroke", config.highlight_color)
-                    .style("stroke-width", Math.pow(scale, 4) * 2)
-                    .style("fill", "none")
-                    .attr("id", (d) => `branch-${d.child.shortname}-${d.parent.shortname}${id_mod}`);
+        g.append("path").attr("d", (d) => link([d.parent, d.child]))
+          .attr("class", "branch_path")
+          .style("stroke", config.highlight_color)
+          .style("stroke-width", Math.pow(scale, 4) * 2)
+          .style("fill", "none")
+          .attr("id", (d) => `branch-${d.child.shortname}-${d.parent.shortname}${id_mod}`);
 
-              const path_select = g.append("path").attr("d", (d) => link([d.parent, d.child]))
-                        .attr("class", "select_path")
-                        .style("stroke", "red")
-                        .style("stroke-width", 15)
-                        .style("fill", "none")
-                        .style("opacity", 0)
-              
-              if(!config.draw_static) {
-                path_select.on("mousedown", (_ev, d) => handlers.branch_select(d));
-              }
+        const path_select = g.append("path").attr("d", (d) => link([d.parent, d.child]))
+          .attr("class", "select_path")
+          .style("stroke", "red")
+          .style("stroke-width", 15)
+          .style("fill", "none")
+          .style("opacity", 0)
+        
+        if(!config.draw_static) {
+          path_select.on("mousedown", (_ev, d) => handlers.branch_select(d));
+        }
 
-              return g;
-            },
-          (update) => {
-            update.select(".branch_path").transition().duration(config.transition_dur)
-                    .attr("d", (d) => link([d.parent, d.child]))
-            update.select(".select_path").transition().duration(config.transition_dur)
-                    .attr("d", (d) => link([d.parent, d.child]))
-            return update;
-          },
-          (exit) => {
-            exit.transition().duration(config.transition_dur).attr("opacity", 0).remove();
-          }
-        );
+        return g;
+      },
+      (update) => {
+        update.select(".branch_path").transition().duration(config.transition_dur)
+                .attr("d", (d) => link([d.parent, d.child]))
+        update.select(".select_path").transition().duration(config.transition_dur)
+                .attr("d", (d) => link([d.parent, d.child]))
+        return update;
+      },
+      (exit) => {
+        exit.transition().duration(config.transition_dur).attr("opacity", 0).remove();
+      }
+    );
 
   // Draw nodes
   const tree_nodes = tree_elem.selectAll(".tree_node")
-                              .data(tree, (d) => (d as flat_node).name);
+    .data(tree, (d) => (d as flat_node).name);
 
-  tree_nodes.join((enter) => {
+  tree_nodes.join(
+    (enter) => {
       const g = enter.append("g")
-                    .attr("id", (d) => `${d.name}${id_mod}`)
-                    .attr("class", "tree_node");
+        .attr("id", (d) => `${d.name}${id_mod}`)
+        .attr("class", "tree_node");
 
       if(!config.draw_static) {
         g.transition().duration(config.transition_dur).attr("opacity", 1);
@@ -188,17 +184,20 @@ export function draw_geometry(
         .style("stroke-width", scale * 3.5)
       
       return(g);
-  },(update) => {
-    update.select(".node_rect").transition().duration(config.transition_dur)
-      .attr("x", (d : flat_node) => coord.x(d.ered) - 4)
-      .attr("y", (d: flat_node) => coord.y(d.x_pos ?? 0) - 4);
-    return update
-  },
-  (exit) => {
-    exit.transition().duration(config.transition_dur).attr("opacity", 0).remove();
-  });
+    },
+    (update) => {
+      update.select(".node_rect").transition().duration(config.transition_dur)
+        .attr("x", (d : flat_node) => coord.x(d.ered) - 4)
+        .attr("y", (d: flat_node) => coord.y(d.x_pos ?? 0) - 4);
+      return update
+    },
+    (exit) => {
+      exit.transition().duration(config.transition_dur).attr("opacity", 0).remove();
+    }
+  );
 }
 
+// Draw complete tree with labels
 export function draw_tree(
   tree : flat_tree, 
   coord: coordinates,
@@ -208,31 +207,31 @@ export function draw_tree(
   names: SvelteMap<string, name_t>) {
 
   // Setup data
-
   const id_mod = config.draw_static ? "_static" : "";
-  // const tree_elem = d3.select("#tree_g" + id_mod);
-  const max_y = coord.y(tree.map((fn) => fn.x_pos).reduce((p,n) => Math.max(p,n)) - 1) + 85;
+  console.warn([...tree.map((fn) => fn.label_y)])
+  const max_y = coord.y(tree.map((fn) => fn.label_y).reduce((p,n) => Math.max(p,n))) + (2 * config.label_height);
 
   // Define pan behavior
-  const pan = d3.zoom();
+  // const pan = d3.zoom();
 
-  if(!config.draw_static) {
-    pan.on('zoom', (e) => {
-      if(e?.sourceEvent?.wheelDeltaY) {
-        const dy = -1 * e.sourceEvent.wheelDeltaY;
-        const t = e.transform;
-        t.k = 1;
-        t.x = 0;
-        cur_y = Math.min(Math.max(0, cur_y + dy), max_y);
-        t.y = -1 * cur_y;
-        d3.select("#tree_layers" + id_mod).attr("transform", t.toString());
-        d3.select("#label_layer").attr("transform", t.toString());
-      } 
-    });
+  // if(!config.draw_static) {
+  //   pan.on('zoom', (e) => {
+  //     if(e?.sourceEvent?.wheelDeltaY) {
+  //       const dy = -1 * e.sourceEvent.wheelDeltaY;
+  //       const t = e.transform;
+  //       t.k = 1;
+  //       t.x = 0;
+  //       cur_y = Math.min(Math.max(0, cur_y + dy), max_y);
+  //       t.y = -1 * cur_y;
+  //       d3.select("#tree_layers" + id_mod).attr("transform", t.toString());
+  //       d3.select("#label_layer").attr("transform", t.toString());
+  //     } 
+  //   });
 
-    d3.select("#tree").call(pan);
-  }
+  //   d3.select("#tree").call(pan);
+  // }
 
+  // Draw shaded rectangle representing minimum var reduction from globals alone
   const limit_data = (global.limit != undefined && config.show_globals) ? [global.limit] : [];
 
   d3.select("#tree_outer").selectAll(".global_limit_rect")
@@ -245,8 +244,6 @@ export function draw_tree(
           .attr("y", -10)
           .style("fill", "black")
           .style("opacity", "10%")
-          // .style("stroke-dasharray", "8 8")
-          // .style("stroke-width", "2px")
           .attr("height", "110%")
           .attr("width", "100%");
 
@@ -269,8 +266,8 @@ export function draw_tree(
           .attr("width", "1000px")
 
         const ldd = fo.append("xhtml:div")
-                      .style("height", "100%")
-                      .style("padding", "1px");
+          .style("height", "100%")
+          .style("padding", "1px");
 
         const ld = ldd.append("xhtml:div")
           .attr("id", "global_limit_label")
@@ -320,39 +317,40 @@ export function draw_tree(
             .style("border-color", "blue")
 
         plist.selectAll(".global_name").data(short_name(global.params, names), (d : string) => d)
-            .join((enter) => {
-              const pdiv = enter.append("div")
-                .attr("class", "global_name")
-                .style("border-radius", "3px")
-                .style("background", "#ffffffff")
-                .style("border", "1px solid #3b3b3bff")
-                .style("display", "flex")
-                .style("flex-direction", "row")
-                
-              pdiv.append("div")
-                .style("font-weight", "bold")
-                .style("padding", "5px")
-                .style("height", "100%")
-                .html((d : string) => d.split("[")[0])
+            .join(
+              (enter) => {
+                const pdiv = enter.append("div")
+                  .attr("class", "global_name")
+                  .style("border-radius", "3px")
+                  .style("background", "#ffffffff")
+                  .style("border", "1px solid #3b3b3bff")
+                  .style("display", "flex")
+                  .style("flex-direction", "row")
+                  
+                pdiv.append("div")
+                  .style("font-weight", "bold")
+                  .style("padding", "5px")
+                  .style("height", "100%")
+                  .html((d : string) => d.split("[")[0])
 
-              pdiv.append("div")
-                .style("padding", (d : string) => d.split("[").length > 1 ? "5px" : "0px")
-                .style("border-left", "1px solid #3b3b3bff")
-                .style("visibility", (d : string) => d.split("[").length > 1 ? "visible" : "hidden")
-                .html((d : string) => {
-                  const end_str = d.split("[");
-                  if(end_str.length > 1) {
-                    return(end_str[1].substring(0, end_str[1].length - 1));
-                  } else {
-                    return("");
-                  }
-                })
+                pdiv.append("div")
+                  .style("padding", (d : string) => d.split("[").length > 1 ? "5px" : "0px")
+                  .style("border-left", "1px solid #3b3b3bff")
+                  .style("visibility", (d : string) => d.split("[").length > 1 ? "visible" : "hidden")
+                  .html((d : string) => {
+                    const end_str = d.split("[");
+                    if(end_str.length > 1) {
+                      return(end_str[1].substring(0, end_str[1].length - 1));
+                    } else {
+                      return("");
+                    }
+                  })
 
-              return(pdiv)
-            },
-          (update) => update,
-          (exit) => exit.remove()
-        );
+                return(pdiv)
+              },
+            (update) => update,
+            (exit) => exit.remove()
+          );
         return fo;
       },
       (update) => update,
@@ -386,7 +384,7 @@ export function draw_tree(
         .attr("x", (d : flat_node) => coord.x(0.003 + d.ered))
         .attr("y", (d: flat_node) => coord.y(d.label_y ?? 0))
         .attr("height", () => config.label_height + "px") //y(l_height)
-        .attr("width", "1000px"); //(d: flat_node) =>  x(10 * compute_width(d.param_names, x))
+        .attr("width", "1000px");
 
       const ldd = fo.append("xhtml:div")
                     .style("height", "100%")
@@ -431,7 +429,6 @@ export function draw_tree(
         .style("font-weight", "normal")
         .style("font-size", "0.7em")
         .style("user-select", "none")
-        // .style("border-right", "1px solid #444444")
         .html((d : flat_node) => d.depth.toString());
 
       ld.append("xhtml:div")
@@ -461,7 +458,6 @@ export function draw_tree(
         console.log(`Updating node label for ${d.name}`);
         return(d.depth.toString())
     });
-    // update.selectAll(".param_name").remove();
     return update
   },
   (exit) => {
@@ -469,22 +465,17 @@ export function draw_tree(
   });
 
   // Fill in node label content
-  // const params_lists = d3.selectAll(".params_list");
   const params_lists = label_selection.select(".params_list");
   if(params_lists.size() > 0) {
-    params_lists.selectAll(".param_name") //<d3.BaseType, HTMLElement>
+    params_lists.selectAll(".param_name")
     .data((d : flat_node) => {
           return(d.param_names);
-        }, (d : flat_node) => d.param_names?.join(",") ?? "none") //(d : flat_node) => d.param_names?.join(",") ?? "none"
+        }, (d : flat_node) => d.param_names?.join(",") ?? "none")
         .join((enter) => {
-          // console.log("Creating label data:")
           const pdiv = enter.append("div")
             .attr("class", "param_name")
             .style("border-radius", "3px")
             .style("background", "#ffffffff")
-            // .style("background", "rgba(250, 250, 250, 0.75)")
-            //.style("border", "1px solid #979797ff")
-            // .style("border", "1px solid darkgrey")
             .style("border", "1px solid #3b3b3bff")
             .style("height", "70%")
             .style("display", "flex")
@@ -496,8 +487,6 @@ export function draw_tree(
             .style("font-weight", "bold")
             .style("padding-left", "8px")
             .style("padding-right", "8px")
-            // .style("padding-top", "3px")
-            // .style("padding-bottom", "3px")
             .style("height", "100%")
             .style("display", "flex")
             .style("flex-direction", "row")
@@ -515,9 +504,7 @@ export function draw_tree(
             .style("visibility", (d : string) => d.split("[").length > 1 ? "visible" : "hidden")
             .style("font-size", "0.7em")
             .style("font-family", "Verdana")
-            // .style("font-weight", "bold")
             .html((d : string) => {
-              // console.log(d)
               const end_str = d.split("[");
               if(end_str.length > 1) {
                 return(end_str[1].substring(0, end_str[1].length - 1));
@@ -528,10 +515,8 @@ export function draw_tree(
           return(pdiv)
         },
       (update) => {
-        // console.log("Updating label data:")
         update.select(".pname_div")
           .html((d : string) => {
-            // console.log(d)
             return(d.split("[")[0])
           })
         return(update)
@@ -543,4 +528,6 @@ export function draw_tree(
   } else {
     console.error("No parameter lists found during tree construction!")
   }
+
+  return(max_y)
 }
