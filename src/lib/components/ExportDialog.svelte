@@ -3,6 +3,7 @@
   import { export_svg } from "$lib/export_svg";
   import { draw_tree } from "$lib/state/draw_tree";
   import { groups } from "$lib/state/groups";
+  import { make_config } from "$lib/state/draw_data";
   import { scaleLinear, axisBottom, select } from "d3";
 
   let { show_dialog = $bindable(), plot_width, y } : { show_dialog : boolean, plot_width : number, y : d3.ScaleLinear<number, number, never> } = $props();
@@ -23,6 +24,15 @@
     if(show_dialog) {
       dialog.showModal();
 
+      const katex_css = (document.getElementById("katex_style") as HTMLLinkElement).sheet;
+      const svg_css = document.getElementById("export_styles");
+      if(katex_css != null && svg_css != null) {
+        const css_str = [...katex_css.cssRules].reduce((psheet, rule) => psheet + "\n" + rule.cssText, "");
+        svg_css.innerHTML = css_str;
+      } else {
+        console.error("BAD STYLES")
+      }
+
       if(user_state.tree != null) {
         const cur_group = groups.get(user_state.group ?? "");
         const flat_tree = [...user_state.tree]
@@ -37,14 +47,25 @@
         xaxis(select("#x_axis_static"));
         select("#x_axis_static").attr("font-size", (50 * (12 / 36)) + "px");
         draw_tree(
-          flat_tree,
-          x,
-          y,
-          50, user_state.global_limit, user_state.globals, user_state.show_globals, document.styleSheets[0],
-          "black", true
+          flat_tree, 
+          {x: x, y: y},
+          { limit: user_state.global_limit, params: user_state.globals },
+          make_config({
+            label_height: 50,
+            show_globals: user_state.show_globals,
+            draw_color: "black",
+            highlight_color: "black",
+            draw_static: true,
+          }),
+          { branch_select: () => {}, node_select: () => {}, node_hover: () => {}, node_unhover: () => {}},
+          user_state.names
         );
       }
     } else {
+      const svg_css = document.getElementById("export_styles");
+      if (svg_css != null) {
+        svg_css.innerHTML = "";
+      }
       dialog.close();
     }
   })
@@ -79,21 +100,14 @@
 
     <div id="snapshot_container">
       {#if show_dialog}
-        <!-- <svg id="tree_static" width={plot_width + 100} bind:this={svg_snapshot}>
-          <rect width="100%" height="100%" fill="white"></rect>
-          <g id="tree_g_static" transform="translate(10 0)">
-            <rect width="100%" height="100%" fill="white"></rect>
-          </g>
-          <g id="x_axis" bind:this={xaxis_g}>
-            <g id="x_axis_static"></g>
-          </g>
-        </svg> -->
         <svg id="tree_static" width={plot_width + 200} bind:this={svg_snapshot}>
-
+          <style id="export_styles">
+            /* @import url("https://cdn.jsdelivr.net/npm/katex@0.16.27/dist/katex.min.css"); */
+          </style>
           <rect width="100%" height="100%" fill="white"></rect>
           
           <g id="tree_outer_static" transform="translate(20 40)">
-            <rect id="global_limit_rect_static" 
+            <rect id="global_limit_rect_st  atic" 
               y="-10" x="100%" 
               fill="#eeeeee" stroke="black"
               opacity="0.3"

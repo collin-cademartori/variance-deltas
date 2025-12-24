@@ -1,7 +1,7 @@
 export function export_svg(svg : SVGElement, cvs : OffscreenCanvas, anchor : HTMLAnchorElement) {
   const svg_xml = (new XMLSerializer()).serializeToString(svg);
   const uri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg_xml)}`;
-  const img = new Image();
+  const img = new Image(); 
   img.src = uri;
   img.onload = () => {
     cvs.width = 4 * img.naturalWidth;
