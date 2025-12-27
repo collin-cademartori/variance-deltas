@@ -24,7 +24,7 @@ model {
   mu ~ normal(0,1)
 }
 
-tree more_data_per_group {
+tree {
   root(mu)
   for(i in 1:K) {
     leaf(y_pot[1:P, k])

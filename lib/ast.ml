@@ -32,9 +32,16 @@ type 'm param_dec_stmt = Param of string * datatype * ('m stmt) list * 'm
 type 'm data_dec_stmt = Data of string * datatype * ('m stmt) list * 'm
 [@@deriving sexp]
 
+type 'm tree_stmt =
+  | Leaf of ('m stmt) list * 'm
+  | Root of ('m stmt) * 'm
+  | TreeFor of string * ('m stmt) * ('m tree_stmt) list * 'm
+[@@deriving sexp]
+
 type 'm model = {
   params_block : ('m param_dec_stmt) list;
   model_block : ('m sample_stmt) list;
   data_block : ('m data_dec_stmt) list;
+  tree_block : ('m tree_stmt) list;
 }
 [@@deriving sexp]

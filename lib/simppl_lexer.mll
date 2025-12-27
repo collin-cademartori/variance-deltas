@@ -15,6 +15,7 @@ let dec = int frac?
 let model_lit = "model"
 let param_lit = "parameters"
 let data_lit = "data"
+let tree_lit = "tree"
 let real_lit = "real"
 let array_lit = "array"
 let int_lit = "int"
@@ -43,9 +44,12 @@ rule read =
   | model_lit { MBD }
   | param_lit { PBD }
   | data_lit { DBD }
+  | tree_lit { TBD }
   | colon_lit { COLON }
   | "for" { FOR }
   | "in" { IN }
+  | "leaf" { LEAF }
+  | "root" { ROOT }
   | nat { INDEX (int_of_string (Lexing.lexeme lexbuf))}
   | dec { ARG (float_of_string (Lexing.lexeme lexbuf))}
   | varname { VAR (Lexing.lexeme lexbuf) }

@@ -13,11 +13,13 @@
 %token MBD
 %token PBD
 %token DBD
-// %token <Ast.paramtype>PTYPE
 %token <Ast.datatype>DTYPE
 %token COLON
 %token FOR
 %token IN
+%token LEAF
+%token ROOT
+%token TBD
 
 %start <Ast.meta Ast.model> filespec
 %%
@@ -27,14 +29,16 @@ block(DEC, spec):
   ;
 
 filespec:
-  | EOF { { Ast.data_block = []; Ast.params_block = []; Ast.model_block = [] } }
+  | EOF {{ Ast.data_block = []; Ast.params_block = []; Ast.model_block = []; Ast.tree_block = []; }}
   | ds = option(block(DBD, dataspec));
     ps = block(PBD, paramspec);
     ms = block(MBD, modelspec);
+    ts = block(TBD, treespec)
     {{
       Ast.data_block = Option.value ds ~default:[];
       Ast.params_block = ps; 
-      Ast.model_block = ms
+      Ast.model_block = ms;
+      Ast.tree_block = ts;
     }}
   ;
 
@@ -70,6 +74,18 @@ sampling_stmt:
   | FOR; LPAREN; loop_i = VAR; IN; loop_is = index_exp; RPAREN;
     LBRACK; loop_spec = modelspec; RBRACK;
     { Ast.For (loop_i, loop_is, loop_spec, $loc) }
+  ;
+
+treespec:
+  | vs = nonempty_list(tree_stmt) { vs }
+  ;
+
+tree_stmt:
+  | ROOT; LPAREN; var = arg; RPAREN { Ast.Root (var, $loc) }
+  | LEAF; LPAREN; vars = argslist; RPAREN { Ast.Leaf (vars, $loc) }
+  | FOR; LPAREN; loop_i = VAR; IN; loop_is = index_exp; RPAREN;
+    LBRACK; loop_spec = treespec; RBRACK;
+    { Ast.TreeFor (loop_i, loop_is, loop_spec, $loc) }
   ;
 
 argslist:

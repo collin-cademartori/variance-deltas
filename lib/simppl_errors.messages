@@ -434,3 +434,202 @@ filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG COMMA 
 ##
 
 Distributional inputs must be valid expressions involving parameters, data, or constant literals, e.g. "normal(mu, 1)".
+
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN RBRACK VAR
+##
+## Ends in an error in state: 65.
+##
+## filespec -> option(block(DBD,dataspec)) block(PBD,paramspec) block(MBD,modelspec) . block(TBD,treespec) [ # ]
+##
+## The known suffix of the stack is as follows:
+## option(block(DBD,dataspec)) block(PBD,paramspec) block(MBD,modelspec)
+##
+
+All statements must occur inside of a valid block (e.g. data, parameters, model, tree).
+
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN RBRACK TBD VAR
+##
+## Ends in an error in state: 66.
+##
+## block(TBD,treespec) -> TBD . LBRACK treespec RBRACK [ # ]
+##
+## The known suffix of the stack is as follows:
+## TBD
+##
+
+Tree block must be delimited by brackets, i.e. "tree { ... }".
+
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN RBRACK TBD LBRACK VAR
+##
+## Ends in an error in state: 67.
+##
+## block(TBD,treespec) -> TBD LBRACK . treespec RBRACK [ # ]
+##
+## The known suffix of the stack is as follows:
+## TBD LBRACK
+##
+
+Tree block must consist of node specifications (e.g. root(...) and leaf(...)) and valid control flow statements (e.g. for(i in 1:10) { ... }).
+
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN RBRACK TBD LBRACK ROOT VAR
+##
+## Ends in an error in state: 68.
+##
+## tree_stmt -> ROOT . LPAREN arg RPAREN [ ROOT RBRACK LEAF FOR ]
+##
+## The known suffix of the stack is as follows:
+## ROOT
+##
+
+Root node variables must be specified between parentheses, e.g. "root(x)".
+
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN RBRACK TBD LBRACK ROOT LPAREN TILDE
+##
+## Ends in an error in state: 69.
+##
+## tree_stmt -> ROOT LPAREN . arg RPAREN [ ROOT RBRACK LEAF FOR ]
+##
+## The known suffix of the stack is as follows:
+## ROOT LPAREN
+##
+
+When declaring root node, expression between parentheses must be a valid identifier (e.g. "root(x)", "root(y[1])").
+
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN RBRACK TBD LBRACK ROOT LPAREN ARG VAR
+##
+## Ends in an error in state: 70.
+##
+## tree_stmt -> ROOT LPAREN arg . RPAREN [ ROOT RBRACK LEAF FOR ]
+##
+## The known suffix of the stack is as follows:
+## ROOT LPAREN arg
+##
+
+When declaring root node, must give a single valid identifier enclosed between parentheses (e.g. "root(x)"). Since the root node must be a scalar, specification must not be a list (e.g. not "root(x,y)").
+
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN RBRACK TBD LBRACK LEAF VAR
+##
+## Ends in an error in state: 72.
+##
+## tree_stmt -> LEAF . LPAREN argslist RPAREN [ ROOT RBRACK LEAF FOR ]
+##
+## The known suffix of the stack is as follows:
+## LEAF
+##
+
+Leaf node variables must be specified between parentheses, e.g. "leaf(x)", "leaf(y,z)".
+
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN RBRACK TBD LBRACK LEAF LPAREN TILDE
+##
+## Ends in an error in state: 73.
+##
+## tree_stmt -> LEAF LPAREN . argslist RPAREN [ ROOT RBRACK LEAF FOR ]
+##
+## The known suffix of the stack is as follows:
+## LEAF LPAREN
+##
+
+When declaring leaf node, expression between parentheses must be a (list of) valid identifier(s) (e.g. "leaf(x)", "leaf(y[1],z)").
+
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN RBRACK TBD LBRACK FOR VAR
+##
+## Ends in an error in state: 76.
+##
+## tree_stmt -> FOR . LPAREN VAR IN index_exp RPAREN LBRACK treespec RBRACK [ ROOT RBRACK LEAF FOR ]
+##
+## The known suffix of the stack is as follows:
+## FOR
+##
+
+For loop extents must be contained within parentheses, e.g. "for (i in 1:10)...".
+
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN RBRACK TBD LBRACK FOR LPAREN TILDE
+##
+## Ends in an error in state: 77.
+##
+## tree_stmt -> FOR LPAREN . VAR IN index_exp RPAREN LBRACK treespec RBRACK [ ROOT RBRACK LEAF FOR ]
+##
+## The known suffix of the stack is as follows:
+## FOR LPAREN
+##
+
+For loop extents must declare an index variable followed by keyword "in" and a valid index set (e.g. integer array or range), e.g. "for (i in 1:10)...".
+
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN RBRACK TBD LBRACK FOR LPAREN VAR VAR
+##
+## Ends in an error in state: 78.
+##
+## tree_stmt -> FOR LPAREN VAR . IN index_exp RPAREN LBRACK treespec RBRACK [ ROOT RBRACK LEAF FOR ]
+##
+## The known suffix of the stack is as follows:
+## FOR LPAREN VAR
+##
+
+For loop indices must be followed by keyword "in" and a valid index set (e.g. integer array or range), e.g. "for (i in 1:10)...".
+
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN RBRACK TBD LBRACK FOR LPAREN VAR IN TILDE
+##
+## Ends in an error in state: 79.
+##
+## tree_stmt -> FOR LPAREN VAR IN . index_exp RPAREN LBRACK treespec RBRACK [ ROOT RBRACK LEAF FOR ]
+##
+## The known suffix of the stack is as follows:
+## FOR LPAREN VAR IN
+##
+
+Expression following "in" in for loop must be valid index set (e.g. integer array or range), e.g. "for (i in 1:10)...".
+
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN RBRACK TBD LBRACK FOR LPAREN VAR IN ARG RIND
+##
+## Ends in an error in state: 80.
+##
+## tree_stmt -> FOR LPAREN VAR IN index_exp . RPAREN LBRACK treespec RBRACK [ ROOT RBRACK LEAF FOR ]
+##
+## The known suffix of the stack is as follows:
+## FOR LPAREN VAR IN index_exp
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 17, spurious reduction of production index_exp -> arg
+##
+
+For loop extents must be contained within parentheses, e.g "for (1 in 1:10)...".
+
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN RBRACK TBD LBRACK FOR LPAREN VAR IN ARG RPAREN VAR
+##
+## Ends in an error in state: 81.
+##
+## tree_stmt -> FOR LPAREN VAR IN index_exp RPAREN . LBRACK treespec RBRACK [ ROOT RBRACK LEAF FOR ]
+##
+## The known suffix of the stack is as follows:
+## FOR LPAREN VAR IN index_exp RPAREN
+##
+
+Expressions following for loop declaration must be contained within brackets, e.g. "for (i in 1:10) {...}".
+
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN RBRACK TBD LBRACK FOR LPAREN VAR IN ARG RPAREN LBRACK VAR
+##
+## Ends in an error in state: 82.
+##
+## tree_stmt -> FOR LPAREN VAR IN index_exp RPAREN LBRACK . treespec RBRACK [ ROOT RBRACK LEAF FOR ]
+##
+## The known suffix of the stack is as follows:
+## FOR LPAREN VAR IN index_exp RPAREN LBRACK
+##
+
+All statements inside for loop must either be tree node declaration (e.g. "root(x)", "leaf(y,z)") or valid control flow expression (e.g. "for(i in 1:10)...").
+
+filespec: PBD LBRACK DTYPE VAR RBRACK MBD LBRACK ARG TILDE VAR LPAREN ARG RPAREN RBRACK TBD LBRACK LEAF LPAREN ARG RPAREN VAR
+##
+## Ends in an error in state: 85.
+##
+## nonempty_list(tree_stmt) -> tree_stmt . [ RBRACK ]
+## nonempty_list(tree_stmt) -> tree_stmt . nonempty_list(tree_stmt) [ RBRACK ]
+##
+## The known suffix of the stack is as follows:
+## tree_stmt
+##
+
+All statements inside tree block must either be node specifications (e.g. root(...) and leaf(...)) or valid control flow statements (e.g. for(i in 1:10) { ... }).
