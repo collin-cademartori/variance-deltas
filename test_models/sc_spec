@@ -1,0 +1,106 @@
+data {
+  int N_units
+  int N_pot_units
+  int K_latent
+  int T_times
+  int T_pre
+  int T_treated
+  int T_pot_times
+  int T_tot_times
+  array[T_treated] t_treated;
+  array[T_times, N_units] Y_obs
+  array[T_times_pot, N_units] Y_pot
+  array[T_tot_times, N_units_pot] Y_pot_new
+}
+
+parameters {
+  array[T_times, K_latent] factors
+  array[N_units, K_latent] factor_loadings
+  array[T_times_pot, K_latent] factors_pot
+  array[N_units_pot, K_latent] factor_loadings_pot
+  array[K_latent] factors_autocor
+  array[N_units] overall_sd
+  real frac_var_latent
+  array[T_treated] causal_effects
+}
+
+model {
+  for(t in 1:T_pre) {
+    Y_obs[t, 1] ~ normal(factors[t, 1], overall_sd[1], frac_var_latent)
+  }
+
+  for(t in 1:T_treated) {
+    Y_obs[t_treated[t], 1] ~ normal(factors[t, 1], overall_sd[1], frac_var_latent, causal_effects[t])
+  }
+
+  for(t in 1:T_times) {
+    for(k in 2:K_latent) {
+      Y_obs[t, k] ~ normal(factors[t, 1:k], factor_loadings[k, 1:k], overall_sd[k], frac_var_latent)
+    }
+    for(n in (K_latent+1):N_units) {
+      Y_obs[t, n] ~ normal(factors[t, 1:K_latent], factor_loadings[n, 1:K_latent], overall_sd[n], frac_var_latent)
+    }
+  }
+
+  for(t in 1:T_pot_times) {
+    for(k in 1:K_latent) {
+      Y_pot[t, k] ~ normal(factors_pot[t, 1:k], factor_loadings[k, 1:k], overall_sd[k], frac_var_latent)
+    }
+    for(n in (K_latent+1):N_units) {
+      Y_pot[t, n] ~ normal(factors_pot[t, 1:K_latent], factor_loadings[n, 1:K_latent], overall_sd[n], frac_var_latent)
+    }
+  }
+
+  for(t in 1:T_pot_times) {
+    for(n in 1:N_pot_units) {
+      Y_pot_new[t, n] ~ normal(factors_pot[t, 1:K_latent], factor_loadings_pot[n, 1:K_latent], frac_var_latent)
+    }
+  }
+
+  for(t in (T_pot_times+1):T_tot_times) {
+    for(n in 1:N_units_pot) {
+      Y_pot_new[t, n] ~ normal(factors[t, 1:K_latent], factor_loadings_pot[n, 1:K_latent], frac_var_latent)
+    }
+  }
+
+  for(k in 1:K_latent) {
+    factors_pot[1, k] ~ normal(factors_autocor[k])
+    for(t in 2:T_pot_times) {
+      factors_pot[t, k] ~ normal(factors_pot[t-1, k], factors_autocor[k])  
+    }
+    
+    factors[1,k] ~ normal(factors_pot[T_pot_times, k], factors_autocor[k])
+    for(t in 2:T_times) {
+      factors[t, k] ~ normal(factors[t-1, k], factors_autocor[k])
+    }
+
+    factor_loadings[k, k] ~ normal()
+  }
+
+  for(n in (K_latent+1):N_units) {
+    for(k in 1:K_latent) {
+      factor_loadings[n, k] ~ normal()
+    }
+  }
+
+  for(n in 1:N_pot_units) {
+    for(k in 1:K_latent) {
+      factor_loadings_pot[n, k] ~ normal()
+    }
+  }
+
+  for(k in 1:K_latent) {
+    factors_autocor[k] ~ uniform()
+  }
+
+  for(t in 1:T_treated) {
+    causal_effects[t] ~ normal()
+  }
+
+  for(n in 1:N_units) {
+    overall_sd[n] ~ gamma()
+  }
+
+  frac_var_latent ~ uniform()
+
+}
