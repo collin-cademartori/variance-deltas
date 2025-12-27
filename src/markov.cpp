@@ -153,7 +153,7 @@ vertex_names minimal_separator_u(MRF mrf, vertex_names u, vertex_names v, const 
 }
 
 pair<vertex_names, bool> minimal_separator(MRF mrf, vertex_names u, vertex_names v, const map<string, Vertex>& param_vertices,
-                                           std::map<std::string, std::set<std::string>> lik_facs) {
+                                           std::function<float(std::set<std::string>)> LC) {
   vertex_names min_u = minimal_separator_u(mrf, u, v, param_vertices);
   if(min_u.size() < 2) {
     return {min_u, false};
@@ -166,31 +166,40 @@ pair<vertex_names, bool> minimal_separator(MRF mrf, vertex_names u, vertex_names
     write_set(min_v);
     cout << endl << endl;
 
-    int u_complexity = 0;
-    int v_complexity = 0;
-    for (const auto& fac : lik_facs) {
-      const std::set<std::string>& fac_set = fac.second;
-      std::set<std::string> fac_int_u {};
-      std::set<std::string> fac_int_v {};
-      std::set_intersection(
-        min_u.begin(), min_u.end(),
-        fac_set.begin(), fac_set.end(),
-        std::inserter(fac_int_u, fac_int_u.begin())
-      );
-      std::set_intersection(
-        min_v.begin(), min_v.end(),
-        fac_set.begin(), fac_set.end(),
-        std::inserter(fac_int_v, fac_int_v.begin())
-      );
-      if(fac_int_u.size() > 0) {
-        u_complexity += 1;
-      }
-      if(fac_int_v.size() > 0) {
-        v_complexity += 1;
-      }
-    }
+    float u_complexity = LC(min_u);
+    float v_complexity = LC(min_v);
 
-    if(u_complexity <= v_complexity) {
+    // int u_complexity = 0;
+    // int v_complexity = 0;
+    // for (const auto& fac : lik_facs) {
+    //   const std::set<std::string>& fac_set = fac.second;
+    //   std::set<std::string> fac_int_u {};
+    //   std::set<std::string> fac_int_v {};
+    //   std::set_intersection(
+    //     min_u.begin(), min_u.end(),
+    //     fac_set.begin(), fac_set.end(),
+    //     std::inserter(fac_int_u, fac_int_u.begin())
+    //   );
+    //   std::set_intersection(
+    //     min_v.begin(), min_v.end(),
+    //     fac_set.begin(), fac_set.end(),
+    //     std::inserter(fac_int_v, fac_int_v.begin())
+    //   );
+    //   if(fac_int_u.size() > 0) {
+    //     u_complexity += 1;
+    //   }
+    //   if(fac_int_v.size() > 0) {
+    //     v_complexity += 1;
+    //   }
+    // }
+
+    if(u_complexity == v_complexity) {
+      if(min_v.size() < min_u.size()) {
+        return {min_v, true};
+      } else {
+        return {min_u, false};
+      }
+    } else if(u_complexity <= v_complexity) {
       return {min_u, false};
     } else {
       return {min_v, true};
@@ -218,7 +227,7 @@ markov_chain markov::make_chain(
   MRF mrf, vertex_names source, vertex_names sink, 
   vertex_names globals,
   const map<string, Vertex>& param_vertices,
-  std::map<std::string, std::set<std::string>> lik_facs, double y_cut
+  std::function<float(std::set<std::string>)> LC, double y_cut
 ) {
 
   cout << "Removing globals... ";
@@ -260,24 +269,25 @@ markov_chain markov::make_chain(
     write_set(cur_end);
     cout << endl << endl;
 
-    auto separator_data = minimal_separator(mrf, cur_start, cur_end, param_vertices, lik_facs);
+    auto separator_data = minimal_separator(mrf, cur_start, cur_end, param_vertices, LC);
     separator = separator_data.first;
     closer_to_v = separator_data.second;
 
-    double sep_complexity = 0;
-    for (const auto& fac : lik_facs) {
-      const std::set<std::string>& fac_set = fac.second;
-      std::set<std::string> fac_int {};
-      std::set_intersection(
-        separator.begin(), separator.end(),
-        fac_set.begin(), fac_set.end(),
-        std::inserter(fac_int, fac_int.begin())
-      );
-      if(fac_int.size() > 0) {
-        sep_complexity += 1;
-      }
-    }
-    sep_complexity = sep_complexity / static_cast<double>(lik_facs.size());
+    float sep_complexity = LC(separator);
+    // double sep_complexity = 0;
+    // for (const auto& fac : lik_facs) {
+    //   const std::set<std::string>& fac_set = fac.second;
+    //   std::set<std::string> fac_int {};
+    //   std::set_intersection(
+    //     separator.begin(), separator.end(),
+    //     fac_set.begin(), fac_set.end(),
+    //     std::inserter(fac_int, fac_int.begin())
+    //   );
+    //   if(fac_int.size() > 0) {
+    //     sep_complexity += 1;
+    //   }
+    // }
+    // sep_complexity = sep_complexity / static_cast<double>(lik_facs.size());
 
     // set<string> y_int;
     // set_intersection(y_names.begin(), y_names.end(),
@@ -344,13 +354,13 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
   const vertex_names& globals, 
   VertexMap& param_vertices,
   const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars,
-  std::map<std::string, std::set<std::string>> lik_facs, double y_cut = 1
+  std::function<float(std::set<std::string>)> LC, double y_cut = 1
 ) {
   int num_leaves = leaves.size();
   vector<markov_chain> chains(num_leaves);
   vector<markov_chain::iterator> chain_it(num_leaves);
   for(int ci = 0; ci < num_leaves; ++ci) {
-    chains[ci] = markov::make_chain(mrf, { root }, leaves[ci], globals, param_vertices, lik_facs, y_cut);
+    chains[ci] = markov::make_chain(mrf, { root }, leaves[ci], globals, param_vertices, LC, y_cut);
     chain_it[ci] = chains[ci].begin();
   }
 
@@ -670,7 +680,26 @@ void markov::extrude_branch(
 
   add_edge(node, new_node, tree);
 
+}
 
+void markov::delete_node(
+  MTree& tree, const Node& root,
+  int node_name
+) {
+  auto [node, node_anc] = locate_node_depth_first(tree, root, node_name);
+  if(node_anc.size() < 2) {
+    return;
+  }
+  Node parent_node = node_anc[node_anc.size() - 2];
+
+  auto [branch_it, branch_end] = out_edges(node, tree);
+  while(branch_it != branch_end) {
+    add_edge(parent_node, target(*branch_it, tree), tree);
+    branch_it = std::next(branch_it);
+  }
+
+  clear_vertex(node, tree);
+  remove_vertex(node, tree);
 }
 
 void markov::merge_nodes(
@@ -678,7 +707,7 @@ void markov::merge_nodes(
   MTree& tree, const Node& root, 
   int node_name, int alt_node_name,
   const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars,
-  std::map<std::string, std::set<std::string>> lik_facs
+  std::function<float(std::set<std::string>)> LC
 ) {
   auto [node, node_anc] = locate_node_depth_first(tree, root, node_name);
   auto [alt_node, alt_node_anc] = locate_node_depth_first(tree, root, alt_node_name);
@@ -711,7 +740,7 @@ void markov::merge_nodes(
   child_params.insert(child_params_1.begin(), child_params_1.end());
   child_params.insert(child_params_2.begin(), child_params_2.end());
 
-  auto new_chain = make_chain(mrf, pre_params, child_params, globals, param_vertices, lik_facs, 1);
+  auto new_chain = make_chain(mrf, pre_params, child_params, globals, param_vertices, LC, 1);
 
   string root_param = *tree[root].parameters.begin();
   Node prev_node = parent_node;
@@ -750,17 +779,31 @@ void markov::merge_nodes(
   //   .chain_nums = {}
   // }, tree);
 
-  add_edge(prev_node, node, tree);
-  add_edge(prev_node, alt_node, tree);
-  remove_edge(node_anc[node_anc.size() - 2], node, tree);
-  remove_edge(alt_node_anc[alt_node_anc.size() - 2], alt_node, tree);
+  Node child1_copy = add_vertex({
+    .name = get_id(std::reduce<vertex_names::iterator, string>(child_params_1.begin(), child_params_1.end(), "")),
+    .parameters = child_params_1,
+    .ered = adj_r_squared(child_params_1, root_param, stan_matrix, stan_vars),
+    .depth = tree[prev_node].depth + 1,
+    .chain_nums = {}
+  }, tree);
+  Node child2_copy = add_vertex({
+    .name = get_id(std::reduce<vertex_names::iterator, string>(child_params_2.begin(), child_params_2.end(), "")),
+    .parameters = child_params_2,
+    .ered = adj_r_squared(child_params_2, root_param, stan_matrix, stan_vars),
+    .depth = tree[prev_node].depth + 1,
+    .chain_nums = {}
+  }, tree);
+  add_edge(prev_node, child1_copy, tree);
+  add_edge(prev_node, child2_copy, tree);
+  // remove_edge(node_anc[node_anc.size() - 2], node, tree);
+  // remove_edge(alt_node_anc[alt_node_anc.size() - 2], alt_node, tree);
 }
 
 void markov::auto_merge(
   MRF mrf, const vertex_names& globals, VertexMap& param_vertices,
   MTree& tree, const Node& root, 
   const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars,
-  int merge_depth, std::map<std::string, std::set<std::string>> lik_facs
+  int merge_depth, std::function<float(std::set<std::string>)> LC
 ) {
   auto leaf_anc = find_leaf_paths(tree, root);
   std::map<int, vector<Node>> node_groups;
@@ -800,14 +843,14 @@ void markov::auto_merge(
   }
 
   cout << "Merging best pair..." << endl;
-  merge_nodes(mrf, globals, param_vertices, tree, root, best_node, best_alt_node, stan_matrix, stan_vars, lik_facs);
+  merge_nodes(mrf, globals, param_vertices, tree, root, best_node, best_alt_node, stan_matrix, stan_vars, LC);
 }
 
 void markov::auto_merge2(
   MRF mrf, const vertex_names& globals, VertexMap& param_vertices,
   MTree& tree, const Node& root, 
   const Eigen::MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars,
-  int merge_depth, std::map<std::string, std::set<std::string>> lik_facs
+  int merge_depth, std::function<float(std::set<std::string>)> LC
 ) {
 
   string root_param = *tree[root].parameters.begin();
@@ -853,7 +896,7 @@ void markov::auto_merge2(
   }
 
   if(best_node != best_alt_node) {
-    merge_nodes(mrf, globals, param_vertices, tree, root, best_node, best_alt_node, stan_matrix, stan_vars, lik_facs);
+    merge_nodes(mrf, globals, param_vertices, tree, root, best_node, best_alt_node, stan_matrix, stan_vars, LC);
   } else {
     cout << "No eligible mergers!" << endl;
   }

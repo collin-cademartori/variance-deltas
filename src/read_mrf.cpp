@@ -1,8 +1,10 @@
 #include <iostream>
 #include <fstream>
 #include <iterator>
+// #include <boost/graph/adjacency_list.hpp>
 
 #include<parameter_graph.hpp>
+#include<factor_graph.hpp>
 
 using namespace std;
   
@@ -55,4 +57,31 @@ std::pair<MRF, VertexMap> read_mrf(string mrf_file_path) {
   cout << "MRF read." << endl;
 
   return std::make_pair(mrf, param_vertices);
+}
+
+std::pair<MRF, VertexMap> mrf_from_fg(FG factor_graph, FG_Map fg_params, FG_Map fg_facs) {
+  MRF mrf(0);
+  VertexMap MRF_map;
+
+  for(const auto& param: fg_params) {
+    Parameter param_data { param.first };
+    const auto param_vertex = add_vertex(param_data, mrf);
+    MRF_map.emplace(make_pair(param.first, param_vertex));
+  }
+  
+  for(auto& factor: fg_facs) {
+    const auto factor_vertex = factor.second;
+    const auto param_edges = in_edges(factor_vertex, factor_graph);
+    for(auto p1i = param_edges.first; p1i != param_edges.second; ++p1i) {
+      const auto p1_name = factor_graph[source(*p1i, factor_graph)].name;
+      for(auto p2i = std::next(p1i); p2i != param_edges.second; ++p2i) {
+        const auto p2_name = factor_graph[source(*p2i, factor_graph)].name;
+        const auto p1_vertex = MRF_map.at(p1_name);
+        const auto p2_vertex = MRF_map.at(p2_name);
+        add_edge(p1_vertex, p2_vertex, mrf);
+      }
+    }
+  }
+
+  return std::make_pair(mrf, MRF_map);
 }

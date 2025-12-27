@@ -54,7 +54,7 @@ MatrixXd predictor_matrix(const MatrixXd& stan_matrix, const std::map<std::strin
 double adj_r_squared(
   set<string> predictor_names, std::string response_name,
   const MatrixXd& stan_matrix, const std::map<std::string, int>& stan_vars,
-  bool sqrt_scale = true
+  bool sqrt_scale = true, bool split_data = true
 ) {
 
   int num_observations = stan_matrix.rows();
@@ -62,12 +62,20 @@ double adj_r_squared(
   MatrixXd predictors = predictor_matrix(stan_matrix, stan_vars, predictor_names, 1, true);
   int num_predictors = predictors.cols() - 1;
 
+  int num_rows = split_data ? (num_observations / 2) : num_observations;
+  predictors = predictors.topRows(num_rows);
+  response = response.topRows(num_rows);
+  MatrixXd predictors_test = split_data ? predictors.bottomRows(num_observations - num_rows) : predictors;
+
   VectorXd coefs = predictors.colPivHouseholderQr().solve(response);
-  VectorXd predictions = predictors * coefs;
+  VectorXd predictions = predictors_test * coefs;
 
   double SSR = (response - predictions).squaredNorm();
   double SST = (response.array() - response.mean()).matrix().squaredNorm();
-  double adj_rsq = (SSR / SST) * ((static_cast<double>(num_observations) - 1) / (static_cast<double>(num_observations) - static_cast<double>(num_predictors) - 1));
+  double adj_rsq = SSR / SST;
+  if(!split_data) { 
+    adj_rsq = adj_rsq * ((static_cast<double>(num_observations) - 1) / (static_cast<double>(num_observations) - static_cast<double>(num_predictors) - 1));
+  }
 
   if(sqrt_scale) {
     return sqrt(adj_rsq);

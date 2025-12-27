@@ -1,5 +1,5 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <iterator>
 
 #include <boost/graph/graphviz.hpp>
@@ -7,7 +7,11 @@
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/property_map/property_map.hpp>
 #include <nlohmann/json.hpp>
+#include <boost/program_options.hpp>
+#include <boost/process.hpp>
+#include <boost/asio.hpp>
 
+#include <lik_complexity.hpp>
 #include <markov.hpp>
 #include <ws_client.hpp>
 #include <read_mrf.hpp>
@@ -16,112 +20,244 @@
 #include <regression.hpp>
 #include <serialize_tree.hpp>
 
+namespace options = boost::program_options;
+namespace proc = boost::process;
+namespace asio = boost::asio;
 using namespace std;
-using namespace boost;
 using namespace markov;
 using json = nlohmann::json;
 
-int main(int, char* []) {
+int main(int argc, char* argv[]) {
+
+  options::options_description ops_desc("Command line options.");
+  auto ops = ops_desc.add_options();
+  ops("help", "print this help message")
+  ("model_file,M", options::value<string>()->required(), "specify the model file")
+  ("data_file,D", options::value<string>()->required(), "specify the data file")
+  ("stan_file_prefix,S",options::value<string>()->required(), "specify the prefix of Stan's MCMC output CSV files")
+  ("num_chains,N", options::value<int>()->required(), "specify the number of MCMC chains, i.e. the number of MCMC CSV files to read");
+
+  options::variables_map user_input;
+
+  try {
+    options::store(options::parse_command_line(argc, argv, ops_desc), user_input);
+
+    if(user_input.count("help")) {
+      std::cout << ops_desc << endl;
+      return 0;
+    }
+
+    options::notify(user_input);
+  } catch (options::required_option& err) {
+    std::cerr << "Must specify options " << err.what() << endl << "Run with --help for details." << endl;
+    return 1;
+  }
+
+  const string& spec_file = user_input["model_file"].as<string>();
+  const string& data_file = user_input["data_file"].as<string>();
+  const string& stan_file_prefix = user_input["stan_file_prefix"].as<string>();
+  const int num_chains = user_input["num_chains"].as<int>();
+
+  //Polling model code
 
   // auto [mrf, param_vertices] = read_mrf("../data/election_model/elec_r3.mrf");
   // auto stan_data = read_stan_file("../data/election_model/standata", 6);
 
+  // std::map<std::string, vertex_names> lik_facs {};
+
   // string leaf_base = "n_democrat_potential";
   // set<string> leaves_set;
-  // for(int j = 1; j <= 54; ++j) {
-  //   leaves.insert(leaf_base + "[" + to_string(j) + "]");
+  // for(int j = 1; j <= 18; ++j) {
+  //   leaves_set.insert(leaf_base + "[" + to_string(j) + "]");
   // }
   // vector<set<string>> leaves;
   // leaves.push_back(leaves_set);
 
-  // string root_name = "mu_b[49,39]";
+  // string root_name = "mu_b[49,42]"; // day 39, up to 46
 
   // set<string> global_params = {};
 
-  auto [mrf, param_vertices] = read_mrf("../data/sc_model/sc_model.mrf");
-  auto lik_facs = read_lik("../data/sc_model/sc_model.lik");
-  auto stan_data = read_stan_file("../data/sc_model/sc_reprod_", 4);
+  // Synthetic control model code
+
+  // auto [mrf, param_vertices] = read_mrf("../data/sc_model/sc_model.mrf");
+  // auto lik_facs = read_lik("../data/sc_model/sc_model.lik");
+  // auto stan_data = read_stan_file("../data/sc_model/sc_reprod_", 4);
+
+  // string leaf_base = "y_pot";
+  // vector<set<string>> leaves;
+  // for(int j = 1; j <= 6; ++j) { // j <= 6
+  //   set<string> leaf;
+  //   for(int k = 1; k <= 5; ++k) {
+  //     leaf.insert(leaf_base + "[" + to_string(k) + "," + to_string(j) + "]");
+  //   }
+  //   leaves.push_back(leaf);
+  // }
+
+  // set<string> leaf;
+  // for(int k = 7; k <= 16; ++k) {
+  //   leaf.insert(leaf_base + "_new[" + to_string(k) + ",1]");
+  // }
+  // leaves.push_back(leaf);
+
+  // string root_name = "causal_effects[4]";
+
+  // set<string> global_params = {
+  //   "frac_var_latent", "overall_sd[1]", "overall_sd[2]",
+  //   "overall_sd[3]", "overall_sd[4]", "overall_sd[5]", "overall_sd[6]"
+  // };
+
+  // Toy hierarchical model code
+
+  // auto [fg, fg_params, fg_facs] = read_fg_from_file("../data/toy_model/toy_model.fg");
+  // auto [mrf, param_vertices] = mrf_from_fg(fg, fg_params, fg_facs);
+  //auto [mrf, param_vertices] = read_mrf("../data/toy_model/toy_model.mrf");
+  // auto lik_facs = read_lik("../data/toy_model/toy_model.lik");
+  // auto stan_data = read_stan_file("../data/toy_model/toy_fit", 4);
+
+  // const auto& t1_facs = closest_factors(fg_params.at("theta[1]"), fg);
+  // cout << "Closest likelihood factors to theta[1]:" << endl;
+  // for(const auto& fac_name : t1_facs) {
+  //   cout << fac_name << "; ";
+  // }
+  // cout << endl;
+
+  // const auto& mu_facs = closest_factors(fg_params.at("mu"), fg);
+  // cout << "Closest likelihood factors to mu:" << endl;
+  // for(const auto& fac_name : mu_facs) {
+  //   cout << fac_name << "; ";
+  // }
+  // cout << endl;
+
+  // const auto likelihood_complexity = get_complexity(fg, fg_params, fg_facs);
+  // const auto c1 = likelihood_complexity({"theta[1]","mu"});
+  // const auto c2 = likelihood_complexity({"theta[1]","theta[2]"});
+  // std::cout << "Complexity of {theta[1], mu} is: " << c1 << std::endl;
+  // std::cout << "Complexity of {theta[1], theta[2]} is: " << c2 << std::endl;
 
   string leaf_base = "y_pot";
   vector<set<string>> leaves;
-  for(int j = 1; j <= 6; ++j) { // j <= 6
+  for(int j = 1; j <= 3; ++j) {
     set<string> leaf;
-    for(int k = 1; k <= 5; ++k) {
+    for(int k = 1; k <= 2; ++k) {
       leaf.insert(leaf_base + "[" + to_string(k) + "," + to_string(j) + "]");
     }
     leaves.push_back(leaf);
   }
 
-  set<string> leaf;
-  for(int k = 7; k <= 16; ++k) {
-    leaf.insert(leaf_base + "_new[" + to_string(k) + ",1]");
+  string root_name = "mu";
+
+  set<string> global_params = {};
+
+  // Begin generic algorithm
+
+  asio::io_context ioc;
+  asio::readable_pipe interp_pipe{ioc};
+
+  proc::process interp_proc(
+    ioc,
+    "../parse-fg-spec", 
+    { spec_file, "-d", data_file },
+    proc::process_stdio({{}, interp_pipe, {}})
+  );
+
+  string fg_data;
+  boost::system::error_code pipe_code;
+  asio::read(interp_pipe, asio::dynamic_buffer(fg_data), pipe_code);
+
+  if(pipe_code != asio::error::eof) {
+    cout << "Error reading interpreter output." << endl;
+    return 1;
   }
-  leaves.push_back(leaf);
 
-  string root_name = "causal_effects[4]";
+  interp_proc.wait();
+  
+  auto [fg, fg_params, fg_facs] = read_fg(fg_data);
+  const auto likelihood_complexity = get_complexity(fg, fg_params, fg_facs);
+  auto [mrf, param_vertices] = mrf_from_fg(fg, fg_params, fg_facs);
+  auto stan_data = read_stan_file(stan_file_prefix, num_chains);
 
-  set<string> global_params = {
-    "frac_var_latent", "overall_sd[1]", "overall_sd[2]",
-    "overall_sd[3]", "overall_sd[4]", "overall_sd[5]", "overall_sd[6]"
-  };
+  auto global_adj_r = adj_r_squared(global_params, root_name, *stan_data.samples, stan_data.vars);
+
+  std::map<std::string, std::set<std::string>> tree_groups {};
 
   auto [mtree, root_node] = make_tree(
     mrf, root_name, { leaves },
     global_params, param_vertices,
-    *stan_data.samples, stan_data.vars, lik_facs, 0.66);
+    *stan_data.samples, stan_data.vars, likelihood_complexity, 1); // 0.66
 
   handle_method("get_tree", [&](json _data){
     cout << "Sending tree to server..." << endl;
-    return std::make_optional(serialize_tree(root_node, *mtree));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
   });
 
-  handle_method("divide_branch", [&root_node, &mtree, &stan_data](json args) {
+  handle_method("divide_branch", [&](json args) {
     int node_name = args.at("node_name");
     set<string> params_kept;
     for(const string& param: args.at("params_kept")) {
       params_kept.insert(param);
     }
     divide_branch(*mtree, root_node, node_name, params_kept, *stan_data.samples, stan_data.vars);
-    return std::make_optional(serialize_tree(root_node, *mtree));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
   });
 
-  handle_method("auto_divide", [&root_node, &mtree, &stan_data](json args) {
+  handle_method("auto_divide", [&](json args) {
     int node_name = args.at("node_name");
     auto_divide(*mtree, root_node, node_name, *stan_data.samples, stan_data.vars);
-    return std::make_optional(serialize_tree(root_node, *mtree));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
   });
 
-  handle_method("extrude_branch", [&root_node, &mtree, &stan_data](json args) {
+  handle_method("extrude_branch", [&](json args) {
     int node_name = args.at("node_name");
     set<string> params_kept;
     for(const string& param: args.at("params_kept")) {
       params_kept.insert(param);
     }
     extrude_branch(*mtree, root_node, node_name, params_kept, *stan_data.samples, stan_data.vars);
-    return std::make_optional(serialize_tree(root_node, *mtree));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
+  });
+
+  handle_method("delete_node", [&](json args) {
+    int node_name = args.at("node_name");
+    delete_node(*mtree, root_node, node_name);
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
   });
 
   handle_method("merge_nodes", [&](json args) {
     int node_name = args.at("node_name");
     int alt_node_name = args.at("alt_node_name");
-    merge_nodes(mrf, global_params, param_vertices, *mtree, root_node, node_name, alt_node_name, *stan_data.samples, stan_data.vars, lik_facs);
-    return std::make_optional(serialize_tree(root_node, *mtree));
+    merge_nodes(mrf, global_params, param_vertices, *mtree, root_node, node_name, alt_node_name, *stan_data.samples, stan_data.vars, likelihood_complexity);
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
   });
 
   handle_method("auto_merge", [&](json args) {
-    auto_merge2(mrf, global_params, param_vertices, *mtree, root_node, *stan_data.samples, stan_data.vars, 1, lik_facs);
-    return std::make_optional(serialize_tree(root_node, *mtree));
+    auto_merge2(mrf, global_params, param_vertices, *mtree, root_node, *stan_data.samples, stan_data.vars, 1, likelihood_complexity);
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
   });
 
+  handle_method("define_group", [&](json args) {
+    cout << "Handling group definition..." << endl;
+    std::string group_name = args.at("group_name");
+    vector<std::string> node_names = args.at("node_names");
+    set<string> node_names_set(node_names.begin(), node_names.end());
+    tree_groups.insert(std::make_pair(group_name, node_names_set));
+    return std::make_optional(serialize_groups(tree_groups, true));
+  });
+
+  handle_method("delete_group", [&](json args) {
+    cout << "Handling group deletion..." << endl;
+    std::string group_name = args.at("group_name");
+    tree_groups.erase(group_name);
+    return std::make_optional(serialize_groups(tree_groups, true));
+  });
 
   handle_method("reset_tree", [&](json args) {
     auto init_tree = make_tree(
       mrf, root_name, leaves,
       global_params, param_vertices,
-      *stan_data.samples, stan_data.vars, lik_facs, 0.66);
+      *stan_data.samples, stan_data.vars, likelihood_complexity, 0.66);
     mtree = std::move(init_tree.first);
     root_node = init_tree.second;
-    return std::make_optional(serialize_tree(root_node, *mtree));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
   });
 
   start_ws_client();

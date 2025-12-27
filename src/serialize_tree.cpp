@@ -39,7 +39,50 @@ pair<string,string> serialize_node(const Node& node, const MTree& tree, string p
   return make_pair(serialized_str, node_name);
 }
 
-string serialize_tree(const Node& root, const MTree& tree) {
+string serialize_set(const set<string>& str_set) {
+  string globals_string = "[";
+  for(auto git = str_set.begin(); git != str_set.end(); git = std::next(git)) {
+    globals_string += "\"" + *git + "\"";
+    if(std::next(git) != str_set.end()) {
+      globals_string += ",";
+    }
+  }
+  globals_string += "]";
+
+  return(globals_string);
+}
+
+string serialize_groups(const map<string, set<string>> groups, bool wrap_message) {
+
+  string serialized_groups = "{";
+  for(auto mit = groups.begin(); mit != groups.end(); mit = std::next(mit)) {
+
+    const auto group_name = mit->first;
+    const auto& node_names = mit->second;
+    const string node_names_str = serialize_set(node_names);
+    
+    serialized_groups += "\"" + group_name + "\":" + node_names_str;
+    if(std::next(mit) != groups.end()) {
+      serialized_groups += ",";
+    }
+  }
+  serialized_groups += "}";
+
+  if(wrap_message) {
+    string groups_str = "{\"type\":\"groups\",";
+    groups_str += "\"groups\":" + serialized_groups;
+    groups_str += "}";
+    return groups_str;
+  } else {
+    return serialized_groups;
+  }
+}
+
+string serialize_tree(
+  const Node& root, const MTree& tree,
+  const set<string>& globals, double global_limit,
+  const map<string, set<string>>& groups
+) {
 
   queue<pair<Node, string>> node_queue{};
 
@@ -65,7 +108,15 @@ string serialize_tree(const Node& root, const MTree& tree) {
   serialized_tree = serialized_tree.substr(0, serialized_tree.size() - 1);
   serialized_tree += "]";
 
+  string serialized_globals = serialize_set(globals);
+  string serialized_groups = serialize_groups(groups, false);
+
   string tree_str = "{\"type\":\"tree\",";
-  tree_str += ("\"tree\":" + serialized_tree + "}");
+  tree_str += "\"tree\":" + serialized_tree + ",";
+  tree_str += "\"globals\":" + serialized_globals + ",";
+  tree_str += "\"global_limit\":" + std::to_string(global_limit) + ",";
+  tree_str += "\"groups\":" + serialized_groups;
+  tree_str += "}";
+  cout << tree_str << endl;
   return tree_str;
 }
