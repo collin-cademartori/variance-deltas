@@ -105,22 +105,26 @@ let expand_integer data_env stmt =
     
 let eval_stmt param_ctx data_env = function
   | Ast.Var (vn, i_stmts, loc) -> begin match i_stmts with
-    | [] -> vn :: [] (* failwith "Currently only support scalar values on left-hand side of sampling statements." *)
-    | _ -> if (List.assoc_opt vn data_env <> None) then []
-      else let indices = List.map (fun i_stmt -> expand_extent data_env i_stmt) i_stmts in
+    | [] -> (vn :: [], List.assoc_opt vn data_env <> None) (* failwith "Currently only support scalar values on left-hand side of sampling statements." *)
+    | _ -> let indices = List.map (fun i_stmt -> expand_extent data_env i_stmt) i_stmts in
       let index_list = try to_int_lists indices
         with DataError msg -> raise (RuntimeError (msg, loc)) in
-      try form_indexed_names vn index_list param_ctx
-      with 
+      try (form_indexed_names vn index_list param_ctx, List.assoc_opt vn data_env <> None)
+      with
         | BoundsError msg -> raise (RuntimeError (msg, loc))
         | Not_found -> raise (RuntimeError ("Parameter " ^ vn ^ " not found.", loc))
     end
-  | _ -> []
+  | _ -> ([], false)
+
+let get_params vs = match vs with
+  | ps, false -> ps
+  | _, true -> []
 
 let rec eval_sample fg param_ctx data_env = function
-  | Ast.Dist (dn, v, ps, _) -> let v_name = eval_stmt param_ctx data_env v in
-    let p_names = List.concat (List.map (fun st -> eval_stmt param_ctx data_env st) ps) in
-      (dn, v_name @ p_names) :: fg
+  | Ast.Dist (_, v, ps, _) -> let v_name, is_data = eval_stmt param_ctx data_env v in
+    let p_names = List.concat (List.map (fun st -> get_params (eval_stmt param_ctx data_env st)) ps) in
+    let d_name = if is_data then (String.concat ";" v_name) ^"_lik" else (String.concat ";" v_name) ^ "_dist" in
+      (d_name, (if is_data then [] else v_name) @ p_names) :: fg
   | Ast.For (l_index, l_extent, l_body, _) -> 
     let ext_list = Array.to_list (Arr.to_array (expand_extent data_env l_extent)) in
     let stmt_vals = List.map (fun i_val -> 
@@ -140,9 +144,19 @@ let eval_param param_ctx data_env = function
 let eval_params data_env param_block =
   List.fold_left (fun pd param -> eval_param pd data_env param) [] param_block
 
-let eval_model data_env pblock mblock = 
+let eval_datum param_ctx data_env = function
+  | Ast.Data (dname, _, dis, loc) -> 
+    let dims = try List.map (fun di -> expand_integer data_env di) dis
+    with DataError msg -> raise (RuntimeError (msg, loc)) in
+    (dname, dims) :: param_ctx
+
+let eval_data data_env data_block =
+  List.fold_left (fun pd datum -> eval_datum pd data_env datum) [] data_block
+
+let eval_model data_env dblock pblock mblock = 
   try begin
-    let param_ctx = eval_params data_env pblock in
+    let param_only_ctx = eval_params data_env pblock in
+    let param_ctx = param_only_ctx @ (eval_data data_env dblock) in
     List.fold_left (fun fg ss -> eval_sample fg param_ctx data_env ss) [] mblock
   end with RuntimeError (emsg, eloc) -> 
     raise (RuntimeError ("Runtime error. " ^ emsg, eloc))
