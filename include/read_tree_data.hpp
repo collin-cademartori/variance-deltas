@@ -1,0 +1,7 @@
+#pragma once
+
+#include <set>
+
+typedef std::vector<std::set<std::string>> leaves_t;
+
+std::pair<std::string, leaves_t> read_tree_data(std::string tree_data);

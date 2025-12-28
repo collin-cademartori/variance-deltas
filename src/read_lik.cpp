@@ -59,7 +59,7 @@ std::tuple<FG, FG_Map, FG_Map> read_fg(std::string fg_data) {
 
     // Connect factor node to parameter nodes, adding parameter
     // vertices as necessary.
-    while(getline(fg_stream, fg_line) && fg_line != "---") {
+    while(getline(fg_stream, fg_line) && fg_line != "-") {
       const auto param_node_it = fg_params.find(fg_line);
       FG_Vertex param_vertex;
       if(param_node_it == fg_params.end()) {

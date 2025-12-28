@@ -10,7 +10,7 @@ find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(nlohmann_json 3.12.0 REQUIRED)
 
-set(GRAPH_SOURCES mrf.cpp markov.cpp ws_client.cpp read_mrf.cpp read_lik.cpp read_stan.cpp regression.cpp serialize_tree.cpp lik_complexity.cpp)
+set(GRAPH_SOURCES mrf.cpp markov.cpp ws_client.cpp read_mrf.cpp read_lik.cpp read_stan.cpp regression.cpp serialize_tree.cpp lik_complexity.cpp read_tree_data.cpp)
 add_executable(graph_test ${GRAPH_SOURCES})
 target_link_libraries(graph_test Boost::headers Boost::program_options Boost::system Boost::process)
 target_link_libraries(graph_test OpenSSL::SSL OpenSSL::Crypto)

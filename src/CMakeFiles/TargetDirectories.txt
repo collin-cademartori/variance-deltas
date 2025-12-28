@@ -1,3 +1,0 @@
-/Users/collin/Documents/Wake/Research/FactorSearch2/Server/src/CMakeFiles/graph_test.dir
-/Users/collin/Documents/Wake/Research/FactorSearch2/Server/src/CMakeFiles/edit_cache.dir
-/Users/collin/Documents/Wake/Research/FactorSearch2/Server/src/CMakeFiles/rebuild_cache.dir

@@ -15,6 +15,7 @@
 #include <markov.hpp>
 #include <ws_client.hpp>
 #include <read_mrf.hpp>
+#include <read_tree_data.hpp>
 #include <read_lik.hpp>
 #include <read_stan.hpp>
 #include <regression.hpp>
@@ -134,19 +135,17 @@ int main(int argc, char* argv[]) {
   // std::cout << "Complexity of {theta[1], mu} is: " << c1 << std::endl;
   // std::cout << "Complexity of {theta[1], theta[2]} is: " << c2 << std::endl;
 
-  string leaf_base = "y_pot";
-  vector<set<string>> leaves;
-  for(int j = 1; j <= 3; ++j) {
-    set<string> leaf;
-    for(int k = 1; k <= 2; ++k) {
-      leaf.insert(leaf_base + "[" + to_string(k) + "," + to_string(j) + "]");
-    }
-    leaves.push_back(leaf);
-  }
+  // string leaf_base = "y_pot";
+  // vector<set<string>> leaves;
+  // for(int j = 1; j <= 3; ++j) {
+  //   set<string> leaf;
+  //   for(int k = 1; k <= 2; ++k) {
+  //     leaf.insert(leaf_base + "[" + to_string(k) + "," + to_string(j) + "]");
+  //   }
+  //   leaves.push_back(leaf);
+  // }
 
-  string root_name = "mu";
-
-  set<string> global_params = {};
+  // string root_name = "mu";
 
   // Begin generic algorithm
 
@@ -160,9 +159,9 @@ int main(int argc, char* argv[]) {
     proc::process_stdio({{}, interp_pipe, {}})
   );
 
-  string fg_data;
+  string interp_data;
   boost::system::error_code pipe_code;
-  asio::read(interp_pipe, asio::dynamic_buffer(fg_data), pipe_code);
+  asio::read(interp_pipe, asio::dynamic_buffer(interp_data), pipe_code);
 
   if(pipe_code != asio::error::eof) {
     cout << "Error reading interpreter output." << endl;
@@ -170,7 +169,13 @@ int main(int argc, char* argv[]) {
   }
 
   interp_proc.wait();
-  
+
+  const int tree_begin = interp_data.find("\n--");
+  const string fg_data = interp_data.substr(0, tree_begin);
+  const string tree_data = interp_data.substr(tree_begin + 4);
+
+  set<string> global_params = {};
+  auto [root_name, leaves] = read_tree_data(tree_data);  
   auto [fg, fg_params, fg_facs] = read_fg(fg_data);
   const auto likelihood_complexity = get_complexity(fg, fg_params, fg_facs);
   auto [mrf, param_vertices] = mrf_from_fg(fg, fg_params, fg_facs);
