@@ -48,7 +48,7 @@ let rec typeof_stmt env = function
 let rec typecheck_s env = function
   | Ast.Dist (_, sub_left, subs_right, loc) -> 
     if (typeof_stmt env sub_left == Bool_T ||
-        not (List.for_all (fun x -> typeof_stmt env x != Bool_T) subs_right)) 
+        not (List.for_all (fun x -> typeof_stmt env x <> Bool_T) subs_right)) 
     then
       raise (TypeError ("Distribution inputs must be of numeric type.", loc))
     else true
@@ -57,6 +57,24 @@ let rec typecheck_s env = function
       let l_env = extend env l_name Int_T in
         List.for_all (fun x -> typecheck_s l_env x) sub_inner
     else raise (TypeError ("Must loop over one-dimensional integer array-like.", loc))
+
+let rec typecheck_t env (root_allowed : bool) = function
+  | Ast.TreeFor (l_name, sub_loop, sub_inner, loc) -> 
+    if (typeof_stmt env sub_loop == IntArray_T 1) then
+      let l_env = extend env l_name Int_T in
+        List.for_all (fun x -> typecheck_t l_env false x) sub_inner
+    else raise (TypeError ("Must loop over one-dimensional integer array-like.", loc))
+  | Ast.Root (root_sub, loc) ->
+    let rtype = typeof_stmt env root_sub  in 
+    if not root_allowed then 
+      raise (TypeError ("Root node can only be declared once at top-level of tree block.", loc))
+    else if (rtype <> Int_T && rtype <> Float_T) then
+      raise (TypeError ("Root node variables must be of scalar numeric type.", loc))
+    else false
+  | Ast.Leaf (leaf_subs, loc) ->
+    if (not (List.for_all (fun x -> typeof_stmt env x <> Bool_T) leaf_subs)) then
+      raise (TypeError ("Leaf node variables must be of numeric type.", loc))
+    else true
 
 let add_param_to_env env param = match param with
   | Ast.Param (pn, pt, pi, loc) -> try match pi with
@@ -95,6 +113,8 @@ let check_model model =
   try begin
     let data_env = List.fold_left add_datum_to_env empty model.data_block in
       let model_env = List.fold_left add_param_to_env data_env model.params_block in
-        ignore (List.for_all (fun ms -> typecheck_s model_env ms) model.model_block)
+        ignore (List.for_all (fun ms -> typecheck_s model_env ms) model.model_block);
+        let typecheck_t_and_track_root = (fun root_okay ts -> (typecheck_t model_env root_okay ts) && root_okay) in
+        ignore (List.fold_left typecheck_t_and_track_root true model.tree_block)
   end with
     | TypeError (msg, loc) -> raise (TypeError ("Type checking failed. " ^ msg, loc))

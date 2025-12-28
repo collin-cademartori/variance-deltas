@@ -48,9 +48,9 @@ let () =
       let fg = eval_model data_env tree.data_block tree.params_block tree.model_block in
         ignore (List.map (fun (dname, ps) -> print_endline ((String.concat "\n" (dname :: ps)) ^ "\n---")) fg)
     end with
-    | TypeError (msg, loc) -> print_err msg loc text
-    | RuntimeError (msg, loc) -> print_err msg loc text
-    | DataError (msg, loc) -> print_err msg loc text
+      | TypeError (msg, loc) -> print_err msg loc text
+      | RuntimeError (msg, loc) -> print_err msg loc text
+      | DataError (msg, loc) -> print_err msg loc text
   with 
     | ParseError err -> print_endline err;
     | Yojson.Json_error msg ->
