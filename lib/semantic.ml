@@ -1,5 +1,6 @@
 open Static_env.StaticEnv
 open Ast
+open Lib_types
 
 exception TypeError of string * meta
 exception IndexError of string
@@ -18,6 +19,18 @@ let rec typeof_stmt env = function
     if(typeof_stmt env x == Int_T && typeof_stmt env y == Int_T) then
       IntArray_T 1
     else raise (TypeError ("Range requires integer limits.", loc))
+  | Ast.Func (f, args, loc) -> begin try
+      let farg_type, fret_type = List.assoc f func_types in
+      let arg_types = (List.map (fun x -> typeof_stmt env x) args) in
+      if List.for_all2 (fun a fa  -> a = fa) arg_types farg_type then fret_type else
+        let find_bad_arg = (fun i a -> if a <> (List.nth farg_type i) then Some (a, List.nth farg_type i, i) else None) in
+        let _, _, i = Option.get (List.find_mapi find_bad_arg arg_types) in
+        raise (TypeError (
+          "Argument at position " ^ (string_of_int i) ^ " has incorrect type.",
+          loc))
+    with
+      | Not_found -> raise (TypeError ("No such function.", loc))
+    end
   | Ast.Var (v, ss, loc) -> 
     let tv = try lookup env v
       with LookupError s -> 
@@ -58,7 +71,7 @@ let rec typecheck_s env = function
         List.for_all (fun x -> typecheck_s l_env x) sub_inner
     else raise (TypeError ("Must loop over one-dimensional integer array-like.", loc))
 
-let rec typecheck_t env (root_allowed : bool) = function
+let rec typecheck_t env root_allowed = function
   | Ast.TreeFor (l_name, sub_loop, sub_inner, loc) -> 
     if (typeof_stmt env sub_loop == IntArray_T 1) then
       let l_env = extend env l_name Int_T in

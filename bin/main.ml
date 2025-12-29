@@ -24,7 +24,7 @@ let () = Arg.parse flag_list set_file correct_usage_message
 
 (* Run Parser and Print Formatted Output *)
 
-let print_tree = false
+let print_tree = true
 
 let print_err err_msg (err_st, err_en) code_text =
   let code_str = String.sub code_text err_st.pos_cnum (err_en.pos_cnum - err_st.pos_cnum) in
@@ -46,7 +46,11 @@ let () =
       check_model tree;
       let data_env = parse_data tree.data_block data_json in
       let fg = eval_model data_env tree.data_block tree.params_block tree.model_block in
-        ignore (List.map (fun (dname, ps) -> print_endline ((String.concat "\n" (dname :: ps)) ^ "\n---")) fg)
+        ignore (List.map (fun (dname, ps) -> print_endline ((String.concat "\n" (dname :: ps)) ^ "\n-")) fg);
+      print_endline("--");
+      let tree = eval_tree data_env tree.params_block tree.tree_block in
+        let () = print_endline tree.root in
+          ignore (List.map (fun l_names -> print_endline (String.concat ", " l_names)) tree.leaves);
     end with
       | TypeError (msg, loc) -> print_err msg loc text
       | RuntimeError (msg, loc) -> print_err msg loc text

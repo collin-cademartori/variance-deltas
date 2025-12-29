@@ -11,7 +11,7 @@ let digit = ['0'-'9']
 let int = '-'? digit+
 let nat = digit+
 let frac = '.' digit+
-let dec = int frac?
+let dec = int frac
 let model_lit = "model"
 let param_lit = "parameters"
 let data_lit = "data"
@@ -50,7 +50,7 @@ rule read =
   | "in" { IN }
   | "leaf" { LEAF }
   | "root" { ROOT }
-  | nat { INDEX (int_of_string (Lexing.lexeme lexbuf))}
+  | int { INDEX (int_of_string (Lexing.lexeme lexbuf))}
   | dec { ARG (float_of_string (Lexing.lexeme lexbuf))}
   | varname { VAR (Lexing.lexeme lexbuf) }
   | _ 

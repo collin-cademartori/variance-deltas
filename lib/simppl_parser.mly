@@ -1,7 +1,7 @@
 %token TILDE
 %token <string>VAR
-%token <int>INDEX
 %token <float>ARG 
+%token <int>INDEX
 %token EOF
 %token LPAREN
 %token RPAREN
@@ -96,6 +96,7 @@ arg:
   | iarg = INDEX { Ast.LitInt (iarg, $loc) }
   | farg = ARG { Ast.Lit (farg, $loc) }
   | varg = VAR; il = option(index_list(index_exp)) { Ast.Var (varg, Option.value il ~default:[], $loc) }
+  | fname = VAR; LPAREN; fargs = argslist; RPAREN { Ast.Func (List.assoc fname Lib_types.func_exp, fargs, $loc) }
   ;
 
 index_list(exp):

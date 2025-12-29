@@ -1,5 +1,6 @@
 open! Core
 open Lexing
+open Lib_types
 
 type meta = position * position
 
@@ -13,6 +14,7 @@ type 'm stmt =
   | LitInt of int * 'm
   | Var of string * ('m stmt) list * 'm
   | Range of ('m stmt) * ('m stmt) * 'm
+  | Func of func_t * ('m stmt) list * 'm
 [@@deriving sexp]
 
 type 'm sample_stmt = 

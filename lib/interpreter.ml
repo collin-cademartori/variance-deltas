@@ -15,6 +15,11 @@ type data_environment = (string * int_data) list
 
 type param_data = (string * (int list)) list
 
+type tree_data = {
+  root: string;
+  leaves: string list list
+}
+
 let index_from_array arr = Arr.init int_kind [|Array.length arr|] (fun i -> arr.(i))
 
 let append_dim grid new_dim =
@@ -66,6 +71,11 @@ let ar_singleton i = Arr.create int_kind [|1|] i
 let ar_seq sv ev = if (sv <= ev) then Arr.sequential int_kind ~a:sv ~step:1 [|(ev-sv+1)|]
   else raise (DataError "Sequence start value must be less or equal to end value.")
 
+let apply2_arr f = function
+  | [a1; a2] -> if (Arr.shape a1 = [|1|] && Arr.shape a2 = [|1|]) then f (Arr.get a1 [|0|]) (Arr.get a2 [|0|]) else
+      raise (DataError "Arguments not scalars.")
+  | _ -> raise (DataError "Wrong number of arguments.")
+
 let rec expand_extent data_env = function
   | Ast.Lit (_, loc) -> raise (RuntimeError ("Loop extents must have integer type.", loc))
   | Ast.LitInt (i, _) -> Arr.create int_kind [|1|] i
@@ -75,6 +85,15 @@ let rec expand_extent data_env = function
       ar_seq (Arr.get vle [|0|]) (Arr.get vue [|0|])
     with DataError msg -> raise (RuntimeError (msg, loc))
     else raise (RuntimeError ("Sequence lower and upper bounds must have integer type.", loc))
+  | Ast.Func (f, arg_stmts, loc) -> 
+    let args = List.map (fun ars -> expand_extent data_env ars) arg_stmts in
+    begin try match f with
+      | Add -> Arr.create int_kind [|1|] (apply2_arr (+) args)
+      | Max -> Arr.create int_kind [|1|] (apply2_arr max args)
+      | Min -> Arr.create int_kind [|1|] (apply2_arr min args)
+    with
+      | DataError err -> raise (RuntimeError ("Error applying function: " ^ err, loc))
+    end
   | Ast.Var (vn, i_stmts, loc) -> 
     let indices = List.map (fun i_stmt -> expand_extent data_env i_stmt) i_stmts in
     let index_list = Array.of_list (List.map (fun ind -> Arr.to_array ind) indices) in
@@ -120,6 +139,10 @@ let get_params vs = match vs with
   | ps, false -> ps
   | _, true -> []
 
+let get_params_or_throw vs = match vs with
+  | ps, false -> ps
+  | _, true -> raise (DataError "Expected parameters but got data.")
+
 let rec eval_sample fg param_ctx data_env = function
   | Ast.Dist (_, v, ps, _) -> let v_name, is_data = eval_stmt param_ctx data_env v in
     let p_names = List.concat (List.map (fun st -> get_params (eval_stmt param_ctx data_env st)) ps) in
@@ -134,6 +157,33 @@ let rec eval_sample fg param_ctx data_env = function
 and eval_samples_with fg param_ctx data_env index index_val sstmts = 
   let new_env = ((index, Some (ar_singleton index_val)) :: data_env) in
   List.concat (List.map (fun sstmt -> eval_sample fg param_ctx new_env sstmt) sstmts)
+
+let concat_trees tree_list = let init_tree = { root = (List.hd tree_list).root; leaves = [] } in
+  List.fold_left (fun at nt -> { root = at.root; leaves = nt.leaves @ at.leaves }) init_tree tree_list
+
+let rec eval_tree_stmt (tree : tree_data) param_ctx data_env = function
+  | Ast.Root (r_stmt, r_loc) -> let r_name, is_data = eval_stmt param_ctx data_env r_stmt in
+    if is_data then
+      raise (RuntimeError ("Tree declarations (root and leaf) cannot consist of data, only model parameters.", r_loc))
+    else if List.length r_name > 1 then
+      raise (RuntimeError ("Root node must be given as a single, scalar parameter.", r_loc))
+    else
+      { root = (List.hd r_name) ; leaves = tree.leaves }
+  | Ast.Leaf (l_stmts, l_loc) -> begin try
+    let l_names = List.concat (List.map (fun tt -> get_params_or_throw (eval_stmt param_ctx data_env tt)) l_stmts) in
+      { root = tree.root ; leaves = l_names :: tree.leaves }
+    with
+      | DataError _ -> raise (RuntimeError ("All arguments to leaf declaration must be model parameters, not input data.", l_loc))
+    end
+  | Ast.TreeFor (l_index, l_extent, l_body, _) -> 
+    let ext_list = Array.to_list (Arr.to_array (expand_extent data_env l_extent)) in
+    let stmt_vals = List.map (fun i_val -> 
+        eval_tree_stmts_with (tree : tree_data) param_ctx data_env l_index i_val l_body
+      ) ext_list in
+      (concat_trees (tree :: stmt_vals))
+and eval_tree_stmts_with (tree : tree_data) param_ctx data_env index index_val tstmts = 
+  let new_env = ((index, Some (ar_singleton index_val)) :: data_env) in
+  concat_trees (List.map (fun tstmt -> eval_tree_stmt tree param_ctx new_env tstmt) tstmts)
 
 let eval_param param_ctx data_env = function
   | Ast.Param (pname, _, pis, loc) -> 
@@ -158,6 +208,14 @@ let eval_model data_env dblock pblock mblock =
     let param_only_ctx = eval_params data_env pblock in
     let param_ctx = param_only_ctx @ (eval_data data_env dblock) in
     List.fold_left (fun fg ss -> eval_sample fg param_ctx data_env ss) [] mblock
+  end with RuntimeError (emsg, eloc) -> 
+    raise (RuntimeError ("Runtime error. " ^ emsg, eloc))
+
+let eval_tree data_env pblock tblock =
+  try begin
+    let param_only_ctx = eval_params data_env pblock in
+    let itree = { root = ""; leaves = [] } in
+    List.fold_left (fun tree ts -> eval_tree_stmt tree param_only_ctx data_env ts) itree tblock
   end with RuntimeError (emsg, eloc) -> 
     raise (RuntimeError ("Runtime error. " ^ emsg, eloc))
 

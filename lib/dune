@@ -18,5 +18,5 @@
  (name parser_learning)
  (preprocess
   (pps ppx_sexp_conv ppx_yojson_conv))
- (modules ast simppl_parser simppl_lexer semantic static_env interpreter read_data simppl_errors parse_file)
+ (modules ast simppl_parser simppl_lexer semantic static_env interpreter read_data simppl_errors parse_file lib_types)
  (libraries core owl menhirLib))
