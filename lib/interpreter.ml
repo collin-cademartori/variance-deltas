@@ -91,13 +91,14 @@ let rec expand_extent data_env = function
       | Add -> Arr.create int_kind [|1|] (apply2_arr (+) args)
       | Max -> Arr.create int_kind [|1|] (apply2_arr max args)
       | Min -> Arr.create int_kind [|1|] (apply2_arr min args)
+      | Sub -> Arr.create int_kind [|1|] (apply2_arr (-) args)
     with
       | DataError err -> raise (RuntimeError ("Error applying function: " ^ err, loc))
     end
   | Ast.Var (vn, i_stmts, loc) -> 
     let indices = List.map (fun i_stmt -> expand_extent data_env i_stmt) i_stmts in
-    let index_list = Array.of_list (List.map (fun ind -> Arr.to_array ind) indices) in
-    let v_array_opt =  List.assoc vn data_env in try
+    let index_list = Array.of_list (List.map (fun ind -> Arr.to_array ind) indices) in try
+    let v_array_opt =  List.assoc vn data_env in
       let v_array = Option.get v_array_opt in
       match index_list with
         | [||] -> v_array
@@ -106,6 +107,7 @@ let rec expand_extent data_env = function
         with BoundsError msg -> raise (RuntimeError (msg, loc))
     with 
     | Invalid_argument _ -> raise (RuntimeError ("Data " ^ vn ^ " not found.", loc))
+    | Not_found -> raise (RuntimeError ("Data " ^ vn ^ " not found.", loc))
     | Failure s -> begin
       print_endline "Tried to index array:";
       print_endline vn;
@@ -118,7 +120,12 @@ let rec expand_extent data_env = function
 
 let expand_integer data_env stmt =
   let maybe_int = expand_extent data_env stmt in
-  if (Arr.shape maybe_int = [|1|]) then Arr.get maybe_int [|0|] 
+  if (Arr.shape maybe_int = [|1|]) then begin 
+    try 
+      Arr.get maybe_int [|0|]
+    with
+      | Not_found -> raise (DataError "Variable not found.")
+    end
   else raise (DataError "Dimension size must be scalar integer.")
     
     
@@ -151,7 +158,7 @@ let rec eval_sample fg param_ctx data_env = function
   | Ast.For (l_index, l_extent, l_body, _) -> 
     let ext_list = Array.to_list (Arr.to_array (expand_extent data_env l_extent)) in
     let stmt_vals = List.map (fun i_val -> 
-        eval_samples_with fg param_ctx data_env l_index i_val l_body
+        eval_samples_with [] param_ctx data_env l_index i_val l_body
       ) ext_list in
       (List.concat stmt_vals) @ fg
 and eval_samples_with fg param_ctx data_env index index_val sstmts = 
@@ -161,7 +168,7 @@ and eval_samples_with fg param_ctx data_env index index_val sstmts =
 let concat_trees tree_list = let init_tree = { root = (List.hd tree_list).root; leaves = [] } in
   List.fold_left (fun at nt -> { root = at.root; leaves = nt.leaves @ at.leaves }) init_tree tree_list
 
-let rec eval_tree_stmt (tree : tree_data) param_ctx data_env = function
+let rec eval_tree_stmt tree param_ctx data_env = function
   | Ast.Root (r_stmt, r_loc) -> let r_name, is_data = eval_stmt param_ctx data_env r_stmt in
     if is_data then
       raise (RuntimeError ("Tree declarations (root and leaf) cannot consist of data, only model parameters.", r_loc))
@@ -178,10 +185,10 @@ let rec eval_tree_stmt (tree : tree_data) param_ctx data_env = function
   | Ast.TreeFor (l_index, l_extent, l_body, _) -> 
     let ext_list = Array.to_list (Arr.to_array (expand_extent data_env l_extent)) in
     let stmt_vals = List.map (fun i_val -> 
-        eval_tree_stmts_with (tree : tree_data) param_ctx data_env l_index i_val l_body
+        eval_tree_stmts_with {root = tree.root; leaves = []} param_ctx data_env l_index i_val l_body
       ) ext_list in
       (concat_trees (tree :: stmt_vals))
-and eval_tree_stmts_with (tree : tree_data) param_ctx data_env index index_val tstmts = 
+and eval_tree_stmts_with tree param_ctx data_env index index_val tstmts = 
   let new_env = ((index, Some (ar_singleton index_val)) :: data_env) in
   concat_trees (List.map (fun tstmt -> eval_tree_stmt tree param_ctx new_env tstmt) tstmts)
 

@@ -50,21 +50,23 @@ let to_lists n_dims json = if (json = `Null) then (L [||])
     raise (LocalError ("At dimenson " ^ string_of_int( n_dims - n) ^ ": " ^ msg))
   
 
-let read_from_json json d_name d_dims = let n_dims  = Array.length d_dims  in
+let read_from_json json d_name d_dims = let n_dims  = Array.length d_dims in
   json 
   |> member d_name
   |> to_lists n_dims
   |> to_marray (if n_dims = 0 then [|1|] else d_dims)
 
 let parse_datum input_json data_env = function
-  | Ast.Data (d_name, _, dis, loc) -> 
-    let dims = try Array.of_list (List.map (fun di -> Interpreter.expand_integer data_env di) dis) 
-      with Interpreter.DataError msg -> raise (DataError (msg, loc)) in
-    let datum = try read_from_json input_json d_name dims 
-    with 
-      | LocalError msg -> raise (DataError ("Error parsing JSON for data variable " ^ d_name ^ ": " ^ msg, loc)) 
-      | Type_error (msg,_) -> raise (DataError ("Error parsing JSON for data variable " ^ d_name ^ ": " ^ msg,loc))
-      | _ -> raise (DataError ("Unknown error while attempting to read input data for data variable " ^ d_name ^ ".", loc))
-    in (d_name, datum) :: data_env
+  | Ast.Data (d_name, d_type, dis, loc) -> 
+    if (Ast.dtype_is_integer d_type) then begin
+      let dims = try Array.of_list (List.map (fun di -> Interpreter.expand_integer data_env di) dis) 
+        with Interpreter.DataError msg -> raise (DataError (msg, loc)) in
+      let datum = try read_from_json input_json d_name dims
+      with 
+        | LocalError msg -> raise (DataError ("Error parsing JSON for data variable " ^ d_name ^ ": " ^ msg, loc)) 
+        | Type_error (msg,_) -> raise (DataError ("Error parsing JSON for data variable " ^ d_name ^ ": " ^ msg,loc))
+        | _ -> raise (DataError ("Unknown error while attempting to read input data for data variable " ^ d_name ^ ".", loc))
+      in (d_name, datum) :: data_env
+    end else (d_name, None) :: data_env
 
 let parse_data dblock json = List.fold_left (fun env ddec -> parse_datum json env ddec) [] dblock

@@ -9,6 +9,14 @@ let sexp_of_meta (st, en) = Sexp.List [
   Sexp.Atom (string_of_int en.pos_cnum)
 ]
 
+type datatype = Bool | Int | IArray | Real | Array
+[@@deriving sexp]
+
+let dtype_is_integer = function
+  | Int -> true
+  | IArray -> true
+  | _ -> false
+
 type 'm stmt =
   | Lit of float * 'm
   | LitInt of int * 'm
@@ -24,9 +32,6 @@ type 'm sample_stmt =
 
 (* type paramtype = Real | Array
 [@@deriving sexp] *)
-
-type datatype = Bool | Int | IArray | Real | Array
-[@@deriving sexp]
 
 type 'm param_dec_stmt = Param of string * datatype * ('m stmt) list * 'm
 [@@deriving sexp]
