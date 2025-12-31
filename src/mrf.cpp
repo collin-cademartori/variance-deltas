@@ -30,6 +30,12 @@ using json = nlohmann::json;
 
 int main(int argc, char* argv[]) {
 
+  #ifdef NDEBUG
+    std::cout << "In release mode." << std::endl;
+  #else
+    std::cout << "In debug mode." << std::endl; 
+  #endif
+
   options::options_description ops_desc("Command line options.");
   auto ops = ops_desc.add_options();
   ops("help", "print this help message")
@@ -175,6 +181,10 @@ int main(int argc, char* argv[]) {
   const string tree_data = interp_data.substr(tree_begin + 4);
 
   set<string> global_params = {};
+  // set<string> global_params = {
+  //   "frac_var_latent", "overall_sd[1]", "overall_sd[2]",
+  //   "overall_sd[3]", "overall_sd[4]", "overall_sd[5]", "overall_sd[6]"
+  // };
   auto [root_name, leaves] = read_tree_data(tree_data);  
   auto [fg, fg_params, fg_facs] = read_fg(fg_data);
   const auto likelihood_complexity = get_complexity(fg, fg_params, fg_facs);
@@ -188,7 +198,7 @@ int main(int argc, char* argv[]) {
   auto [mtree, root_node] = make_tree(
     mrf, root_name, { leaves },
     global_params, param_vertices,
-    *stan_data.samples, stan_data.vars, likelihood_complexity, 1); // 0.66
+    *stan_data.samples, stan_data.vars, likelihood_complexity, 1.01); // 0.66
 
   handle_method("get_tree", [&](json _data){
     cout << "Sending tree to server..." << endl;
@@ -259,7 +269,7 @@ int main(int argc, char* argv[]) {
     auto init_tree = make_tree(
       mrf, root_name, leaves,
       global_params, param_vertices,
-      *stan_data.samples, stan_data.vars, likelihood_complexity, 0.66);
+      *stan_data.samples, stan_data.vars, likelihood_complexity, 1);
     mtree = std::move(init_tree.first);
     root_node = init_tree.second;
     return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));

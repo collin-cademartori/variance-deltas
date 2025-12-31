@@ -43,7 +43,7 @@ void write_set(set<string>& pset) {
   for(auto pset_it = pset.begin(); pset_it != pset.end(); pset_it = std::next(pset_it)) {
     cout << *pset_it;
     if(std::next(pset_it) != pset.end()) {
-      cout << ", ";
+      cout << "; ";
     }
   }
   cout << "}";
@@ -160,14 +160,16 @@ pair<vertex_names, bool> minimal_separator(MRF mrf, vertex_names u, vertex_names
   } else {
     vertex_names min_v = minimal_separator_u(mrf, v, u, param_vertices);
 
-    cout << "Separators found:" << endl;
-    write_set(min_u);
-    cout << endl;
-    write_set(min_v);
-    cout << endl << endl;
-
     float u_complexity = LC(min_u);
     float v_complexity = LC(min_v);
+
+    cout << "Separators found:" << endl;
+    write_set(min_u);
+    cout << "Complexity: " << to_string(u_complexity) << endl;
+    cout << endl;
+    write_set(min_v);
+    cout << "Complexity: " << to_string(v_complexity) << endl;
+    cout << endl << endl;
 
     // int u_complexity = 0;
     // int v_complexity = 0;
@@ -295,10 +297,14 @@ markov_chain markov::make_chain(
     //                  std::inserter(y_int, y_int.begin()));
     // double y_perc = static_cast<double>(y_int.size()) / static_cast<double>(num_ys);
 
-    if(separator.size() == 0 || sep_complexity > y_cut) {
-      cout << "-------------------" << endl;
-      cout << "COMPLEXITY EXCEEDED" << endl;
-      cout << "-------------------" << endl;
+    if(separator.size() == 0 || sep_complexity >= y_cut) {
+      cout << "-----------------------" << endl;
+      if(separator.size() == 0) {
+        cout << "SEPARATION IMPOSSIBLE" << endl;
+      } else {
+        cout << "COMPLEXITY EXCEEDED" << endl;
+      }
+      cout << "-----------------------" << endl;
       separable = false;
     }
 
