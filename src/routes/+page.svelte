@@ -77,9 +77,9 @@
     ws.handle_groups(handle_groups);
     get_tree([]);
 
-    document.addEventListener("keydown", (ev) => {
-      if(ev.code == "KeyR") reset_tree([]);
-    });
+    // document.addEventListener("keydown", (ev) => {
+    //   if(ev.code == "KeyR") reset_tree([]);
+    // });
 
   });
 </script>

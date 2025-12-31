@@ -101,9 +101,7 @@
     <div id="snapshot_container">
       {#if show_dialog}
         <svg id="tree_static" width={plot_width + 200} bind:this={svg_snapshot}>
-          <style id="export_styles">
-            /* @import url("https://cdn.jsdelivr.net/npm/katex@0.16.27/dist/katex.min.css"); */
-          </style>
+          <style id="export_styles"></style>
           <rect width="100%" height="100%" fill="white"></rect>
           
           <g id="tree_outer_static" transform="translate(20 40)">

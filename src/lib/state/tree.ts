@@ -2,6 +2,7 @@ import * as d3 from "d3";
 import { type name_t } from "./names.ts";
 import { short_name } from "./short_names.ts";
 import { SvelteMap } from "svelte/reactivity";
+import { consts } from "./draw_data.ts";
 
 import type { flat_node, flat_tree, tree_node } from "./types.ts";
 import type { coordinates, global_data, render_config } from "./draw_data.ts";
@@ -23,7 +24,7 @@ export function annotate_tree(
   }
   const tree_with_xs = compute_xs(ft, coord.y, config.format, false, config.label_height + 8);
   const label_height_y = coord.y.invert(config.label_height);
-  compute_label_pos(tree_with_xs, label_height_y, coord.y, config.format);
+  compute_label_pos(tree_with_xs, label_height_y, coord.y, 1, config.format);
   return(tree_with_xs);
 }
 
@@ -115,16 +116,17 @@ function compute_label_pos(
   ft : d3.HierarchyNode<flat_node>, 
   label_height : number,
   y_scale : d3.ScaleLinear<number, number, never>,
+  scale: number,
   layout_format : 'normal' | 'long') {
 
-  const label_gap = y_scale.invert(2);
+  const label_gap = y_scale.invert(consts.label_gap);
   for(const desc of ft) {
     const node = desc.data;
-    const bottom_y = [node.x_pos + y_scale.invert(4.5) + label_gap, label_height]
+    const bottom_y = [node.x_pos + y_scale.invert(scale * consts.node_size / 2) + label_gap, label_height]
     if(layout_format == "long") {
       node.label_y = bottom_y[0];
     } else {
-      const top_y = [bottom_y[0] - y_scale.invert(9) - bottom_y[1] - 2*label_gap, bottom_y[1]]
+      const top_y = [bottom_y[0] - y_scale.invert(scale * consts.node_size) - bottom_y[1] - 2*label_gap, bottom_y[1]]
       node.label_y = node.depth % 2 == 0 ? top_y[0] : bottom_y[0];
     }
   }

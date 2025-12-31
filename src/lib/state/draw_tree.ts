@@ -1,6 +1,6 @@
 import type { flat_node, flat_tree, flat_branch } from "./types.ts";
 import type { SvelteMap } from "svelte/reactivity";
-import type { render_config, global_data, coordinates, event_handlers } from "./draw_data.ts";
+import { render_config, global_data, coordinates, event_handlers, consts } from "./draw_data.ts";
 import { short_name } from "./short_names.ts";
 import { global_latex, type name_t } from "./names.ts"
 import * as d3 from "d3";
@@ -112,7 +112,7 @@ export function draw_geometry(
     return pn == null ? null : {child: n, parent: pn};
   }).filter((branch) => branch != null);
 
-  // Draw branches
+  // Draw branch paths
   tree_elem.selectAll(".tree_branch")
     .data(
       branch_data,
@@ -157,7 +157,7 @@ export function draw_geometry(
       }
     );
 
-  // Draw nodes
+  // Draw tree nodes
   const tree_nodes = tree_elem.selectAll(".tree_node")
     .data(tree, (d) => (d as flat_node).name);
 
@@ -174,14 +174,14 @@ export function draw_geometry(
       g.append("rect")
         .attr("id", (d) => `${d.name}_rect${id_mod}`)
         .attr("class", "node_rect")
-        .attr("width", scale * 7)
-        .attr("height", scale * 7)
-        .attr("x", (d : flat_node) => coord.x(d.ered) - (scale * 7) / 2)
-        .attr("y", (d: flat_node) => coord.y(d.x_pos ?? 0) - (scale * 7) / 2)
-        .attr("rx", scale * 1.5)
+        .attr("width", scale * consts.node_size)
+        .attr("height", scale * consts.node_size)
+        .attr("x", (d : flat_node) => coord.x(d.ered) - (scale * consts.node_size) / 2)
+        .attr("y", (d: flat_node) => coord.y(d.x_pos ?? 0) - (scale * consts.node_size) / 2)
+        .attr("rx", scale * consts.node_radius)
         .style("fill", config.draw_color)
         .style("stroke", config.highlight_color)
-        .style("stroke-width", scale * 3.5)
+        .style("stroke-width", scale * consts.node_stroke)
       
       return(g);
     },

@@ -44,6 +44,13 @@ const default_config = {
   format: 'normal'
 }
 
+export const consts = {
+  node_size: 7,
+  node_radius: 1.5,
+  node_stroke: 3.5,
+  label_gap: 3
+}
+
 export function make_config(options: partial_config) {
   const def_copy = Object.assign({}, default_config);
   return(Object.assign(def_copy, options));
