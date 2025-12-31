@@ -1,12 +1,12 @@
-open Parser_learning.Ast
-open Parser_learning.Semantic
-open Parser_learning.Interpreter
-open Parser_learning.Read_data
+open Fg_parser.Ast
+open Fg_parser.Semantic
+open Fg_parser.Interpreter
+open Fg_parser.Read_data
 open Lexing
 open Sexplib
 open Format
 open Yojson.Basic
-open Parser_learning.Parse_file
+open Fg_parser.Parse_file
 
 (* CLI Processing Stuff *)
 

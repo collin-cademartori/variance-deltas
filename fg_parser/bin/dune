@@ -1,4 +1,5 @@
 (executable
- (public_name parser-learning)
+ (public_name fg_parser)
+ (package fg_parser)
  (name main)
- (libraries parser_learning core yojson))
+ (libraries fg_parser core yojson))

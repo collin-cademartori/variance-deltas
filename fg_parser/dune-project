@@ -1,6 +1,6 @@
 (lang dune 3.20)
 
-(name parser-learning)
+(name fg_parser)
 
 (generate_opam_files true)
 
@@ -18,10 +18,10 @@
 (documentation https://url/to/documentation)
 
 (package
- (name parser-learning)
- (synopsis "A playground for learning about parser implementation in OCaml")
- (description "A")
- (depends ocaml)
+ (name fg_parser)
+ (synopsis "A parser which converts model specifications and data into a list of factors.")
+ (description "A parser of factor graph files. These files compactly describe the factorization of a probability model in a data-dependent manner using a stan-like syntax. The factor graph parser combines these specifications with user-provided data in JSON format in order to produce a list of posterior factors, as well as specification of roor and leaf nodes for constructing variance deltas.")
+ (depends ocaml core yojson ppx_sexp_conv ppx_yojson_conv owl menhir menhirLib)
  (tags
   ("add topics" "to describe" your project)))
 

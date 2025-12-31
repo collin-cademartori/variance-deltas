@@ -1,2 +1,2 @@
 (test
- (name test_parser_learning))
+ (name test_fg_parsing))
