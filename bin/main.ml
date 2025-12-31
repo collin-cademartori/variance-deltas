@@ -24,7 +24,7 @@ let () = Arg.parse flag_list set_file correct_usage_message
 
 (* Run Parser and Print Formatted Output *)
 
-let print_tree = true
+let print_tree = false
 
 let print_err err_msg (err_st, err_en) code_text =
   let code_str = String.sub code_text err_st.pos_cnum (err_en.pos_cnum - err_st.pos_cnum) in
@@ -45,7 +45,6 @@ let () =
       if print_tree then fprintf std_formatter "%a@." Sexp.pp_hum (sexp_of_model sexp_of_meta tree);
       check_model tree;
       let data_env = parse_data tree.data_block data_json in
-      print_endline "Preparing to parse model...";
       let fg = eval_model data_env tree.data_block tree.params_block tree.model_block in
         ignore (List.map (fun (dname, ps) -> print_endline ((String.concat "\n" (dname :: ps)) ^ "\n-")) fg);
       print_endline("--");
