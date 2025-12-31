@@ -1,0 +1,2076 @@
+((params_block
+  ((Param factors Array
+    ((Var T_times () (154 161)) (Var K_latent () (163 171))) (148 180))
+   (Param factor_loadings Array
+    ((Var N_units () (189 196)) (Var K_latent () (198 206))) (183 223))
+   (Param factors_pot Array
+    ((Var T_pot_times () (232 243)) (Var K_latent () (245 253))) (226 266))
+   (Param factor_loadings_pot Array
+    ((Var N_pot_units () (275 286)) (Var K_latent () (288 296))) (269 317))
+   (Param factors_autocor Array ((Var K_latent () (326 334))) (320 351))
+   (Param overall_sd Array ((Var N_units () (360 367))) (354 379))
+   (Param frac_var_latent Real () (382 402))
+   (Param causal_effects Array
+    ((Func Sub ((Var T_times () (415 422)) (Var T_pre () (424 429)))
+      (411 430)))
+    (405 446))
+   (Param y_pot Array
+    ((Var T_pot_times () (455 466)) (Var N_units () (468 475))) (449 482))
+   (Param y_pot_new Array
+    ((Func Add ((Var T_times () (495 502)) (Var T_pot_times () (504 515)))
+      (491 516))
+     (Var N_pot_units () (518 529)))
+    (485 540))))
+ (model_block
+  ((For t (Range (LitInt 1 (563 564)) (Var T_pre () (565 570)) (563 570))
+    ((Dist normal
+      (Var Y_obs ((Var t () (584 585)) (LitInt 1 (587 588))) (578 589))
+      ((Var factors ((Var t () (607 608)) (LitInt 1 (610 611))) (599 612))
+       (Var overall_sd ((LitInt 1 (625 626))) (614 627))
+       (Var frac_var_latent () (629 644)))
+      (578 645)))
+    (554 649))
+   (For t
+    (Range (LitInt 1 (662 663))
+     (Func Sub ((Var T_times () (668 675)) (Var T_pre () (677 682)))
+      (664 683))
+     (662 683))
+    ((Dist normal
+      (Var Y_obs
+       ((Func Add ((Var T_pre () (701 706)) (Var t () (708 709))) (697 710))
+        (LitInt 1 (712 713)))
+       (691 714))
+      ((Var factors
+        ((Func Add ((Var T_pre () (736 741)) (Var t () (743 744))) (732 745))
+         (LitInt 1 (747 748)))
+        (724 749))
+       (Var overall_sd ((LitInt 1 (762 763))) (751 764))
+       (Var frac_var_latent () (766 781))
+       (Var causal_effects ((Var t () (798 799))) (783 800)))
+      (691 801)))
+    (653 805))
+   (For t (Range (LitInt 1 (818 819)) (Var T_times () (820 827)) (818 827))
+    ((For n (Range (LitInt 2 (844 845)) (Var N_units () (846 853)) (844 853))
+      ((Dist normal
+        (Var Y_obs ((Var t () (869 870)) (Var n () (872 873))) (863 874))
+        ((Var factors
+          ((Var t () (892 893))
+           (Range (LitInt 1 (895 896))
+            (Func Min ((Var n () (901 902)) (Var K_latent () (904 912)))
+             (897 913))
+            (895 913)))
+          (884 914))
+         (Var factor_loadings
+          ((Var n () (932 933))
+           (Range (LitInt 1 (935 936))
+            (Func Min ((Var n () (941 942)) (Var K_latent () (944 952)))
+             (937 953))
+            (935 953)))
+          (916 954))
+         (Var overall_sd ((Var n () (967 968))) (956 969))
+         (Var frac_var_latent () (971 986)))
+        (863 987)))
+      (835 993)))
+    (809 997))
+   (For t
+    (Range (LitInt 1 (1010 1011)) (Var T_pot_times () (1012 1023))
+     (1010 1023))
+    ((For n
+      (Range (LitInt 1 (1040 1041)) (Var N_units () (1042 1049)) (1040 1049))
+      ((Dist normal
+        (Var y_pot ((Var t () (1065 1066)) (Var n () (1068 1069)))
+         (1059 1070))
+        ((Var factors_pot
+          ((Var t () (1092 1093))
+           (Range (LitInt 1 (1095 1096))
+            (Func Min ((Var n () (1101 1102)) (Var K_latent () (1104 1112)))
+             (1097 1113))
+            (1095 1113)))
+          (1080 1114))
+         (Var factor_loadings
+          ((Var n () (1132 1133))
+           (Range (LitInt 1 (1135 1136))
+            (Func Min ((Var n () (1141 1142)) (Var K_latent () (1144 1152)))
+             (1137 1153))
+            (1135 1153)))
+          (1116 1154))
+         (Var overall_sd ((Var n () (1167 1168))) (1156 1169))
+         (Var frac_var_latent () (1171 1186)))
+        (1059 1187)))
+      (1031 1193)))
+    (1001 1197))
+   (For n
+    (Range (LitInt 1 (1210 1211)) (Var N_pot_units () (1212 1223))
+     (1210 1223))
+    ((For t
+      (Range (LitInt 1 (1240 1241)) (Var T_pot_times () (1242 1253))
+       (1240 1253))
+      ((Dist normal
+        (Var y_pot_new ((Var t () (1273 1274)) (Var n () (1276 1277)))
+         (1263 1278))
+        ((Var factors_pot
+          ((Var t () (1300 1301))
+           (Range (LitInt 1 (1303 1304)) (Var K_latent () (1305 1313))
+            (1303 1313)))
+          (1288 1314))
+         (Var factor_loadings_pot
+          ((Var n () (1336 1337))
+           (Range (LitInt 1 (1339 1340)) (Var K_latent () (1341 1349))
+            (1339 1349)))
+          (1316 1350))
+         (Var frac_var_latent () (1352 1367)))
+        (1263 1368)))
+      (1231 1374))
+     (For t
+      (Range (LitInt 1 (1388 1389)) (Var T_times () (1390 1397)) (1388 1397))
+      ((Dist normal
+        (Var y_pot_new
+         ((Func Add ((Var T_pot_times () (1421 1432)) (Var t () (1434 1435)))
+           (1417 1436))
+          (Var n () (1438 1439)))
+         (1407 1440))
+        ((Var factors
+          ((Var t () (1458 1459))
+           (Range (LitInt 1 (1461 1462)) (Var K_latent () (1463 1471))
+            (1461 1471)))
+          (1450 1472))
+         (Var factor_loadings_pot
+          ((Var n () (1494 1495))
+           (Range (LitInt 1 (1497 1498)) (Var K_latent () (1499 1507))
+            (1497 1507)))
+          (1474 1508))
+         (Var frac_var_latent () (1510 1525)))
+        (1407 1526)))
+      (1379 1532)))
+    (1201 1536))
+   (For k
+    (Range (LitInt 1 (1549 1550)) (Var K_latent () (1551 1559)) (1549 1559))
+    ((Dist normal
+      (Var factors_pot ((LitInt 1 (1579 1580)) (Var k () (1582 1583)))
+       (1567 1584))
+      ((Var factors_autocor ((Var k () (1610 1611))) (1594 1612)))
+      (1567 1613))
+     (For t
+      (Range (LitInt 2 (1627 1628)) (Var T_pot_times () (1629 1640))
+       (1627 1640))
+      ((Dist normal
+        (Var factors_pot ((Var t () (1662 1663)) (Var k () (1665 1666)))
+         (1650 1667))
+        ((Var factors_pot
+          ((Func Sub ((Var t () (1693 1694)) (LitInt 1 (1695 1696)))
+            (1689 1697))
+           (Var k () (1699 1700)))
+          (1677 1701))
+         (Var factors_autocor ((Var k () (1719 1720))) (1703 1721)))
+        (1650 1722)))
+      (1618 1730))
+     (Dist normal
+      (Var factors ((LitInt 1 (1748 1749)) (Var k () (1750 1751)))
+       (1740 1752))
+      ((Var factors_pot
+        ((Var T_pot_times () (1774 1785)) (Var k () (1787 1788)))
+        (1762 1789))
+       (Var factors_autocor ((Var k () (1807 1808))) (1791 1809)))
+      (1740 1810))
+     (For t
+      (Range (LitInt 2 (1824 1825)) (Var T_times () (1826 1833)) (1824 1833))
+      ((Dist normal
+        (Var factors ((Var t () (1851 1852)) (Var k () (1854 1855)))
+         (1843 1856))
+        ((Var factors
+          ((Func Sub ((Var t () (1878 1879)) (LitInt 1 (1880 1881)))
+            (1874 1882))
+           (Var k () (1884 1885)))
+          (1866 1886))
+         (Var factors_autocor ((Var k () (1904 1905))) (1888 1906)))
+        (1843 1907)))
+      (1815 1913)))
+    (1540 1917))
+   (For n
+    (Range (LitInt 1 (1930 1931)) (Var N_units () (1932 1939)) (1930 1939))
+    ((For k
+      (Range (LitInt 1 (1956 1957))
+       (Func Min ((Var n () (1962 1963)) (Var K_latent () (1965 1973)))
+        (1958 1974))
+       (1956 1974))
+      ((Dist normal
+        (Var factor_loadings ((Var n () (2000 2001)) (Var k () (2003 2004)))
+         (1984 2005))
+        ((LitInt 0 (2015 2016))) (1984 2017)))
+      (1947 2023)))
+    (1921 2027))
+   (For n
+    (Range (LitInt 1 (2040 2041)) (Var N_pot_units () (2042 2053))
+     (2040 2053))
+    ((For k
+      (Range (LitInt 1 (2070 2071)) (Var K_latent () (2072 2080))
+       (2070 2080))
+      ((Dist normal
+        (Var factor_loadings_pot
+         ((Var n () (2110 2111)) (Var k () (2113 2114))) (2090 2115))
+        ((LitInt 0 (2125 2126))) (2090 2127)))
+      (2061 2133)))
+    (2031 2137))
+   (For k
+    (Range (LitInt 1 (2150 2151)) (Var K_latent () (2152 2160)) (2150 2160))
+    ((Dist uniform (Var factors_autocor ((Var k () (2184 2185))) (2168 2186))
+      ((LitInt 0 (2197 2198)) (LitInt 1 (2199 2200))) (2168 2201)))
+    (2141 2205))
+   (For t
+    (Range (LitInt 1 (2218 2219))
+     (Func Sub ((Var T_times () (2224 2231)) (Var T_pre () (2233 2238)))
+      (2220 2239))
+     (2218 2239))
+    ((Dist normal (Var causal_effects ((Var t () (2262 2263))) (2247 2264))
+      ((LitInt 0 (2274 2275))) (2247 2276)))
+    (2209 2280))
+   (For n
+    (Range (LitInt 1 (2293 2294)) (Var N_units () (2295 2302)) (2293 2302))
+    ((Dist gamma (Var overall_sd ((Var n () (2321 2322))) (2310 2323))
+      ((LitInt 0 (2332 2333))) (2310 2334)))
+    (2284 2338))
+   (Dist uniform (Var frac_var_latent () (2342 2357))
+    ((LitInt 0 (2368 2369))) (2342 2370))))
+ (data_block
+  ((Data N_units Int () (9 20)) (Data N_pot_units Int () (23 38))
+   (Data K_latent Int () (41 53)) (Data T_times Int () (56 67))
+   (Data T_pre Int () (70 79)) (Data T_pot_times Int () (82 97))
+   (Data Y_obs Array ((Var T_times () (106 113)) (Var N_units () (115 122)))
+    (100 129))))
+ (tree_block
+  ((Root
+    (Var causal_effects
+     ((Func Sub ((Var T_times () (2408 2415)) (Var T_pre () (2417 2422)))
+       (2404 2423)))
+     (2389 2424))
+    (2384 2425))
+   (TreeFor n
+    (Range (LitInt 1 (2437 2438)) (Var N_units () (2439 2446)) (2437 2446))
+    ((Leaf
+      ((Var y_pot
+        ((Range (LitInt 1 (2465 2466)) (Var T_pot_times () (2467 2478))
+          (2465 2478))
+         (Var n () (2479 2480)))
+        (2459 2481)))
+      (2454 2482)))
+    (2428 2486))
+   (TreeFor n
+    (Range (LitInt 1 (2498 2499)) (Var N_pot_units () (2500 2511))
+     (2498 2511))
+    ((Leaf
+      ((Var y_pot_new
+        ((Range (LitInt 1 (2534 2535))
+          (Func Add
+           ((Var T_pot_times () (2540 2551)) (Var T_times () (2553 2560)))
+           (2536 2561))
+          (2534 2561))
+         (Var n () (2563 2564)))
+        (2524 2565)))
+      (2519 2566)))
+    (2489 2570)))))
+Preparing to parse model...
+frac_var_latent_dist
+frac_var_latent
+-
+overall_sd[1]_dist
+overall_sd[1]
+-
+overall_sd[2]_dist
+overall_sd[2]
+-
+overall_sd[3]_dist
+overall_sd[3]
+-
+overall_sd[4]_dist
+overall_sd[4]
+-
+overall_sd[5]_dist
+overall_sd[5]
+-
+overall_sd[6]_dist
+overall_sd[6]
+-
+causal_effects[1]_dist
+causal_effects[1]
+-
+causal_effects[2]_dist
+causal_effects[2]
+-
+causal_effects[3]_dist
+causal_effects[3]
+-
+causal_effects[4]_dist
+causal_effects[4]
+-
+factors_autocor[1]_dist
+factors_autocor[1]
+-
+factors_autocor[2]_dist
+factors_autocor[2]
+-
+factors_autocor[3]_dist
+factors_autocor[3]
+-
+factors_autocor[4]_dist
+factors_autocor[4]
+-
+factors_autocor[5]_dist
+factors_autocor[5]
+-
+factor_loadings_pot[1,1]_dist
+factor_loadings_pot[1,1]
+-
+factor_loadings_pot[1,2]_dist
+factor_loadings_pot[1,2]
+-
+factor_loadings_pot[1,3]_dist
+factor_loadings_pot[1,3]
+-
+factor_loadings_pot[1,4]_dist
+factor_loadings_pot[1,4]
+-
+factor_loadings_pot[1,5]_dist
+factor_loadings_pot[1,5]
+-
+factor_loadings[1,1]_dist
+factor_loadings[1,1]
+-
+factor_loadings[2,1]_dist
+factor_loadings[2,1]
+-
+factor_loadings[2,2]_dist
+factor_loadings[2,2]
+-
+factor_loadings[3,1]_dist
+factor_loadings[3,1]
+-
+factor_loadings[3,2]_dist
+factor_loadings[3,2]
+-
+factor_loadings[3,3]_dist
+factor_loadings[3,3]
+-
+factor_loadings[4,1]_dist
+factor_loadings[4,1]
+-
+factor_loadings[4,2]_dist
+factor_loadings[4,2]
+-
+factor_loadings[4,3]_dist
+factor_loadings[4,3]
+-
+factor_loadings[4,4]_dist
+factor_loadings[4,4]
+-
+factor_loadings[5,1]_dist
+factor_loadings[5,1]
+-
+factor_loadings[5,2]_dist
+factor_loadings[5,2]
+-
+factor_loadings[5,3]_dist
+factor_loadings[5,3]
+-
+factor_loadings[5,4]_dist
+factor_loadings[5,4]
+-
+factor_loadings[5,5]_dist
+factor_loadings[5,5]
+-
+factor_loadings[6,1]_dist
+factor_loadings[6,1]
+-
+factor_loadings[6,2]_dist
+factor_loadings[6,2]
+-
+factor_loadings[6,3]_dist
+factor_loadings[6,3]
+-
+factor_loadings[6,4]_dist
+factor_loadings[6,4]
+-
+factor_loadings[6,5]_dist
+factor_loadings[6,5]
+-
+factors_pot[1,1]_dist
+factors_pot[1,1]
+factors_autocor[1]
+-
+factors_pot[2,1]_dist
+factors_pot[2,1]
+factors_pot[1,1]
+factors_autocor[1]
+-
+factors_pot[3,1]_dist
+factors_pot[3,1]
+factors_pot[2,1]
+factors_autocor[1]
+-
+factors_pot[4,1]_dist
+factors_pot[4,1]
+factors_pot[3,1]
+factors_autocor[1]
+-
+factors_pot[5,1]_dist
+factors_pot[5,1]
+factors_pot[4,1]
+factors_autocor[1]
+-
+factors_pot[6,1]_dist
+factors_pot[6,1]
+factors_pot[5,1]
+factors_autocor[1]
+-
+factors[1,1]_dist
+factors[1,1]
+factors_pot[6,1]
+factors_autocor[1]
+-
+factors[2,1]_dist
+factors[2,1]
+factors[1,1]
+factors_autocor[1]
+-
+factors[3,1]_dist
+factors[3,1]
+factors[2,1]
+factors_autocor[1]
+-
+factors[4,1]_dist
+factors[4,1]
+factors[3,1]
+factors_autocor[1]
+-
+factors[5,1]_dist
+factors[5,1]
+factors[4,1]
+factors_autocor[1]
+-
+factors[6,1]_dist
+factors[6,1]
+factors[5,1]
+factors_autocor[1]
+-
+factors[7,1]_dist
+factors[7,1]
+factors[6,1]
+factors_autocor[1]
+-
+factors[8,1]_dist
+factors[8,1]
+factors[7,1]
+factors_autocor[1]
+-
+factors[9,1]_dist
+factors[9,1]
+factors[8,1]
+factors_autocor[1]
+-
+factors[10,1]_dist
+factors[10,1]
+factors[9,1]
+factors_autocor[1]
+-
+factors_pot[1,2]_dist
+factors_pot[1,2]
+factors_autocor[2]
+-
+factors_pot[2,2]_dist
+factors_pot[2,2]
+factors_pot[1,2]
+factors_autocor[2]
+-
+factors_pot[3,2]_dist
+factors_pot[3,2]
+factors_pot[2,2]
+factors_autocor[2]
+-
+factors_pot[4,2]_dist
+factors_pot[4,2]
+factors_pot[3,2]
+factors_autocor[2]
+-
+factors_pot[5,2]_dist
+factors_pot[5,2]
+factors_pot[4,2]
+factors_autocor[2]
+-
+factors_pot[6,2]_dist
+factors_pot[6,2]
+factors_pot[5,2]
+factors_autocor[2]
+-
+factors[1,2]_dist
+factors[1,2]
+factors_pot[6,2]
+factors_autocor[2]
+-
+factors[2,2]_dist
+factors[2,2]
+factors[1,2]
+factors_autocor[2]
+-
+factors[3,2]_dist
+factors[3,2]
+factors[2,2]
+factors_autocor[2]
+-
+factors[4,2]_dist
+factors[4,2]
+factors[3,2]
+factors_autocor[2]
+-
+factors[5,2]_dist
+factors[5,2]
+factors[4,2]
+factors_autocor[2]
+-
+factors[6,2]_dist
+factors[6,2]
+factors[5,2]
+factors_autocor[2]
+-
+factors[7,2]_dist
+factors[7,2]
+factors[6,2]
+factors_autocor[2]
+-
+factors[8,2]_dist
+factors[8,2]
+factors[7,2]
+factors_autocor[2]
+-
+factors[9,2]_dist
+factors[9,2]
+factors[8,2]
+factors_autocor[2]
+-
+factors[10,2]_dist
+factors[10,2]
+factors[9,2]
+factors_autocor[2]
+-
+factors_pot[1,3]_dist
+factors_pot[1,3]
+factors_autocor[3]
+-
+factors_pot[2,3]_dist
+factors_pot[2,3]
+factors_pot[1,3]
+factors_autocor[3]
+-
+factors_pot[3,3]_dist
+factors_pot[3,3]
+factors_pot[2,3]
+factors_autocor[3]
+-
+factors_pot[4,3]_dist
+factors_pot[4,3]
+factors_pot[3,3]
+factors_autocor[3]
+-
+factors_pot[5,3]_dist
+factors_pot[5,3]
+factors_pot[4,3]
+factors_autocor[3]
+-
+factors_pot[6,3]_dist
+factors_pot[6,3]
+factors_pot[5,3]
+factors_autocor[3]
+-
+factors[1,3]_dist
+factors[1,3]
+factors_pot[6,3]
+factors_autocor[3]
+-
+factors[2,3]_dist
+factors[2,3]
+factors[1,3]
+factors_autocor[3]
+-
+factors[3,3]_dist
+factors[3,3]
+factors[2,3]
+factors_autocor[3]
+-
+factors[4,3]_dist
+factors[4,3]
+factors[3,3]
+factors_autocor[3]
+-
+factors[5,3]_dist
+factors[5,3]
+factors[4,3]
+factors_autocor[3]
+-
+factors[6,3]_dist
+factors[6,3]
+factors[5,3]
+factors_autocor[3]
+-
+factors[7,3]_dist
+factors[7,3]
+factors[6,3]
+factors_autocor[3]
+-
+factors[8,3]_dist
+factors[8,3]
+factors[7,3]
+factors_autocor[3]
+-
+factors[9,3]_dist
+factors[9,3]
+factors[8,3]
+factors_autocor[3]
+-
+factors[10,3]_dist
+factors[10,3]
+factors[9,3]
+factors_autocor[3]
+-
+factors_pot[1,4]_dist
+factors_pot[1,4]
+factors_autocor[4]
+-
+factors_pot[2,4]_dist
+factors_pot[2,4]
+factors_pot[1,4]
+factors_autocor[4]
+-
+factors_pot[3,4]_dist
+factors_pot[3,4]
+factors_pot[2,4]
+factors_autocor[4]
+-
+factors_pot[4,4]_dist
+factors_pot[4,4]
+factors_pot[3,4]
+factors_autocor[4]
+-
+factors_pot[5,4]_dist
+factors_pot[5,4]
+factors_pot[4,4]
+factors_autocor[4]
+-
+factors_pot[6,4]_dist
+factors_pot[6,4]
+factors_pot[5,4]
+factors_autocor[4]
+-
+factors[1,4]_dist
+factors[1,4]
+factors_pot[6,4]
+factors_autocor[4]
+-
+factors[2,4]_dist
+factors[2,4]
+factors[1,4]
+factors_autocor[4]
+-
+factors[3,4]_dist
+factors[3,4]
+factors[2,4]
+factors_autocor[4]
+-
+factors[4,4]_dist
+factors[4,4]
+factors[3,4]
+factors_autocor[4]
+-
+factors[5,4]_dist
+factors[5,4]
+factors[4,4]
+factors_autocor[4]
+-
+factors[6,4]_dist
+factors[6,4]
+factors[5,4]
+factors_autocor[4]
+-
+factors[7,4]_dist
+factors[7,4]
+factors[6,4]
+factors_autocor[4]
+-
+factors[8,4]_dist
+factors[8,4]
+factors[7,4]
+factors_autocor[4]
+-
+factors[9,4]_dist
+factors[9,4]
+factors[8,4]
+factors_autocor[4]
+-
+factors[10,4]_dist
+factors[10,4]
+factors[9,4]
+factors_autocor[4]
+-
+factors_pot[1,5]_dist
+factors_pot[1,5]
+factors_autocor[5]
+-
+factors_pot[2,5]_dist
+factors_pot[2,5]
+factors_pot[1,5]
+factors_autocor[5]
+-
+factors_pot[3,5]_dist
+factors_pot[3,5]
+factors_pot[2,5]
+factors_autocor[5]
+-
+factors_pot[4,5]_dist
+factors_pot[4,5]
+factors_pot[3,5]
+factors_autocor[5]
+-
+factors_pot[5,5]_dist
+factors_pot[5,5]
+factors_pot[4,5]
+factors_autocor[5]
+-
+factors_pot[6,5]_dist
+factors_pot[6,5]
+factors_pot[5,5]
+factors_autocor[5]
+-
+factors[1,5]_dist
+factors[1,5]
+factors_pot[6,5]
+factors_autocor[5]
+-
+factors[2,5]_dist
+factors[2,5]
+factors[1,5]
+factors_autocor[5]
+-
+factors[3,5]_dist
+factors[3,5]
+factors[2,5]
+factors_autocor[5]
+-
+factors[4,5]_dist
+factors[4,5]
+factors[3,5]
+factors_autocor[5]
+-
+factors[5,5]_dist
+factors[5,5]
+factors[4,5]
+factors_autocor[5]
+-
+factors[6,5]_dist
+factors[6,5]
+factors[5,5]
+factors_autocor[5]
+-
+factors[7,5]_dist
+factors[7,5]
+factors[6,5]
+factors_autocor[5]
+-
+factors[8,5]_dist
+factors[8,5]
+factors[7,5]
+factors_autocor[5]
+-
+factors[9,5]_dist
+factors[9,5]
+factors[8,5]
+factors_autocor[5]
+-
+factors[10,5]_dist
+factors[10,5]
+factors[9,5]
+factors_autocor[5]
+-
+y_pot_new[1,1]_dist
+y_pot_new[1,1]
+factors_pot[1,1]
+factors_pot[1,2]
+factors_pot[1,3]
+factors_pot[1,4]
+factors_pot[1,5]
+factor_loadings_pot[1,1]
+factor_loadings_pot[1,2]
+factor_loadings_pot[1,3]
+factor_loadings_pot[1,4]
+factor_loadings_pot[1,5]
+frac_var_latent
+-
+y_pot_new[2,1]_dist
+y_pot_new[2,1]
+factors_pot[2,1]
+factors_pot[2,2]
+factors_pot[2,3]
+factors_pot[2,4]
+factors_pot[2,5]
+factor_loadings_pot[1,1]
+factor_loadings_pot[1,2]
+factor_loadings_pot[1,3]
+factor_loadings_pot[1,4]
+factor_loadings_pot[1,5]
+frac_var_latent
+-
+y_pot_new[3,1]_dist
+y_pot_new[3,1]
+factors_pot[3,1]
+factors_pot[3,2]
+factors_pot[3,3]
+factors_pot[3,4]
+factors_pot[3,5]
+factor_loadings_pot[1,1]
+factor_loadings_pot[1,2]
+factor_loadings_pot[1,3]
+factor_loadings_pot[1,4]
+factor_loadings_pot[1,5]
+frac_var_latent
+-
+y_pot_new[4,1]_dist
+y_pot_new[4,1]
+factors_pot[4,1]
+factors_pot[4,2]
+factors_pot[4,3]
+factors_pot[4,4]
+factors_pot[4,5]
+factor_loadings_pot[1,1]
+factor_loadings_pot[1,2]
+factor_loadings_pot[1,3]
+factor_loadings_pot[1,4]
+factor_loadings_pot[1,5]
+frac_var_latent
+-
+y_pot_new[5,1]_dist
+y_pot_new[5,1]
+factors_pot[5,1]
+factors_pot[5,2]
+factors_pot[5,3]
+factors_pot[5,4]
+factors_pot[5,5]
+factor_loadings_pot[1,1]
+factor_loadings_pot[1,2]
+factor_loadings_pot[1,3]
+factor_loadings_pot[1,4]
+factor_loadings_pot[1,5]
+frac_var_latent
+-
+y_pot_new[6,1]_dist
+y_pot_new[6,1]
+factors_pot[6,1]
+factors_pot[6,2]
+factors_pot[6,3]
+factors_pot[6,4]
+factors_pot[6,5]
+factor_loadings_pot[1,1]
+factor_loadings_pot[1,2]
+factor_loadings_pot[1,3]
+factor_loadings_pot[1,4]
+factor_loadings_pot[1,5]
+frac_var_latent
+-
+y_pot_new[7,1]_dist
+y_pot_new[7,1]
+factors[1,1]
+factors[1,2]
+factors[1,3]
+factors[1,4]
+factors[1,5]
+factor_loadings_pot[1,1]
+factor_loadings_pot[1,2]
+factor_loadings_pot[1,3]
+factor_loadings_pot[1,4]
+factor_loadings_pot[1,5]
+frac_var_latent
+-
+y_pot_new[8,1]_dist
+y_pot_new[8,1]
+factors[2,1]
+factors[2,2]
+factors[2,3]
+factors[2,4]
+factors[2,5]
+factor_loadings_pot[1,1]
+factor_loadings_pot[1,2]
+factor_loadings_pot[1,3]
+factor_loadings_pot[1,4]
+factor_loadings_pot[1,5]
+frac_var_latent
+-
+y_pot_new[9,1]_dist
+y_pot_new[9,1]
+factors[3,1]
+factors[3,2]
+factors[3,3]
+factors[3,4]
+factors[3,5]
+factor_loadings_pot[1,1]
+factor_loadings_pot[1,2]
+factor_loadings_pot[1,3]
+factor_loadings_pot[1,4]
+factor_loadings_pot[1,5]
+frac_var_latent
+-
+y_pot_new[10,1]_dist
+y_pot_new[10,1]
+factors[4,1]
+factors[4,2]
+factors[4,3]
+factors[4,4]
+factors[4,5]
+factor_loadings_pot[1,1]
+factor_loadings_pot[1,2]
+factor_loadings_pot[1,3]
+factor_loadings_pot[1,4]
+factor_loadings_pot[1,5]
+frac_var_latent
+-
+y_pot_new[11,1]_dist
+y_pot_new[11,1]
+factors[5,1]
+factors[5,2]
+factors[5,3]
+factors[5,4]
+factors[5,5]
+factor_loadings_pot[1,1]
+factor_loadings_pot[1,2]
+factor_loadings_pot[1,3]
+factor_loadings_pot[1,4]
+factor_loadings_pot[1,5]
+frac_var_latent
+-
+y_pot_new[12,1]_dist
+y_pot_new[12,1]
+factors[6,1]
+factors[6,2]
+factors[6,3]
+factors[6,4]
+factors[6,5]
+factor_loadings_pot[1,1]
+factor_loadings_pot[1,2]
+factor_loadings_pot[1,3]
+factor_loadings_pot[1,4]
+factor_loadings_pot[1,5]
+frac_var_latent
+-
+y_pot_new[13,1]_dist
+y_pot_new[13,1]
+factors[7,1]
+factors[7,2]
+factors[7,3]
+factors[7,4]
+factors[7,5]
+factor_loadings_pot[1,1]
+factor_loadings_pot[1,2]
+factor_loadings_pot[1,3]
+factor_loadings_pot[1,4]
+factor_loadings_pot[1,5]
+frac_var_latent
+-
+y_pot_new[14,1]_dist
+y_pot_new[14,1]
+factors[8,1]
+factors[8,2]
+factors[8,3]
+factors[8,4]
+factors[8,5]
+factor_loadings_pot[1,1]
+factor_loadings_pot[1,2]
+factor_loadings_pot[1,3]
+factor_loadings_pot[1,4]
+factor_loadings_pot[1,5]
+frac_var_latent
+-
+y_pot_new[15,1]_dist
+y_pot_new[15,1]
+factors[9,1]
+factors[9,2]
+factors[9,3]
+factors[9,4]
+factors[9,5]
+factor_loadings_pot[1,1]
+factor_loadings_pot[1,2]
+factor_loadings_pot[1,3]
+factor_loadings_pot[1,4]
+factor_loadings_pot[1,5]
+frac_var_latent
+-
+y_pot_new[16,1]_dist
+y_pot_new[16,1]
+factors[10,1]
+factors[10,2]
+factors[10,3]
+factors[10,4]
+factors[10,5]
+factor_loadings_pot[1,1]
+factor_loadings_pot[1,2]
+factor_loadings_pot[1,3]
+factor_loadings_pot[1,4]
+factor_loadings_pot[1,5]
+frac_var_latent
+-
+y_pot[1,1]_dist
+y_pot[1,1]
+factors_pot[1,1]
+factor_loadings[1,1]
+overall_sd[1]
+frac_var_latent
+-
+y_pot[1,2]_dist
+y_pot[1,2]
+factors_pot[1,1]
+factors_pot[1,2]
+factor_loadings[2,1]
+factor_loadings[2,2]
+overall_sd[2]
+frac_var_latent
+-
+y_pot[1,3]_dist
+y_pot[1,3]
+factors_pot[1,1]
+factors_pot[1,2]
+factors_pot[1,3]
+factor_loadings[3,1]
+factor_loadings[3,2]
+factor_loadings[3,3]
+overall_sd[3]
+frac_var_latent
+-
+y_pot[1,4]_dist
+y_pot[1,4]
+factors_pot[1,1]
+factors_pot[1,2]
+factors_pot[1,3]
+factors_pot[1,4]
+factor_loadings[4,1]
+factor_loadings[4,2]
+factor_loadings[4,3]
+factor_loadings[4,4]
+overall_sd[4]
+frac_var_latent
+-
+y_pot[1,5]_dist
+y_pot[1,5]
+factors_pot[1,1]
+factors_pot[1,2]
+factors_pot[1,3]
+factors_pot[1,4]
+factors_pot[1,5]
+factor_loadings[5,1]
+factor_loadings[5,2]
+factor_loadings[5,3]
+factor_loadings[5,4]
+factor_loadings[5,5]
+overall_sd[5]
+frac_var_latent
+-
+y_pot[1,6]_dist
+y_pot[1,6]
+factors_pot[1,1]
+factors_pot[1,2]
+factors_pot[1,3]
+factors_pot[1,4]
+factors_pot[1,5]
+factor_loadings[6,1]
+factor_loadings[6,2]
+factor_loadings[6,3]
+factor_loadings[6,4]
+factor_loadings[6,5]
+overall_sd[6]
+frac_var_latent
+-
+y_pot[2,1]_dist
+y_pot[2,1]
+factors_pot[2,1]
+factor_loadings[1,1]
+overall_sd[1]
+frac_var_latent
+-
+y_pot[2,2]_dist
+y_pot[2,2]
+factors_pot[2,1]
+factors_pot[2,2]
+factor_loadings[2,1]
+factor_loadings[2,2]
+overall_sd[2]
+frac_var_latent
+-
+y_pot[2,3]_dist
+y_pot[2,3]
+factors_pot[2,1]
+factors_pot[2,2]
+factors_pot[2,3]
+factor_loadings[3,1]
+factor_loadings[3,2]
+factor_loadings[3,3]
+overall_sd[3]
+frac_var_latent
+-
+y_pot[2,4]_dist
+y_pot[2,4]
+factors_pot[2,1]
+factors_pot[2,2]
+factors_pot[2,3]
+factors_pot[2,4]
+factor_loadings[4,1]
+factor_loadings[4,2]
+factor_loadings[4,3]
+factor_loadings[4,4]
+overall_sd[4]
+frac_var_latent
+-
+y_pot[2,5]_dist
+y_pot[2,5]
+factors_pot[2,1]
+factors_pot[2,2]
+factors_pot[2,3]
+factors_pot[2,4]
+factors_pot[2,5]
+factor_loadings[5,1]
+factor_loadings[5,2]
+factor_loadings[5,3]
+factor_loadings[5,4]
+factor_loadings[5,5]
+overall_sd[5]
+frac_var_latent
+-
+y_pot[2,6]_dist
+y_pot[2,6]
+factors_pot[2,1]
+factors_pot[2,2]
+factors_pot[2,3]
+factors_pot[2,4]
+factors_pot[2,5]
+factor_loadings[6,1]
+factor_loadings[6,2]
+factor_loadings[6,3]
+factor_loadings[6,4]
+factor_loadings[6,5]
+overall_sd[6]
+frac_var_latent
+-
+y_pot[3,1]_dist
+y_pot[3,1]
+factors_pot[3,1]
+factor_loadings[1,1]
+overall_sd[1]
+frac_var_latent
+-
+y_pot[3,2]_dist
+y_pot[3,2]
+factors_pot[3,1]
+factors_pot[3,2]
+factor_loadings[2,1]
+factor_loadings[2,2]
+overall_sd[2]
+frac_var_latent
+-
+y_pot[3,3]_dist
+y_pot[3,3]
+factors_pot[3,1]
+factors_pot[3,2]
+factors_pot[3,3]
+factor_loadings[3,1]
+factor_loadings[3,2]
+factor_loadings[3,3]
+overall_sd[3]
+frac_var_latent
+-
+y_pot[3,4]_dist
+y_pot[3,4]
+factors_pot[3,1]
+factors_pot[3,2]
+factors_pot[3,3]
+factors_pot[3,4]
+factor_loadings[4,1]
+factor_loadings[4,2]
+factor_loadings[4,3]
+factor_loadings[4,4]
+overall_sd[4]
+frac_var_latent
+-
+y_pot[3,5]_dist
+y_pot[3,5]
+factors_pot[3,1]
+factors_pot[3,2]
+factors_pot[3,3]
+factors_pot[3,4]
+factors_pot[3,5]
+factor_loadings[5,1]
+factor_loadings[5,2]
+factor_loadings[5,3]
+factor_loadings[5,4]
+factor_loadings[5,5]
+overall_sd[5]
+frac_var_latent
+-
+y_pot[3,6]_dist
+y_pot[3,6]
+factors_pot[3,1]
+factors_pot[3,2]
+factors_pot[3,3]
+factors_pot[3,4]
+factors_pot[3,5]
+factor_loadings[6,1]
+factor_loadings[6,2]
+factor_loadings[6,3]
+factor_loadings[6,4]
+factor_loadings[6,5]
+overall_sd[6]
+frac_var_latent
+-
+y_pot[4,1]_dist
+y_pot[4,1]
+factors_pot[4,1]
+factor_loadings[1,1]
+overall_sd[1]
+frac_var_latent
+-
+y_pot[4,2]_dist
+y_pot[4,2]
+factors_pot[4,1]
+factors_pot[4,2]
+factor_loadings[2,1]
+factor_loadings[2,2]
+overall_sd[2]
+frac_var_latent
+-
+y_pot[4,3]_dist
+y_pot[4,3]
+factors_pot[4,1]
+factors_pot[4,2]
+factors_pot[4,3]
+factor_loadings[3,1]
+factor_loadings[3,2]
+factor_loadings[3,3]
+overall_sd[3]
+frac_var_latent
+-
+y_pot[4,4]_dist
+y_pot[4,4]
+factors_pot[4,1]
+factors_pot[4,2]
+factors_pot[4,3]
+factors_pot[4,4]
+factor_loadings[4,1]
+factor_loadings[4,2]
+factor_loadings[4,3]
+factor_loadings[4,4]
+overall_sd[4]
+frac_var_latent
+-
+y_pot[4,5]_dist
+y_pot[4,5]
+factors_pot[4,1]
+factors_pot[4,2]
+factors_pot[4,3]
+factors_pot[4,4]
+factors_pot[4,5]
+factor_loadings[5,1]
+factor_loadings[5,2]
+factor_loadings[5,3]
+factor_loadings[5,4]
+factor_loadings[5,5]
+overall_sd[5]
+frac_var_latent
+-
+y_pot[4,6]_dist
+y_pot[4,6]
+factors_pot[4,1]
+factors_pot[4,2]
+factors_pot[4,3]
+factors_pot[4,4]
+factors_pot[4,5]
+factor_loadings[6,1]
+factor_loadings[6,2]
+factor_loadings[6,3]
+factor_loadings[6,4]
+factor_loadings[6,5]
+overall_sd[6]
+frac_var_latent
+-
+y_pot[5,1]_dist
+y_pot[5,1]
+factors_pot[5,1]
+factor_loadings[1,1]
+overall_sd[1]
+frac_var_latent
+-
+y_pot[5,2]_dist
+y_pot[5,2]
+factors_pot[5,1]
+factors_pot[5,2]
+factor_loadings[2,1]
+factor_loadings[2,2]
+overall_sd[2]
+frac_var_latent
+-
+y_pot[5,3]_dist
+y_pot[5,3]
+factors_pot[5,1]
+factors_pot[5,2]
+factors_pot[5,3]
+factor_loadings[3,1]
+factor_loadings[3,2]
+factor_loadings[3,3]
+overall_sd[3]
+frac_var_latent
+-
+y_pot[5,4]_dist
+y_pot[5,4]
+factors_pot[5,1]
+factors_pot[5,2]
+factors_pot[5,3]
+factors_pot[5,4]
+factor_loadings[4,1]
+factor_loadings[4,2]
+factor_loadings[4,3]
+factor_loadings[4,4]
+overall_sd[4]
+frac_var_latent
+-
+y_pot[5,5]_dist
+y_pot[5,5]
+factors_pot[5,1]
+factors_pot[5,2]
+factors_pot[5,3]
+factors_pot[5,4]
+factors_pot[5,5]
+factor_loadings[5,1]
+factor_loadings[5,2]
+factor_loadings[5,3]
+factor_loadings[5,4]
+factor_loadings[5,5]
+overall_sd[5]
+frac_var_latent
+-
+y_pot[5,6]_dist
+y_pot[5,6]
+factors_pot[5,1]
+factors_pot[5,2]
+factors_pot[5,3]
+factors_pot[5,4]
+factors_pot[5,5]
+factor_loadings[6,1]
+factor_loadings[6,2]
+factor_loadings[6,3]
+factor_loadings[6,4]
+factor_loadings[6,5]
+overall_sd[6]
+frac_var_latent
+-
+y_pot[6,1]_dist
+y_pot[6,1]
+factors_pot[6,1]
+factor_loadings[1,1]
+overall_sd[1]
+frac_var_latent
+-
+y_pot[6,2]_dist
+y_pot[6,2]
+factors_pot[6,1]
+factors_pot[6,2]
+factor_loadings[2,1]
+factor_loadings[2,2]
+overall_sd[2]
+frac_var_latent
+-
+y_pot[6,3]_dist
+y_pot[6,3]
+factors_pot[6,1]
+factors_pot[6,2]
+factors_pot[6,3]
+factor_loadings[3,1]
+factor_loadings[3,2]
+factor_loadings[3,3]
+overall_sd[3]
+frac_var_latent
+-
+y_pot[6,4]_dist
+y_pot[6,4]
+factors_pot[6,1]
+factors_pot[6,2]
+factors_pot[6,3]
+factors_pot[6,4]
+factor_loadings[4,1]
+factor_loadings[4,2]
+factor_loadings[4,3]
+factor_loadings[4,4]
+overall_sd[4]
+frac_var_latent
+-
+y_pot[6,5]_dist
+y_pot[6,5]
+factors_pot[6,1]
+factors_pot[6,2]
+factors_pot[6,3]
+factors_pot[6,4]
+factors_pot[6,5]
+factor_loadings[5,1]
+factor_loadings[5,2]
+factor_loadings[5,3]
+factor_loadings[5,4]
+factor_loadings[5,5]
+overall_sd[5]
+frac_var_latent
+-
+y_pot[6,6]_dist
+y_pot[6,6]
+factors_pot[6,1]
+factors_pot[6,2]
+factors_pot[6,3]
+factors_pot[6,4]
+factors_pot[6,5]
+factor_loadings[6,1]
+factor_loadings[6,2]
+factor_loadings[6,3]
+factor_loadings[6,4]
+factor_loadings[6,5]
+overall_sd[6]
+frac_var_latent
+-
+Y_obs[1,2]_lik
+factors[1,1]
+factors[1,2]
+factor_loadings[2,1]
+factor_loadings[2,2]
+overall_sd[2]
+frac_var_latent
+-
+Y_obs[1,3]_lik
+factors[1,1]
+factors[1,2]
+factors[1,3]
+factor_loadings[3,1]
+factor_loadings[3,2]
+factor_loadings[3,3]
+overall_sd[3]
+frac_var_latent
+-
+Y_obs[1,4]_lik
+factors[1,1]
+factors[1,2]
+factors[1,3]
+factors[1,4]
+factor_loadings[4,1]
+factor_loadings[4,2]
+factor_loadings[4,3]
+factor_loadings[4,4]
+overall_sd[4]
+frac_var_latent
+-
+Y_obs[1,5]_lik
+factors[1,1]
+factors[1,2]
+factors[1,3]
+factors[1,4]
+factors[1,5]
+factor_loadings[5,1]
+factor_loadings[5,2]
+factor_loadings[5,3]
+factor_loadings[5,4]
+factor_loadings[5,5]
+overall_sd[5]
+frac_var_latent
+-
+Y_obs[1,6]_lik
+factors[1,1]
+factors[1,2]
+factors[1,3]
+factors[1,4]
+factors[1,5]
+factor_loadings[6,1]
+factor_loadings[6,2]
+factor_loadings[6,3]
+factor_loadings[6,4]
+factor_loadings[6,5]
+overall_sd[6]
+frac_var_latent
+-
+Y_obs[2,2]_lik
+factors[2,1]
+factors[2,2]
+factor_loadings[2,1]
+factor_loadings[2,2]
+overall_sd[2]
+frac_var_latent
+-
+Y_obs[2,3]_lik
+factors[2,1]
+factors[2,2]
+factors[2,3]
+factor_loadings[3,1]
+factor_loadings[3,2]
+factor_loadings[3,3]
+overall_sd[3]
+frac_var_latent
+-
+Y_obs[2,4]_lik
+factors[2,1]
+factors[2,2]
+factors[2,3]
+factors[2,4]
+factor_loadings[4,1]
+factor_loadings[4,2]
+factor_loadings[4,3]
+factor_loadings[4,4]
+overall_sd[4]
+frac_var_latent
+-
+Y_obs[2,5]_lik
+factors[2,1]
+factors[2,2]
+factors[2,3]
+factors[2,4]
+factors[2,5]
+factor_loadings[5,1]
+factor_loadings[5,2]
+factor_loadings[5,3]
+factor_loadings[5,4]
+factor_loadings[5,5]
+overall_sd[5]
+frac_var_latent
+-
+Y_obs[2,6]_lik
+factors[2,1]
+factors[2,2]
+factors[2,3]
+factors[2,4]
+factors[2,5]
+factor_loadings[6,1]
+factor_loadings[6,2]
+factor_loadings[6,3]
+factor_loadings[6,4]
+factor_loadings[6,5]
+overall_sd[6]
+frac_var_latent
+-
+Y_obs[3,2]_lik
+factors[3,1]
+factors[3,2]
+factor_loadings[2,1]
+factor_loadings[2,2]
+overall_sd[2]
+frac_var_latent
+-
+Y_obs[3,3]_lik
+factors[3,1]
+factors[3,2]
+factors[3,3]
+factor_loadings[3,1]
+factor_loadings[3,2]
+factor_loadings[3,3]
+overall_sd[3]
+frac_var_latent
+-
+Y_obs[3,4]_lik
+factors[3,1]
+factors[3,2]
+factors[3,3]
+factors[3,4]
+factor_loadings[4,1]
+factor_loadings[4,2]
+factor_loadings[4,3]
+factor_loadings[4,4]
+overall_sd[4]
+frac_var_latent
+-
+Y_obs[3,5]_lik
+factors[3,1]
+factors[3,2]
+factors[3,3]
+factors[3,4]
+factors[3,5]
+factor_loadings[5,1]
+factor_loadings[5,2]
+factor_loadings[5,3]
+factor_loadings[5,4]
+factor_loadings[5,5]
+overall_sd[5]
+frac_var_latent
+-
+Y_obs[3,6]_lik
+factors[3,1]
+factors[3,2]
+factors[3,3]
+factors[3,4]
+factors[3,5]
+factor_loadings[6,1]
+factor_loadings[6,2]
+factor_loadings[6,3]
+factor_loadings[6,4]
+factor_loadings[6,5]
+overall_sd[6]
+frac_var_latent
+-
+Y_obs[4,2]_lik
+factors[4,1]
+factors[4,2]
+factor_loadings[2,1]
+factor_loadings[2,2]
+overall_sd[2]
+frac_var_latent
+-
+Y_obs[4,3]_lik
+factors[4,1]
+factors[4,2]
+factors[4,3]
+factor_loadings[3,1]
+factor_loadings[3,2]
+factor_loadings[3,3]
+overall_sd[3]
+frac_var_latent
+-
+Y_obs[4,4]_lik
+factors[4,1]
+factors[4,2]
+factors[4,3]
+factors[4,4]
+factor_loadings[4,1]
+factor_loadings[4,2]
+factor_loadings[4,3]
+factor_loadings[4,4]
+overall_sd[4]
+frac_var_latent
+-
+Y_obs[4,5]_lik
+factors[4,1]
+factors[4,2]
+factors[4,3]
+factors[4,4]
+factors[4,5]
+factor_loadings[5,1]
+factor_loadings[5,2]
+factor_loadings[5,3]
+factor_loadings[5,4]
+factor_loadings[5,5]
+overall_sd[5]
+frac_var_latent
+-
+Y_obs[4,6]_lik
+factors[4,1]
+factors[4,2]
+factors[4,3]
+factors[4,4]
+factors[4,5]
+factor_loadings[6,1]
+factor_loadings[6,2]
+factor_loadings[6,3]
+factor_loadings[6,4]
+factor_loadings[6,5]
+overall_sd[6]
+frac_var_latent
+-
+Y_obs[5,2]_lik
+factors[5,1]
+factors[5,2]
+factor_loadings[2,1]
+factor_loadings[2,2]
+overall_sd[2]
+frac_var_latent
+-
+Y_obs[5,3]_lik
+factors[5,1]
+factors[5,2]
+factors[5,3]
+factor_loadings[3,1]
+factor_loadings[3,2]
+factor_loadings[3,3]
+overall_sd[3]
+frac_var_latent
+-
+Y_obs[5,4]_lik
+factors[5,1]
+factors[5,2]
+factors[5,3]
+factors[5,4]
+factor_loadings[4,1]
+factor_loadings[4,2]
+factor_loadings[4,3]
+factor_loadings[4,4]
+overall_sd[4]
+frac_var_latent
+-
+Y_obs[5,5]_lik
+factors[5,1]
+factors[5,2]
+factors[5,3]
+factors[5,4]
+factors[5,5]
+factor_loadings[5,1]
+factor_loadings[5,2]
+factor_loadings[5,3]
+factor_loadings[5,4]
+factor_loadings[5,5]
+overall_sd[5]
+frac_var_latent
+-
+Y_obs[5,6]_lik
+factors[5,1]
+factors[5,2]
+factors[5,3]
+factors[5,4]
+factors[5,5]
+factor_loadings[6,1]
+factor_loadings[6,2]
+factor_loadings[6,3]
+factor_loadings[6,4]
+factor_loadings[6,5]
+overall_sd[6]
+frac_var_latent
+-
+Y_obs[6,2]_lik
+factors[6,1]
+factors[6,2]
+factor_loadings[2,1]
+factor_loadings[2,2]
+overall_sd[2]
+frac_var_latent
+-
+Y_obs[6,3]_lik
+factors[6,1]
+factors[6,2]
+factors[6,3]
+factor_loadings[3,1]
+factor_loadings[3,2]
+factor_loadings[3,3]
+overall_sd[3]
+frac_var_latent
+-
+Y_obs[6,4]_lik
+factors[6,1]
+factors[6,2]
+factors[6,3]
+factors[6,4]
+factor_loadings[4,1]
+factor_loadings[4,2]
+factor_loadings[4,3]
+factor_loadings[4,4]
+overall_sd[4]
+frac_var_latent
+-
+Y_obs[6,5]_lik
+factors[6,1]
+factors[6,2]
+factors[6,3]
+factors[6,4]
+factors[6,5]
+factor_loadings[5,1]
+factor_loadings[5,2]
+factor_loadings[5,3]
+factor_loadings[5,4]
+factor_loadings[5,5]
+overall_sd[5]
+frac_var_latent
+-
+Y_obs[6,6]_lik
+factors[6,1]
+factors[6,2]
+factors[6,3]
+factors[6,4]
+factors[6,5]
+factor_loadings[6,1]
+factor_loadings[6,2]
+factor_loadings[6,3]
+factor_loadings[6,4]
+factor_loadings[6,5]
+overall_sd[6]
+frac_var_latent
+-
+Y_obs[7,2]_lik
+factors[7,1]
+factors[7,2]
+factor_loadings[2,1]
+factor_loadings[2,2]
+overall_sd[2]
+frac_var_latent
+-
+Y_obs[7,3]_lik
+factors[7,1]
+factors[7,2]
+factors[7,3]
+factor_loadings[3,1]
+factor_loadings[3,2]
+factor_loadings[3,3]
+overall_sd[3]
+frac_var_latent
+-
+Y_obs[7,4]_lik
+factors[7,1]
+factors[7,2]
+factors[7,3]
+factors[7,4]
+factor_loadings[4,1]
+factor_loadings[4,2]
+factor_loadings[4,3]
+factor_loadings[4,4]
+overall_sd[4]
+frac_var_latent
+-
+Y_obs[7,5]_lik
+factors[7,1]
+factors[7,2]
+factors[7,3]
+factors[7,4]
+factors[7,5]
+factor_loadings[5,1]
+factor_loadings[5,2]
+factor_loadings[5,3]
+factor_loadings[5,4]
+factor_loadings[5,5]
+overall_sd[5]
+frac_var_latent
+-
+Y_obs[7,6]_lik
+factors[7,1]
+factors[7,2]
+factors[7,3]
+factors[7,4]
+factors[7,5]
+factor_loadings[6,1]
+factor_loadings[6,2]
+factor_loadings[6,3]
+factor_loadings[6,4]
+factor_loadings[6,5]
+overall_sd[6]
+frac_var_latent
+-
+Y_obs[8,2]_lik
+factors[8,1]
+factors[8,2]
+factor_loadings[2,1]
+factor_loadings[2,2]
+overall_sd[2]
+frac_var_latent
+-
+Y_obs[8,3]_lik
+factors[8,1]
+factors[8,2]
+factors[8,3]
+factor_loadings[3,1]
+factor_loadings[3,2]
+factor_loadings[3,3]
+overall_sd[3]
+frac_var_latent
+-
+Y_obs[8,4]_lik
+factors[8,1]
+factors[8,2]
+factors[8,3]
+factors[8,4]
+factor_loadings[4,1]
+factor_loadings[4,2]
+factor_loadings[4,3]
+factor_loadings[4,4]
+overall_sd[4]
+frac_var_latent
+-
+Y_obs[8,5]_lik
+factors[8,1]
+factors[8,2]
+factors[8,3]
+factors[8,4]
+factors[8,5]
+factor_loadings[5,1]
+factor_loadings[5,2]
+factor_loadings[5,3]
+factor_loadings[5,4]
+factor_loadings[5,5]
+overall_sd[5]
+frac_var_latent
+-
+Y_obs[8,6]_lik
+factors[8,1]
+factors[8,2]
+factors[8,3]
+factors[8,4]
+factors[8,5]
+factor_loadings[6,1]
+factor_loadings[6,2]
+factor_loadings[6,3]
+factor_loadings[6,4]
+factor_loadings[6,5]
+overall_sd[6]
+frac_var_latent
+-
+Y_obs[9,2]_lik
+factors[9,1]
+factors[9,2]
+factor_loadings[2,1]
+factor_loadings[2,2]
+overall_sd[2]
+frac_var_latent
+-
+Y_obs[9,3]_lik
+factors[9,1]
+factors[9,2]
+factors[9,3]
+factor_loadings[3,1]
+factor_loadings[3,2]
+factor_loadings[3,3]
+overall_sd[3]
+frac_var_latent
+-
+Y_obs[9,4]_lik
+factors[9,1]
+factors[9,2]
+factors[9,3]
+factors[9,4]
+factor_loadings[4,1]
+factor_loadings[4,2]
+factor_loadings[4,3]
+factor_loadings[4,4]
+overall_sd[4]
+frac_var_latent
+-
+Y_obs[9,5]_lik
+factors[9,1]
+factors[9,2]
+factors[9,3]
+factors[9,4]
+factors[9,5]
+factor_loadings[5,1]
+factor_loadings[5,2]
+factor_loadings[5,3]
+factor_loadings[5,4]
+factor_loadings[5,5]
+overall_sd[5]
+frac_var_latent
+-
+Y_obs[9,6]_lik
+factors[9,1]
+factors[9,2]
+factors[9,3]
+factors[9,4]
+factors[9,5]
+factor_loadings[6,1]
+factor_loadings[6,2]
+factor_loadings[6,3]
+factor_loadings[6,4]
+factor_loadings[6,5]
+overall_sd[6]
+frac_var_latent
+-
+Y_obs[10,2]_lik
+factors[10,1]
+factors[10,2]
+factor_loadings[2,1]
+factor_loadings[2,2]
+overall_sd[2]
+frac_var_latent
+-
+Y_obs[10,3]_lik
+factors[10,1]
+factors[10,2]
+factors[10,3]
+factor_loadings[3,1]
+factor_loadings[3,2]
+factor_loadings[3,3]
+overall_sd[3]
+frac_var_latent
+-
+Y_obs[10,4]_lik
+factors[10,1]
+factors[10,2]
+factors[10,3]
+factors[10,4]
+factor_loadings[4,1]
+factor_loadings[4,2]
+factor_loadings[4,3]
+factor_loadings[4,4]
+overall_sd[4]
+frac_var_latent
+-
+Y_obs[10,5]_lik
+factors[10,1]
+factors[10,2]
+factors[10,3]
+factors[10,4]
+factors[10,5]
+factor_loadings[5,1]
+factor_loadings[5,2]
+factor_loadings[5,3]
+factor_loadings[5,4]
+factor_loadings[5,5]
+overall_sd[5]
+frac_var_latent
+-
+Y_obs[10,6]_lik
+factors[10,1]
+factors[10,2]
+factors[10,3]
+factors[10,4]
+factors[10,5]
+factor_loadings[6,1]
+factor_loadings[6,2]
+factor_loadings[6,3]
+factor_loadings[6,4]
+factor_loadings[6,5]
+overall_sd[6]
+frac_var_latent
+-
+Y_obs[7,1]_lik
+factors[7,1]
+overall_sd[1]
+frac_var_latent
+causal_effects[1]
+-
+Y_obs[8,1]_lik
+factors[8,1]
+overall_sd[1]
+frac_var_latent
+causal_effects[2]
+-
+Y_obs[9,1]_lik
+factors[9,1]
+overall_sd[1]
+frac_var_latent
+causal_effects[3]
+-
+Y_obs[10,1]_lik
+factors[10,1]
+overall_sd[1]
+frac_var_latent
+causal_effects[4]
+-
+Y_obs[1,1]_lik
+factors[1,1]
+overall_sd[1]
+frac_var_latent
+-
+Y_obs[2,1]_lik
+factors[2,1]
+overall_sd[1]
+frac_var_latent
+-
+Y_obs[3,1]_lik
+factors[3,1]
+overall_sd[1]
+frac_var_latent
+-
+Y_obs[4,1]_lik
+factors[4,1]
+overall_sd[1]
+frac_var_latent
+-
+Y_obs[5,1]_lik
+factors[5,1]
+overall_sd[1]
+frac_var_latent
+-
+Y_obs[6,1]_lik
+factors[6,1]
+overall_sd[1]
+frac_var_latent
+-
+--
+causal_effects[4]
+y_pot_new[1,1], y_pot_new[2,1], y_pot_new[3,1], y_pot_new[4,1], y_pot_new[5,1], y_pot_new[6,1], y_pot_new[7,1], y_pot_new[8,1], y_pot_new[9,1], y_pot_new[10,1], y_pot_new[11,1], y_pot_new[12,1], y_pot_new[13,1], y_pot_new[14,1], y_pot_new[15,1], y_pot_new[16,1]
+y_pot[1,6], y_pot[2,6], y_pot[3,6], y_pot[4,6], y_pot[5,6], y_pot[6,6]
+y_pot[1,5], y_pot[2,5], y_pot[3,5], y_pot[4,5], y_pot[5,5], y_pot[6,5]
+y_pot[1,4], y_pot[2,4], y_pot[3,4], y_pot[4,4], y_pot[5,4], y_pot[6,4]
+y_pot[1,3], y_pot[2,3], y_pot[3,3], y_pot[4,3], y_pot[5,3], y_pot[6,3]
+y_pot[1,2], y_pot[2,2], y_pot[3,2], y_pot[4,2], y_pot[5,2], y_pot[6,2]
+y_pot[1,1], y_pot[2,1], y_pot[3,1], y_pot[4,1], y_pot[5,1], y_pot[6,1]
