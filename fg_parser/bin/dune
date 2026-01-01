@@ -1,5 +1,5 @@
 (executable
  (public_name fg_parser)
  (package fg_parser)
- (name main)
+ (name model_parser)
  (libraries fg_parser core yojson))
