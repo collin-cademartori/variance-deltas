@@ -160,7 +160,7 @@ int main(int argc, char* argv[]) {
 
   proc::process interp_proc(
     ioc,
-    "../parse-fg-spec", 
+    "./fg_parser", 
     { spec_file, "-d", data_file },
     proc::process_stdio({{}, interp_pipe, {}})
   );

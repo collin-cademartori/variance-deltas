@@ -1,6 +1,6 @@
 import type { flat_node, flat_tree, flat_branch } from "./types.ts";
 import type { SvelteMap } from "svelte/reactivity";
-import { render_config, global_data, coordinates, event_handlers, consts } from "./draw_data.ts";
+import { type render_config, type global_data, type coordinates, type event_handlers, consts } from "./draw_data.ts";
 import { short_name } from "./short_names.ts";
 import { global_latex, type name_t } from "./names.ts"
 import * as d3 from "d3";

@@ -1,6 +1,7 @@
 import { serveFile, serveDir } from "jsr:@std/http/file-server";
+import { parseArgs } from "jsr:@std/cli@^1.0.20/parse-args";
 
-const site_root = Deno.build.standalone ? (import.meta.dirname + "/client") : "../MRF_Client/build";
+const site_root = Deno.build.standalone ? ("./client") : "../MRF_Client/build";
 
 type WSData = {
   id? : 'backend' | 'frontend';
@@ -34,6 +35,15 @@ const queues : Queues = {
   backend: []
 };
 
+const args = parseArgs(Deno.args, {
+  string: ["M", "D", "S", "N"],
+});
+
+if(args.M == null || args.D == null || args.S == null || args.N == null) {
+  console.error("All arguments mandatory.")
+  Deno.exit(1);
+}
+
 console.log("Starting server.");
 Deno.serve((req) => {
 
@@ -46,14 +56,19 @@ Deno.serve((req) => {
   }
 });
 
-// console.log("Starting client subprocess.");
-// try {
-//   // const command = new Deno.Command("./ws_test");
-//   const command = new Deno.Command("./graph_test");
-//   const _subproc = await command.output();
-// } catch (err) {
-//   console.error("Failed to launch backend: ", err);
-// }
+console.log("Starting client subprocess.");
+try {
+  const command = new Deno.Command("./graph_test",
+    {
+      args: [
+        "-M", args.M, "-D", args.D, "-S", args.S, "-N", args.N
+      ]
+    }
+  );
+  const _subproc = await command.output();
+} catch (err) {
+  console.error("Failed to launch backend: ", err);
+}
 
 function handle_ws_request(req : Request) {
   const { socket, response } = Deno.upgradeWebSocket(req);
@@ -94,6 +109,8 @@ function handle_http_request(req : Request) {
     return serveDir(req, {
       fsRoot: site_root,
     });
+  } else if (pathname.startsWith("/")) {
+    return serveFile(req, site_root + pathname);
   } else {
     console.warn("Denying request for ", pathname);
     return new Response("404: Not Found", {
