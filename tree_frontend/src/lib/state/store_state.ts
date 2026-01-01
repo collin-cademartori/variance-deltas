@@ -18,18 +18,28 @@ export function store_state(sid : string, state_prefix : string, state : boolean
 
 export function restore_state_bool(sid : string, state_prefix : string, default_value : boolean = true) {
   if(browser) {
-    const restore_value = JSON.parse(localStorage.getItem(`${sid}-${state_prefix}`));
+    const str_value = localStorage.getItem(`${sid}-${state_prefix}`);
+    if(str_value == null) {
+      return default_value;
+    }
+    const restore_value = JSON.parse(str_value);
     if(typeof restore_value != "boolean") {
       return default_value;
     } else {
       return restore_value;
     }
+  } else {
+    return default_value;
   }
 }
 
 export function restore_state_string(sid : string, state_prefix : string, default_value : string | undefined) {
   if(browser) {
-    const restore_value = JSON.parse(localStorage.getItem(`${sid}-${state_prefix}`));
+    const str_value = localStorage.getItem(`${sid}-${state_prefix}`);
+    if(str_value == null) {
+      return default_value;
+    }
+    const restore_value = JSON.parse(str_value);
     if(typeof restore_value != "string") {
       return default_value;
     } else {
@@ -42,7 +52,11 @@ export function restore_state_string(sid : string, state_prefix : string, defaul
 
 export function restore_state_map(sid : string, state_prefix : string, default_items : Array<[string, name_t]>) {
   if(browser) {
-    const restore_value = JSON.parse(localStorage.getItem(`${sid}-${state_prefix}`));
+    const str_value = localStorage.getItem(`${sid}-${state_prefix}`);
+    if(str_value == null) {
+      return default_items;
+    }
+    const restore_value = JSON.parse(str_value);
     if(Array.isArray(restore_value)) {
       return new SvelteMap(restore_value);
     } else {

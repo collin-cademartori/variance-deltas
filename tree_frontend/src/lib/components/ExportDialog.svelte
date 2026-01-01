@@ -9,7 +9,9 @@
   let { show_dialog = $bindable(), plot_width, y } : { show_dialog : boolean, plot_width : number, y : d3.ScaleLinear<number, number, never> } = $props();
 
   let dialog : HTMLDialogElement;
+  //svelte-ignore non_reactive_update
   let svg_snapshot : SVGElement | null = null;
+  //svelte-ignore non_reactive_update
   let xaxis_g : SVGGElement;
 
   function do_export() {

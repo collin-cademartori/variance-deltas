@@ -55,9 +55,11 @@ export const user_state : state_t = $state({
   get tree() {
     return(_tree);
   },  
-  set tree(tree : HierarchyNode<flat_node>) {
+  set tree(tree : HierarchyNode<flat_node> | undefined) {
     selection.clear();
-    _create_tree([...tree].map((n) => n.data));
+    if(_tree != undefined) {
+      _create_tree([...(tree as HierarchyNode<flat_node>)].map((n) => n.data));
+    }
     _tree = tree;
   },
   get group() {
@@ -65,9 +67,13 @@ export const user_state : state_t = $state({
   },
   set group(group : string | undefined) {
     _group = group;
-    store_state(session_id, "group", group);
+    if(group != null) {
+      store_state(session_id, "group", group);
+    }
     selection.clear();
-    _create_tree([..._tree].map((n) => n.data));
+    if(_tree != null) {
+      _create_tree([..._tree].map((n) => n.data));
+    }
   },
   globals: [],
   global_limit: undefined,
@@ -77,7 +83,9 @@ export const user_state : state_t = $state({
   set layout_format(fmt : 'long' | 'normal') {
     _layout_format = fmt;
     store_state(session_id, "layout_format", fmt)
-    _create_tree([..._tree].map((n) => n.data));
+    if(_tree != null) {
+      _create_tree([..._tree].map((n) => n.data));
+    }
   },
   get show_globals() {
     return(_show_globals);
@@ -85,7 +93,9 @@ export const user_state : state_t = $state({
   set show_globals(show: boolean) {
     _show_globals = show;
     store_state(session_id, "show_globals", show);
-    _create_tree([..._tree].map((n) => n.data));
+    if(_tree != null) {
+      _create_tree([..._tree].map((n) => n.data));
+    }
   },
   get names() {
     return(_names);
@@ -93,7 +103,9 @@ export const user_state : state_t = $state({
   set names(new_names : SvelteMap<string, name_t>) {
     _names = new_names;
     store_state(session_id, "names", new_names)
-    _create_tree([..._tree].map((n) => n.data));
+   if(_tree != null) {
+      _create_tree([..._tree].map((n) => n.data));
+    }
   },
   get svg_height() {
     return(_svg_height)
@@ -178,7 +190,7 @@ export function setup_tree(coord: coordinates, l_height : number) {
     _tree = (stratify<flat_node>()
               .id((n : flat_node) => n.name.toString())
               .parentId((n : flat_node) => n.parent.toString()))(data);
-    const fil_data = _group == undefined ? data : data.filter((node) => groups.get(user_state.group)?.has(node.name));
+    const fil_data = (user_state.group == null) ? data : data.filter((node) => groups.get(user_state.group as string)?.has(node.name));
     const global_data = {
       limit: user_state.global_limit,
       params: user_state.globals
@@ -219,7 +231,7 @@ export function setup_tree(coord: coordinates, l_height : number) {
           const cn = `${channel}_label_selected`;
           const sel_nodes = selection.nodes(channel);
           for(let ni = 0; ni < selection.size(channel); ++ni) {
-            document.getElementById(`${sel_nodes[ni]}_div`).classList.add(cn);
+            document.getElementById(`${sel_nodes[ni]}_div`)?.classList?.add(cn);
           }
         }
       });

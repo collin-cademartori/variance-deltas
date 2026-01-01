@@ -7,6 +7,9 @@ export function export_svg(svg : SVGElement, cvs : OffscreenCanvas, anchor : HTM
     cvs.width = 4 * img.naturalWidth;
     cvs.height = 4 * img.naturalHeight;
     const ctx = cvs.getContext('2d');
+    if(ctx == null) {
+      throw new Error("Canvas 2D context is null, cannot render tree to image!");
+    }
     ctx.drawImage(img, 0, 0, 4 * img.naturalWidth, 4 * img.naturalHeight);
     cvs.convertToBlob({
       type: "image/png"

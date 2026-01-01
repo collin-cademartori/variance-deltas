@@ -119,10 +119,6 @@
     background: rgb(234, 234, 234);
   } */
 
-  .bracket {
-    font-size: 1.1rem;
-  }
-
   #index_inputs {
     display: flex;
     flex-direction: row;

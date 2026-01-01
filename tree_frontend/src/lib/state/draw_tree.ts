@@ -14,7 +14,7 @@ export function draw_highlight(
 ) {
   d3.select("#highlight_container")
     .selectAll(".highlight_box")
-    .data(tree, (d : flat_node) => d.name)
+    .data(tree, (d) => (d as flat_node).name)
     .join(
       (enter) => {
         const g = enter.append("g")
@@ -68,7 +68,7 @@ export function draw_highlight(
     );
 
     d3.select("#vert_line_container").selectAll(".vline")
-      .data(tree, (d : flat_node) => d.name)
+      .data(tree, (d) => (d as flat_node).name)
       .join(
         (enter) => {
           const g = enter.append("g").attr("class", "vline")
@@ -116,7 +116,7 @@ export function draw_geometry(
   tree_elem.selectAll(".tree_branch")
     .data(
       branch_data,
-      (d: flat_branch) => `${d.parent.name}-->${d.child.name}`
+      (d) => `${(d as flat_branch).parent.name}-->${(d as flat_branch).child.name}`
     )
     .join(
       (enter) => {
@@ -209,7 +209,7 @@ export function draw_tree(
   // Setup data
   const id_mod = config.draw_static ? "_static" : "";
   console.warn([...tree.map((fn) => fn.label_y)])
-  const max_y = coord.y(tree.map((fn) => fn.label_y).reduce((p,n) => Math.max(p,n))) + (2 * config.label_height);
+  const max_y = coord.y(tree.map((fn) => fn.label_y ?? 0).reduce((p,n) => Math.max(p,n))) + (2 * config.label_height);
 
   // Define pan behavior
   // const pan = d3.zoom();
@@ -316,7 +316,7 @@ export function draw_tree(
             .style("user-select", "none")
             .style("border-color", "blue")
 
-        plist.selectAll(".global_name").data(short_name(global.params, names), (d : string) => d)
+        plist.selectAll(".global_name").data(short_name(global.params, names), (d) => d as string)
             .join(
               (enter) => {
                 const pdiv = enter.append("div")
@@ -403,8 +403,8 @@ export function draw_tree(
         .style("border-width", "0.12rem")
         .style("border-style", "solid")
         .style("border-radius", "8px")
-        .style("border-top-left-radius", (d) => d.x_pos > d.label_y ? "8px" : "2px")
-        .style("border-bottom-left-radius", (d) => d.x_pos > d.label_y ? "2px" : "8px")
+        .style("border-top-left-radius", (d) => ((d.x_pos ?? 0) > (d.label_y ?? 0)) ? "8px" : "2px")
+        .style("border-bottom-left-radius", (d) => (d.x_pos ?? 0) > (d.label_y ?? 0) ? "2px" : "8px")
         .style("font-size", (1.2 * config.label_height * 14 / 36) + "px")
         .style("font-weight", "bold")
         .style("width", "fit-content")
@@ -429,7 +429,7 @@ export function draw_tree(
         .style("font-weight", "normal")
         .style("font-size", "0.7em")
         .style("user-select", "none")
-        .html((d : flat_node) => d.depth.toString());
+        .html((d : flat_node) => d.depth?.toString() || "");
 
       ld.append("xhtml:div")
         .attr("class", "params_list")
@@ -451,12 +451,12 @@ export function draw_tree(
       .attr("x", (d : flat_node) => coord.x(0.003 + d.ered))
       .attr("y", (d: flat_node) => coord.y(d.label_y ?? 0));
     update.select(".label-div")
-      .style("border-top-left-radius", (d) => d.x_pos > d.label_y ? "8px" : "2px")
-      .style("border-bottom-left-radius", (d) => d.x_pos > d.label_y ? "2px" : "8px");
+      .style("border-top-left-radius", (d) => (d.x_pos ?? 0) > (d.label_y ?? 0) ? "8px" : "2px")
+      .style("border-bottom-left-radius", (d) => (d.x_pos ?? 0) > (d.label_y ?? 0) ? "2px" : "8px");
     update.select(".depth_tag")
       .html((d : flat_node) => {
         console.log(`Updating node label for ${d.name}`);
-        return(d.depth.toString())
+        return(d.depth?.toString() ?? "")
     });
     return update
   },
@@ -469,8 +469,8 @@ export function draw_tree(
   if(params_lists.size() > 0) {
     params_lists.selectAll(".param_name")
     .data((d : flat_node) => {
-          return(d.param_names);
-        }, (d : flat_node) => d.param_names?.join(",") ?? "none")
+          return(d.param_names ?? []);
+        }, (d) => (d as flat_node).param_names?.join(",") ?? "none")
         .join((enter) => {
           const pdiv = enter.append("div")
             .attr("class", "param_name")

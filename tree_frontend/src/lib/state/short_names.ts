@@ -33,7 +33,7 @@ export function short_name(
     //   np = np.split("_").map((s) => s[0]).join("");
     // }
 
-    np = names.get(np).formatted_name ?? np;
+    np = (names.get(np)?.formatted_name) ?? np;
     // np = katex.renderToString(np, { output: 'html' });
 
     const index_strs = get_index_strs(indices).join(", ");

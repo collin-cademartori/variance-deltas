@@ -2,8 +2,11 @@ import { type flat_tree } from "./state/types.ts";
 
 export const ws = new WebSocket("ws://localhost:8000");
 
-const tree_handlers = [];
-const group_handlers = [];
+type tree_handler_t = (tree_data : flat_tree, globals_data : string[], global_limit : number, groups_data : object) => void;
+type group_handler_t = (data : object) => void;
+
+const tree_handlers : tree_handler_t[] = [];
+const group_handlers : group_handler_t[] = [];
 const queue : string[] = [];
 let connected = false;
 
@@ -15,11 +18,11 @@ function send_message(msg : string) {
   }
 }
 
-export function handle_message(handler : (tree_data : flat_tree, globals_data : string[], global_limit : number, groups_data : object) => void) {
+export function handle_message(handler : tree_handler_t) {
   tree_handlers.push(handler);
 }
 
-export function handle_groups(handler : (data : object) => void) {
+export function handle_groups(handler : group_handler_t) {
   group_handlers.push(handler);
 }
 

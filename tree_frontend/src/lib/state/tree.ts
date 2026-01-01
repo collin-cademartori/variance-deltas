@@ -122,12 +122,12 @@ function compute_label_pos(
   const label_gap = y_scale.invert(consts.label_gap);
   for(const desc of ft) {
     const node = desc.data;
-    const bottom_y = [node.x_pos + y_scale.invert(scale * consts.node_size / 2) + label_gap, label_height]
+    const bottom_y = [(node.x_pos ?? 0) + y_scale.invert(scale * consts.node_size / 2) + label_gap, label_height]
     if(layout_format == "long") {
       node.label_y = bottom_y[0];
     } else {
       const top_y = [bottom_y[0] - y_scale.invert(scale * consts.node_size) - bottom_y[1] - 2*label_gap, bottom_y[1]]
-      node.label_y = node.depth % 2 == 0 ? top_y[0] : bottom_y[0];
+      node.label_y = (node.depth ?? 0) % 2 == 0 ? top_y[0] : bottom_y[0];
     }
   }
 }
