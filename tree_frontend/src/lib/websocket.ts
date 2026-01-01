@@ -1,6 +1,8 @@
 import { type flat_tree } from "./state/types.ts";
 
-export const ws = new WebSocket("ws://localhost:8000");
+// Connect to the same host/port that served the page
+const wsUrl = `ws://${window.location.host}`;
+export const ws = new WebSocket(wsUrl);
 
 type tree_handler_t = (tree_data : flat_tree, globals_data : string[], global_limit : number, groups_data : object) => void;
 type group_handler_t = (data : object) => void;

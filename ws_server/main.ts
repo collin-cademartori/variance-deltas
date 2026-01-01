@@ -36,7 +36,10 @@ const queues : Queues = {
 };
 
 const args = parseArgs(Deno.args, {
-  string: ["M", "D", "S", "N"],
+  string: ["M", "D", "S", "N", "port"],
+  default: {
+    port: "8765"
+  }
 });
 
 if(args.M == null || args.D == null || args.S == null || args.N == null) {
@@ -44,8 +47,14 @@ if(args.M == null || args.D == null || args.S == null || args.N == null) {
   Deno.exit(1);
 }
 
-console.log("Starting server.");
-Deno.serve((req) => {
+const PORT = parseInt(args.port, 10);
+if (isNaN(PORT) || PORT < 1 || PORT > 65535) {
+  console.error("Invalid port number. Must be between 1 and 65535.");
+  Deno.exit(1);
+}
+
+console.log(`Starting server on port ${PORT}...`);
+Deno.serve({ port: PORT }, (req) => {
 
   if (req.headers.get("upgrade") === "websocket") {
     const res = handle_ws_request(req);
@@ -61,7 +70,7 @@ try {
   const command = new Deno.Command("./graph_test",
     {
       args: [
-        "-M", args.M, "-D", args.D, "-S", args.S, "-N", args.N
+        "-M", args.M, "-D", args.D, "-S", args.S, "-N", args.N, "-P", PORT.toString()
       ]
     }
   );
@@ -157,6 +166,11 @@ function attach_id(socket : WebSocketWithData, id : string) {
     socket.data.id = id;
     clients[id] = socket;
 
+    // Open browser when backend connects
+    if (id === "backend") {
+      open_browser();
+    }
+
     let queued_msg = null;
     while((queued_msg = queues[id].shift()) != null) {
       socket.send(queued_msg);
@@ -164,6 +178,40 @@ function attach_id(socket : WebSocketWithData, id : string) {
   } else {
     console.error("Client id not recognized: ", id);
     socket.close();
+  }
+}
+
+async function open_browser() {
+  const url = `http://localhost:${PORT}`;
+  console.log(`Opening browser to ${url}...`);
+
+  try {
+    let command: string;
+    let args: string[];
+
+    switch (Deno.build.os) {
+      case "darwin":  // macOS
+        command = "open";
+        args = [url];
+        break;
+      case "linux":
+        command = "xdg-open";
+        args = [url];
+        break;
+      case "windows":
+        command = "cmd";
+        args = ["/c", "start", url];
+        break;
+      default:
+        console.warn(`Unknown OS: ${Deno.build.os}, cannot open browser`);
+        return;
+    }
+
+    const cmd = new Deno.Command(command, { args });
+    await cmd.output();
+  } catch (err) {
+    console.error("Failed to open browser:", err);
+    console.log(`Please open your browser manually to: http://localhost:${PORT}`);
   }
 }
 

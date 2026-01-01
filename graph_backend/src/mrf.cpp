@@ -42,7 +42,8 @@ int main(int argc, char* argv[]) {
   ("model_file,M", options::value<string>()->required(), "specify the model file")
   ("data_file,D", options::value<string>()->required(), "specify the data file")
   ("stan_file_prefix,S",options::value<string>()->required(), "specify the prefix of Stan's MCMC output CSV files")
-  ("num_chains,N", options::value<int>()->required(), "specify the number of MCMC chains, i.e. the number of MCMC CSV files to read");
+  ("num_chains,N", options::value<int>()->required(), "specify the number of MCMC chains, i.e. the number of MCMC CSV files to read")
+  ("port,P", options::value<int>()->default_value(8765), "specify the WebSocket server port (default: 8765)");
 
   options::variables_map user_input;
 
@@ -64,6 +65,7 @@ int main(int argc, char* argv[]) {
   const string& data_file = user_input["data_file"].as<string>();
   const string& stan_file_prefix = user_input["stan_file_prefix"].as<string>();
   const int num_chains = user_input["num_chains"].as<int>();
+  const int ws_port = user_input["port"].as<int>();
 
   //Polling model code
 
@@ -275,6 +277,7 @@ int main(int argc, char* argv[]) {
     return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
   });
 
+  initialize_ws_client("localhost", ws_port);
   start_ws_client();
 
   cout << "WS client start called." << endl;
