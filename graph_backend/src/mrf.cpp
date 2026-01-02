@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <filesystem>
 
 #include <boost/graph/graphviz.hpp>
 #include <boost/graph/adjacency_list.hpp>
@@ -66,6 +67,43 @@ int main(int argc, char* argv[]) {
   const string& stan_file_prefix = user_input["stan_file_prefix"].as<string>();
   const int num_chains = user_input["num_chains"].as<int>();
   const int ws_port = user_input["port"].as<int>();
+
+  // Verify input files exist
+  bool files_missing = false;
+
+  if (!std::filesystem::exists(spec_file)) {
+    std::cerr << "Error: Model file does not exist: " << spec_file << endl;
+    files_missing = true;
+  }
+
+  if (!std::filesystem::exists(data_file)) {
+    std::cerr << "Error: Data file does not exist: " << data_file << endl;
+    files_missing = true;
+  }
+
+  // Check if Stan output files exist (check for first chain)
+  string first_chain_file = stan_file_prefix + "1.csv";
+  if (!std::filesystem::exists(first_chain_file)) {
+    std::cerr << "Error: Stan output file does not exist: " << first_chain_file << endl;
+    std::cerr << "       (Looking for files with prefix: " << stan_file_prefix << ")" << endl;
+    files_missing = true;
+  } else {
+    // Check if all chains exist
+    for (int i = 1; i <= num_chains; ++i) {
+      string chain_file = stan_file_prefix + to_string(i) + ".csv";
+      if (!std::filesystem::exists(chain_file)) {
+        std::cerr << "Error: Stan output file does not exist: " << chain_file << endl;
+        files_missing = true;
+      }
+    }
+  }
+
+  if (files_missing) {
+    std::cerr << endl << "Please check the file paths and try again." << endl;
+    return 1;
+  } else {
+    std::cout << endl << "All file paths resolved, proceeding." << endl;
+  }
 
   //Polling model code
 
@@ -160,9 +198,11 @@ int main(int argc, char* argv[]) {
   asio::io_context ioc;
   asio::readable_pipe interp_pipe{ioc};
 
+  cout << "About to run parser..." << endl;
+
   proc::process interp_proc(
     ioc,
-    "./fg_parser", 
+    "./model_parser", 
     { spec_file, "-d", data_file },
     proc::process_stdio({{}, interp_pipe, {}})
   );
@@ -177,6 +217,8 @@ int main(int argc, char* argv[]) {
   }
 
   interp_proc.wait();
+
+  cout << "Parser ran" << endl;
 
   const int tree_begin = interp_data.find("\n--");
   const string fg_data = interp_data.substr(0, tree_begin);

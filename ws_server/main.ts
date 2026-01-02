@@ -1,7 +1,14 @@
 import { serveFile, serveDir } from "jsr:@std/http/file-server";
 import { parseArgs } from "jsr:@std/cli@^1.0.20/parse-args";
+import * as path from "jsr:@std/path";
 
-const site_root = Deno.build.standalone ? ("./client") : "../MRF_Client/build";
+// Get the directory where this executable is located
+const execPath = Deno.execPath();
+const execDir = path.dirname(execPath);
+
+// Construct paths relative to executable location
+const graph_test_path = path.join(execDir, "graph_test");
+const site_root = path.join(execDir, "client");
 
 type WSData = {
   id? : 'backend' | 'frontend';
@@ -67,14 +74,23 @@ Deno.serve({ port: PORT }, (req) => {
 
 console.log("Starting client subprocess.");
 try {
-  const command = new Deno.Command("./graph_test",
+  const command = new Deno.Command(graph_test_path,
     {
       args: [
         "-M", args.M, "-D", args.D, "-S", args.S, "-N", args.N, "-P", PORT.toString()
-      ]
+      ],
+      stdout: "inherit",
+      stderr: "inherit"
     }
   );
-  const _subproc = await command.output();
+  const _subproc = command.spawn();
+
+  // Wait for the subprocess to complete in the background
+  _subproc.status.then((status) => {
+    if (!status.success) {
+      console.error(`Backend process exited with code: ${status.code}`);
+    }
+  });
 } catch (err) {
   console.error("Failed to launch backend: ", err);
 }
