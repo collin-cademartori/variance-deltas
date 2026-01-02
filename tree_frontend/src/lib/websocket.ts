@@ -1,7 +1,8 @@
 import { type flat_tree } from "./state/types.ts";
+import { browser } from "$app/environment";
 
 // Connect to the same host/port that served the page
-const wsUrl = `ws://${window.location.host}`;
+const wsUrl = browser ? `ws://${window.location.host}` : 'ws://localhost:8000';
 export const ws = new WebSocket(wsUrl);
 
 type tree_handler_t = (tree_data : flat_tree, globals_data : string[], global_limit : number, groups_data : object) => void;
