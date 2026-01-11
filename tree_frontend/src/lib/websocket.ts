@@ -67,7 +67,6 @@ ws.addEventListener("message", (event) => {
   }
   try {
       const pdata = JSON.parse(event.data);
-      console.log(pdata)
       switch(pdata.type) {
         case "tree":
           tree_handlers.forEach((h) => h(JSON.parse(pdata.tree), JSON.parse(pdata.globals), JSON.parse(pdata.global_limit), JSON.parse(pdata.groups)));

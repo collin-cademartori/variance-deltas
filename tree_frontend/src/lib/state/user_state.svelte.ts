@@ -30,7 +30,7 @@ let _names : SvelteMap<string, name_t> = $state(restore_state_map(session_id, "n
   type: 'latex',
   name: '\\bar{g}',
   formatted_name: global_latex
-}]]) as SvelteMap<string, name_t>);
+}]]));
 let _tree : HierarchyNode<flat_node> | undefined;
 let _group : string | undefined = $state(restore_state_string(session_id, "group", undefined));
 let _layout_format : 'long' | 'normal' = $state(restore_state_string(session_id, "layout_format", 'normal') as 'long' | 'normal');

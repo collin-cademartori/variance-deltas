@@ -64,15 +64,27 @@
     setup_tree({x: x, y: y}, l_height);
 
     ws.handle_message((tree_data, globals_data, global_limit, groups_data) => {
-      const pnames = new Set([...tree_data].map((node) => node.params.map((n) => n.split("[")[0])).flat());
-      update_names(pnames);
-      const tree = (d3.stratify<flat_node>()
-                    .id((n : flat_node) => n.name.toString())
-                    .parentId((n : flat_node) => n.parent.toString()))(tree_data);
-      handle_groups(groups_data);
-      globals_data.forEach((global) => user_state.globals.push(global));
-      user_state.global_limit = global_limit;
-      user_state.tree = tree;
+      try {
+        const pnames = new Set([...tree_data].map((node) => node.params.map((n) => n.split("[")[0])).flat());
+        console.log("Step 1")
+        update_names(pnames);
+        console.log("Step 2")
+        const tree = (d3.stratify<flat_node>()
+                      .id((n : flat_node) => n.name.toString())
+                      .parentId((n : flat_node) => n.parent.toString()))(tree_data);
+        console.log("Step 3")
+        handle_groups(groups_data);
+        console.log("Step 4")
+        globals_data.forEach((global) => user_state.globals.push(global));
+        console.log("Step 5")
+        user_state.global_limit = global_limit;
+        user_state.tree = tree;
+        console.log("Step 6")
+      } catch (err) {
+        console.error("Error while handling tree message:");
+        console.error(err);
+      }
+
     });
     ws.handle_groups(handle_groups);
     get_tree([]);

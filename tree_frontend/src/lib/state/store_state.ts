@@ -54,15 +54,15 @@ export function restore_state_map(sid : string, state_prefix : string, default_i
   if(browser) {
     const str_value = localStorage.getItem(`${sid}-${state_prefix}`);
     if(str_value == null) {
-      return default_items;
+      return new SvelteMap(default_items);
     }
     const restore_value = JSON.parse(str_value);
     if(Array.isArray(restore_value)) {
-      return new SvelteMap(restore_value);
+      return new SvelteMap<string, name_t>(restore_value);
     } else {
       return new SvelteMap(default_items);
     }
   } else {
-    return new SvelteMap();
+    return new SvelteMap<string, name_t>();
   }
 }
