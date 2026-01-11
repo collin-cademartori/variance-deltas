@@ -1,6 +1,7 @@
 #include<map>
 #include<fstream>
 #include<iostream>
+#include<random>
 #include<Eigen/Dense>
 
 #include<read_stan.hpp>
@@ -17,7 +18,7 @@ vector<int> dot_pos(string name) {
   return(pos);
 }
  
-standata read_stan_file(string file_name, int num_chains) {
+standata read_stan_file(string file_name, int num_chains, bool bootstrap) {
   vector<double> stan_data;
   vector<string> stan_names;
   int sample_size = 0;
@@ -81,8 +82,24 @@ standata read_stan_file(string file_name, int num_chains) {
     col_names.insert(make_pair(par_name, ci));
   }
 
-  return {
-    .samples = std::move(stan_matrix),
-    .vars = col_names
-  };
+  if(bootstrap) {
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::uniform_int_distribution<> unif(0, stan_matrix->rows()-1);
+
+    auto sm_boot = std::make_unique<MatrixXd>(stan_matrix->rows(), stan_matrix->cols());
+    for(int i = 0; i < stan_matrix->rows(); ++i){
+      sm_boot->row(i) = stan_matrix->row(unif(generator));
+    }
+    return {
+      .samples = std::move(sm_boot),
+      .vars = col_names
+    };
+  } else {
+    return {
+      .samples = std::move(stan_matrix),
+      .vars = col_names
+    };
+  }
+
 }
