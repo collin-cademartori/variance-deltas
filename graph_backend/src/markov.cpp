@@ -788,14 +788,14 @@ void markov::merge_nodes(
   Node child1_copy = add_vertex({
     .name = get_id(std::reduce<vertex_names::iterator, string>(child_params_1.begin(), child_params_1.end(), "")),
     .parameters = child_params_1,
-    .ered = adj_r_squared(child_params_1, root_param, stan_matrix, stan_vars),
+    .ered = tree[node].ered,
     .depth = tree[prev_node].depth + 1,
     .chain_nums = {}
   }, tree);
   Node child2_copy = add_vertex({
     .name = get_id(std::reduce<vertex_names::iterator, string>(child_params_2.begin(), child_params_2.end(), "")),
     .parameters = child_params_2,
-    .ered = adj_r_squared(child_params_2, root_param, stan_matrix, stan_vars),
+    .ered = tree[alt_node].ered,
     .depth = tree[prev_node].depth + 1,
     .chain_nums = {}
   }, tree);
