@@ -32,7 +32,7 @@ function compute_xs(
   ft : flat_tree,
   y_scale : d3.ScaleLinear<number, number, never>,
   layout_format : 'normal' | 'long' = 'long',
-  compact : boolean = false,
+  compact : boolean = true,
   label_size : number
 ) {
   const test_tree = (d3.stratify<flat_node>()
@@ -71,7 +71,9 @@ function compute_xs(
     console.log(`Computing positions of ${num_leaves} leaves`);
     for(const [lindex, leaf] of test_tree.leaves().sort(leaf_sort).entries()) {
       // leaf.data.x_pos = 0.05 + 0.9 * ((lindex + 0.1) / ((num_leaves - 1) + 0.2));
-      leaf.data.x_pos = (1.1 * y_scale.invert(label_size)) + lindex * spacing_factor * y_scale.invert(label_size);
+      leaf.data.x_pos = y_scale.invert(10) + 
+                        (spacing_factor * y_scale.invert(label_size)) + 
+                        lindex * spacing_factor * y_scale.invert(label_size);
     } 
 
     test_tree.eachAfter((d) => {

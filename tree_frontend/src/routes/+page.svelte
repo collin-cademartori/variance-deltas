@@ -23,7 +23,7 @@
 
   const width = 1150;
 
-  const x = d3.scaleLinear([0, 1], [0, 0.95 * width]);
+  const x = d3.scaleLinear([0, 1], [0, 0.85 * width]);
   const y = d3.scaleLinear([0, 1], [0, 1000]);
   const l_height = 50;
 
@@ -337,7 +337,7 @@
 <style>
 
   :global(.katex) {
-    font-size: 1em;
+    font-size: 0.9em !important;
   }
 
   :global(.main_label_selected) {    
