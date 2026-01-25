@@ -20,6 +20,7 @@
 #include <read_lik.hpp>
 #include <read_stan.hpp>
 #include <regression.hpp>
+#include <regression_rf.hpp>
 #include <serialize_tree.hpp>
 
 namespace options = boost::program_options;
@@ -235,7 +236,7 @@ int main(int argc, char* argv[]) {
   auto [mrf, param_vertices] = mrf_from_fg(fg, fg_params, fg_facs);
   auto stan_data = read_stan_file(stan_file_prefix, num_chains);
 
-  auto global_adj_r = adj_r_squared(global_params, root_name, *stan_data.samples, stan_data.vars);
+  auto global_adj_r = rf_oob_mse(global_params, root_name, *stan_data.samples, stan_data.vars);
 
   std::map<std::string, std::set<std::string>> tree_groups {};
 

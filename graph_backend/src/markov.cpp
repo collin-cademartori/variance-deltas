@@ -7,7 +7,8 @@
 
 #include <markov.hpp>
 #include <min_sep_vis.hpp>
-#include <regression.hpp>
+// #include <regression.hpp>
+#include <regression_rf.hpp>
 
 using namespace std;
 using namespace boost;
@@ -398,7 +399,7 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
 
         std::optional<Node> next_node = search_children(cur_node, chain_parameters, markov_tree);
         if(next_node == nullopt) {
-          double ered = adj_r_squared(chain_parameters, root, stan_matrix, stan_vars);
+          double ered = rf_oob_mse(chain_parameters, root, stan_matrix, stan_vars);
           auto name_hash = get_id(std::reduce<vertex_names::iterator, string>(chain_parameters.begin(), chain_parameters.end(), ""));
           Node new_node = add_vertex({ 
             .name = name_hash,
@@ -571,7 +572,7 @@ void markov::divide_branch(
     auto child_params = tree[child_node].parameters;
     params_kept.insert(child_params.begin(), child_params.end());
     string root_name = *tree[root].parameters.begin();
-    double ered = adj_r_squared(params_kept, root_name, stan_matrix, stan_vars);
+    double ered = rf_oob_mse(params_kept, root_name, stan_matrix, stan_vars);
     auto name_hash = get_id(std::reduce<vertex_names::iterator, string>(params_kept.begin(), params_kept.end(), ""));
     Node split_node = add_vertex({ 
       .name = name_hash,
@@ -641,7 +642,7 @@ void markov::auto_divide(
     double best_ered = 2;
     for(auto& [prefix, params]: par_param_prefixes_map) {
       params.insert(child_params.begin(), child_params.end());
-      double ered = adj_r_squared(params, root_name, stan_matrix, stan_vars);
+      double ered = rf_oob_mse(params, root_name, stan_matrix, stan_vars);
       if(ered < best_ered) {
         best_ered = ered;
         best_params = params;
@@ -673,7 +674,7 @@ void markov::extrude_branch(
   auto node = locate_node(tree, root, node_name);
 
   string root_name = *tree[root].parameters.begin();
-  double ered = adj_r_squared(params_kept, root_name, stan_matrix, stan_vars);
+  double ered = rf_oob_mse(params_kept, root_name, stan_matrix, stan_vars);
   auto name_hash = get_id(std::reduce<vertex_names::iterator, string>(params_kept.begin(), params_kept.end(), ""));
 
   Node new_node = add_vertex({ 
@@ -755,7 +756,7 @@ void markov::merge_nodes(
     Node new_node = add_vertex({
       .name = name_hash,
       .parameters = param_names,
-      .ered = adj_r_squared(param_names, root_param, stan_matrix, stan_vars),
+      .ered = rf_oob_mse(param_names, root_param, stan_matrix, stan_vars),
       .depth = tree[prev_node].depth + 1,
       .chain_nums = {}
     }, tree);
@@ -838,7 +839,7 @@ void markov::auto_merge(
         set<string> params_2 = tree[node_group[nj]].parameters;
         merge_params.insert(params_1.begin(), params_1.end());
         merge_params.insert(params_2.begin(), params_2.end());
-        double merge_ered = adj_r_squared(merge_params, root_param, stan_matrix, stan_vars);
+        double merge_ered = rf_oob_mse(merge_params, root_param, stan_matrix, stan_vars);
         if(merge_ered < best_ered) {
           best_node = tree[node_group[ni]].name;
           best_alt_node = tree[node_group[nj]].name;
@@ -889,7 +890,7 @@ void markov::auto_merge2(
         if(!std::includes(c_params.begin(), c_params.end(), p_params.begin(), p_params.end())) {
           double c1_ered = tree[child1].ered.value();
           double c2_ered = tree[child2].ered.value();
-          double merge_ered = adj_r_squared(c_params, root_param, stan_matrix, stan_vars);
+          double merge_ered = rf_oob_mse(c_params, root_param, stan_matrix, stan_vars);
           double rel_ered = merge_ered / min(c1_ered, c2_ered);
           if(rel_ered < best_rel_ered) {
             best_node = tree[child1].name;
