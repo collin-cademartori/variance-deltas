@@ -3,7 +3,7 @@ import { parseArgs } from "jsr:@std/cli@^1.0.20/parse-args";
 import * as path from "jsr:@std/path";
 
 // Get the directory where this executable is located
-const execPath = Deno.execPath();
+const execPath = Deno.realPathSync(Deno.execPath());
 const execDir = path.dirname(execPath);
 
 // Construct paths relative to executable location

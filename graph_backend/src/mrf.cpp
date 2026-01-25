@@ -11,6 +11,7 @@
 #include <boost/program_options.hpp>
 #include <boost/process.hpp>
 #include <boost/asio.hpp>
+#include <boost/dll/runtime_symbol_info.hpp>
 
 #include <lik_complexity.hpp>
 #include <markov.hpp>
@@ -32,10 +33,8 @@ using json = nlohmann::json;
 
 int main(int argc, char* argv[]) {
 
-  #ifdef NDEBUG
-    std::cout << "In release mode." << std::endl;
-  #else
-    std::cout << "In debug mode." << std::endl; 
+  #ifndef NDEBUG
+    std::cout << "Warning: Running in debug mode, performance may be significantly degraded." << std::endl;
   #endif
 
   options::options_description ops_desc("Command line options.");
@@ -196,14 +195,19 @@ int main(int argc, char* argv[]) {
 
   // Begin generic algorithm
 
+  // Get executable directory for finding sibling executables
+  boost::filesystem::path exec_path = boost::dll::program_location();
+  boost::filesystem::path exec_dir = exec_path.parent_path();
+  boost::filesystem::path model_parser_path = exec_dir / "model_parser";
+
   asio::io_context ioc;
   asio::readable_pipe interp_pipe{ioc};
 
-  cout << "About to run parser..." << endl;
+  cout << "About to run parser: " << model_parser_path << endl;
 
   proc::process interp_proc(
     ioc,
-    "./model_parser", 
+    model_parser_path.string(),
     { spec_file, "-d", data_file },
     proc::process_stdio({{}, interp_pipe, {}})
   );
