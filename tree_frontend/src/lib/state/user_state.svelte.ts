@@ -36,7 +36,7 @@ let _group : string | undefined = $state(restore_state_string(session_id, "group
 let _layout_format : 'long' | 'normal' = $state(restore_state_string(session_id, "layout_format", 'normal') as 'long' | 'normal');
 let _show_globals : boolean = $state(restore_state_bool(session_id, "show_globals", true));
 let _svg_height = $state(0);
-let _create_tree : (data : flat_tree) => void;
+let _create_tree : (data : flat_tree) => void = () => { console.warn("Tried to create tree before setup complete - ignoring"); }
 
 export const user_state : state_t = $state({ 
   get state() {
@@ -56,10 +56,9 @@ export const user_state : state_t = $state({
     return(_tree);
   },  
   set tree(tree : HierarchyNode<flat_node> | undefined) {
+    console.log("Setting tree...")
     selection.clear();
-    if(_tree != undefined) {
-      _create_tree([...(tree as HierarchyNode<flat_node>)].map((n) => n.data));
-    }
+    _create_tree([...(tree as HierarchyNode<flat_node>)].map((n) => n.data));
     _tree = tree;
   },
   get group() {
@@ -186,6 +185,7 @@ const handlers = {
 }
 
 export function setup_tree(coord: coordinates, l_height : number) {
+  console.log("Setting up to draw...")
   _create_tree = function(data : flat_tree) {
     _tree = (stratify<flat_node>()
               .id((n : flat_node) => n.name.toString())
