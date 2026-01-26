@@ -64,6 +64,10 @@ if [ ! -f "$SCRIPT_DIR/build/model_parser" ]; then
     MISSING_FILES+=("model_parser")
 fi
 
+if [ ! -f "$SCRIPT_DIR/build/ranger" ]; then
+    MISSING_FILES+=("ranger")
+fi
+
 if [ ! -d "$SCRIPT_DIR/build/client" ]; then
     MISSING_FILES+=("client/")
 fi
@@ -121,6 +125,11 @@ print_info "Copying model_parser..."
 cp "$SCRIPT_DIR/build/model_parser" "$APP_DIR/"
 chmod +x "$APP_DIR/model_parser"
 print_success "Installed model_parser"
+
+print_info "Copying ranger..."
+cp "$SCRIPT_DIR/build/ranger" "$APP_DIR/"
+chmod +x "$APP_DIR/ranger"
+print_success "Installed ranger"
 
 print_info "Copying client files..."
 cp -r "$SCRIPT_DIR/build/client" "$APP_DIR/"

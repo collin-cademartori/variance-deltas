@@ -8,6 +8,7 @@
 
 #include <boost/process.hpp>
 #include <boost/asio.hpp>
+#include <boost/dll/runtime_symbol_info.hpp>
 
 namespace proc = boost::process;
 namespace asio = boost::asio;
@@ -27,6 +28,16 @@ static string sanitize_column_name(const string& name) {
   return result;
 }
 
+// Get path to ranger executable (sibling of this executable)
+static boost::filesystem::path get_ranger_path() {
+  static boost::filesystem::path ranger_path;
+  if (ranger_path.empty()) {
+    boost::filesystem::path exec_path = boost::dll::program_location();
+    ranger_path = exec_path.parent_path() / "ranger";
+  }
+  return ranger_path;
+}
+
 // Helper to run ranger and capture output
 static string run_ranger(const vector<string>& args) {
   asio::io_context ioc;
@@ -34,7 +45,7 @@ static string run_ranger(const vector<string>& args) {
 
   proc::process ranger_proc(
     ioc,
-    "/Users/collin/.local/bin/ranger",
+    get_ranger_path().string(),
     args,
     proc::process_stdio({{}, ranger_pipe, {}})
   );

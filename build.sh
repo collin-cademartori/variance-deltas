@@ -207,6 +207,11 @@ cd "$SCRIPT_DIR/ws_server"
 rm -rf build/
 print_success "Cleaned ws_server"
 
+print_info "Cleaning ranger..."
+cd "$SCRIPT_DIR/ranger/cpp_version"
+rm -rf build/
+print_success "Cleaned ranger"
+
 cd "$SCRIPT_DIR"
 print_success "All clean phases completed"
 
@@ -244,6 +249,25 @@ if make; then
     print_success "graph_backend built successfully"
 else
     print_error "Failed to build graph_backend"
+    exit 1
+fi
+
+# Build ranger (random forest CLI)
+print_info "Building ranger (C++)..."
+cd "$SCRIPT_DIR/ranger/cpp_version"
+mkdir -p build
+cd build
+if cmake -DCMAKE_BUILD_TYPE=Release ..; then
+    print_success "ranger CMake configuration completed"
+else
+    print_error "ranger CMake configuration failed"
+    exit 1
+fi
+
+if make; then
+    print_success "ranger built successfully"
+else
+    print_error "Failed to build ranger"
     exit 1
 fi
 
@@ -292,6 +316,14 @@ if cp "$SCRIPT_DIR/graph_backend/build/graph_test" "$SCRIPT_DIR/build/"; then
     print_success "Copied graph_test"
 else
     print_error "Failed to copy graph_test"
+    exit 1
+fi
+
+print_info "Copying ranger executable..."
+if cp "$SCRIPT_DIR/ranger/cpp_version/build/ranger" "$SCRIPT_DIR/build/"; then
+    print_success "Copied ranger"
+else
+    print_error "Failed to copy ranger"
     exit 1
 fi
 
@@ -355,6 +387,7 @@ verify_executable() {
 verify_executable "$SCRIPT_DIR/build/ws_server" "ws_server"
 verify_executable "$SCRIPT_DIR/build/graph_test" "graph_test"
 verify_executable "$SCRIPT_DIR/build/model_parser" "model_parser"
+verify_executable "$SCRIPT_DIR/build/ranger" "ranger"
 verify_file "$SCRIPT_DIR/build/client/index.html" "Frontend index.html"
 verify_file "$SCRIPT_DIR/build/client/_app/version.json" "Frontend app bundle"
 
