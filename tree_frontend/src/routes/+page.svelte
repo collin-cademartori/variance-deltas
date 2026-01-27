@@ -7,11 +7,11 @@
   import * as ws from "$lib/websocket";
   import * as d3 from "d3";
   import type { flat_node, flat_branch } from "$lib/state/types";
-  import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge, define_group, delete_node } from "$lib/tree_methods";
+  import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge, delete_node } from "$lib/tree_methods";
   // import { setup_context } from "$lib/state/compute_width";
   import { selection } from "$lib/state/selection.svelte";
   import { user_state, setup_tree, update_names } from "$lib/state/user_state.svelte";
-  import { groups, handle_groups } from "$lib/state/groups";
+  import { groups, make_group, prune_groups } from "$lib/state/groups";
 
   import SelectionDialog from "$lib/components/SelectionDialog.svelte";
   import MultiSelectionDialog from "$lib/components/MultiSelectionDialog.svelte";
@@ -63,7 +63,7 @@
 
     setup_tree({x: x, y: y}, l_height);
 
-    ws.handle_message((tree_data, globals_data, global_limit, groups_data) => {
+    ws.handle_message((tree_data, globals_data, global_limit, _groups_data) => {
       try {
         const pnames = new Set([...tree_data].map((node) => node.params.map((n) => n.split("[")[0])).flat());
         console.log("Step 1")
@@ -73,7 +73,9 @@
                       .id((n : flat_node) => n.name.toString())
                       .parentId((n : flat_node) => n.parent.toString()))(tree_data);
         console.log("Step 3")
-        handle_groups(groups_data);
+        // Prune groups that reference deleted nodes
+        const valid_node_names = new Set(tree_data.map((node: flat_node) => node.name));
+        prune_groups(valid_node_names);
         console.log("Step 4")
         globals_data.forEach((global) => user_state.globals.push(global));
         console.log("Step 5")
@@ -86,7 +88,6 @@
       }
 
     });
-    ws.handle_groups(handle_groups);
     get_tree([]);
 
     // document.addEventListener("keydown", (ev) => {
@@ -249,12 +250,7 @@
           input_text={"Group Name"}
           button_text={"Create Group"} 
           button_action={(name, node_names) => {
-            // console.log(node_names);  
-            // make_group(name, node_names);
-            define_group({
-              group_name: name,
-              node_names: node_names
-            });
+            make_group(name, node_names);
             selection.clear();
             user_state.state = 'groups';
           }} 

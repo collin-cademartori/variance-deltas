@@ -35,7 +35,7 @@ pair<string,string> serialize_node(const Node& node, const MTree& tree, string p
   serialized_str += "\"ered\":" + to_string(tree[node].ered.value()) + ",";
   serialized_str += "\"parent\":\"" + parent_name + "\"";
   serialized_str += "}";
-  
+
   return make_pair(serialized_str, node_name);
 }
 
@@ -52,36 +52,9 @@ string serialize_set(const set<string>& str_set) {
   return(globals_string);
 }
 
-string serialize_groups(const map<string, set<string>> groups, bool wrap_message) {
-
-  string serialized_groups = "{";
-  for(auto mit = groups.begin(); mit != groups.end(); mit = std::next(mit)) {
-
-    const auto group_name = mit->first;
-    const auto& node_names = mit->second;
-    const string node_names_str = serialize_set(node_names);
-    
-    serialized_groups += "\"" + group_name + "\":" + node_names_str;
-    if(std::next(mit) != groups.end()) {
-      serialized_groups += ",";
-    }
-  }
-  serialized_groups += "}";
-
-  if(wrap_message) {
-    string groups_str = "{\"type\":\"groups\",";
-    groups_str += "\"groups\":" + serialized_groups;
-    groups_str += "}";
-    return groups_str;
-  } else {
-    return serialized_groups;
-  }
-}
-
 string serialize_tree(
   const Node& root, const MTree& tree,
-  const set<string>& globals, double global_limit,
-  const map<string, set<string>>& groups
+  const set<string>& globals, double global_limit
 ) {
 
   queue<pair<Node, string>> node_queue{};
@@ -109,13 +82,12 @@ string serialize_tree(
   serialized_tree += "]";
 
   string serialized_globals = serialize_set(globals);
-  string serialized_groups = serialize_groups(groups, false);
 
   string tree_str = "{\"type\":\"tree\",";
   tree_str += "\"tree\":" + serialized_tree + ",";
   tree_str += "\"globals\":" + serialized_globals + ",";
   tree_str += "\"global_limit\":" + std::to_string(global_limit) + ",";
-  tree_str += "\"groups\":" + serialized_groups;
+  tree_str += "\"groups\":{}";  // Groups are now managed by frontend
   tree_str += "}";
   cout << tree_str << endl;
   return tree_str;

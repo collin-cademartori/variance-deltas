@@ -6,10 +6,8 @@ const wsUrl = browser ? `ws://${window.location.host}` : 'ws://localhost:8000';
 export const ws = new WebSocket(wsUrl);
 
 type tree_handler_t = (tree_data : flat_tree, globals_data : string[], global_limit : number, groups_data : object) => void;
-type group_handler_t = (data : object) => void;
 
 const tree_handlers : tree_handler_t[] = [];
-const group_handlers : group_handler_t[] = [];
 const queue : string[] = [];
 let connected = false;
 
@@ -23,10 +21,6 @@ function send_message(msg : string) {
 
 export function handle_message(handler : tree_handler_t) {
   tree_handlers.push(handler);
-}
-
-export function handle_groups(handler : group_handler_t) {
-  group_handlers.push(handler);
 }
 
 export function make_method_caller(method_name : string, arg_keys : string[]) {
@@ -71,11 +65,8 @@ ws.addEventListener("message", (event) => {
         case "tree":
           tree_handlers.forEach((h) => h(JSON.parse(pdata.tree), JSON.parse(pdata.globals), JSON.parse(pdata.global_limit), JSON.parse(pdata.groups)));
           break;
-        case "groups":
-          group_handlers.forEach((h) => h(JSON.parse(pdata.groups)));
-          break;
         default:
-          console.error("Received of unknown type! ", pdata);
+          console.error("Received message of unknown type: ", pdata);
       }
     } catch (err) {
       console.error("Could not convert message to JSON:\n ", event.data);

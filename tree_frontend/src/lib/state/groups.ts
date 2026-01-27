@@ -1,34 +1,57 @@
 import { SvelteMap } from "svelte/reactivity";
-import { delete_group } from "../tree_methods.ts";
+import { restore_state_groups, store_state_groups } from "./store_state.ts";
 
-export const groups : Map<string, Set<string>> = new SvelteMap();
+// TODO: Replace with real session ID when session saving is implemented.
+// Currently all sessions share the same groups in localStorage.
+const session_id = "1234";
 
-export function handle_groups(data : object) {
-  for(const [gname, nnames] of Object.entries(data)) {
-    if(!groups.has(gname)) {
-      groups.set(gname, new Set(nnames as string[]));
-    }
-  }
-  
-  for(const gname of groups.keys()) {
-    if(!Object.keys(data).includes(gname)) {
-      groups.delete(gname);
-    }
+// Initialize groups from localStorage
+export const groups : Map<string, Set<string>> = restore_state_groups(session_id);
+
+function save_groups() {
+  store_state_groups(session_id, groups);
+}
+
+export function make_group(group_name : string, node_names : Array<string>) {
+  if(groups.has(group_name)) {
+    throw new Error("Group already exists with this name.");
+  } else if(group_name.length == 0) {
+    throw new Error("Group must have name.");
+  } else {
+    groups.set(group_name, new Set(node_names));
+    save_groups();
   }
 }
 
 export function remove_group(group_name : string) {
-  delete_group({
-    "group_name" : group_name
-  });
+  groups.delete(group_name);
+  save_groups();
 }
 
-// export function make_group(group_name : string, node_names : Array<string>) {
-//   if(groups.has(group_name)) {
-//     throw new Error("Group already exists with this name.");
-//   } else if(group_name.length == 0) {
-//     throw new Error("Group must have name.")
-//   } else {
-//     groups.set(group_name, new Set(node_names));
-//   }
-// }
+// Remove nodes from groups that no longer exist in the tree.
+// Deletes groups that become empty.
+export function prune_groups(valid_node_names : Set<string>) {
+  let changed = false;
+  const groups_to_delete : string[] = [];
+
+  for(const [group_name, node_set] of groups.entries()) {
+    for(const node_name of node_set) {
+      if(!valid_node_names.has(node_name)) {
+        node_set.delete(node_name);
+        changed = true;
+      }
+    }
+    if(node_set.size === 0) {
+      groups_to_delete.push(group_name);
+    }
+  }
+
+  for(const group_name of groups_to_delete) {
+    groups.delete(group_name);
+    changed = true;
+  }
+
+  if(changed) {
+    save_groups();
+  }
+}

@@ -242,8 +242,6 @@ int main(int argc, char* argv[]) {
 
   auto global_adj_r = rf_oob_mse(global_params, root_name, *stan_data.samples, stan_data.vars);
 
-  std::map<std::string, std::set<std::string>> tree_groups {};
-
   auto [mtree, root_node] = make_tree(
     mrf, root_name, { leaves },
     global_params, param_vertices,
@@ -251,7 +249,7 @@ int main(int argc, char* argv[]) {
 
   handle_method("get_tree", [&](json _data){
     cout << "Sending tree to server..." << endl;
-    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
   });
 
   handle_method("divide_branch", [&](json args) {
@@ -261,13 +259,13 @@ int main(int argc, char* argv[]) {
       params_kept.insert(param);
     }
     divide_branch(*mtree, root_node, node_name, params_kept, *stan_data.samples, stan_data.vars);
-    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
   });
 
   handle_method("auto_divide", [&](json args) {
     int node_name = args.at("node_name");
     auto_divide(*mtree, root_node, node_name, *stan_data.samples, stan_data.vars);
-    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
   });
 
   handle_method("extrude_branch", [&](json args) {
@@ -277,41 +275,25 @@ int main(int argc, char* argv[]) {
       params_kept.insert(param);
     }
     extrude_branch(*mtree, root_node, node_name, params_kept, *stan_data.samples, stan_data.vars);
-    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
   });
 
   handle_method("delete_node", [&](json args) {
     int node_name = args.at("node_name");
     delete_node(*mtree, root_node, node_name);
-    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
   });
 
   handle_method("merge_nodes", [&](json args) {
     int node_name = args.at("node_name");
     int alt_node_name = args.at("alt_node_name");
     merge_nodes(mrf, global_params, param_vertices, *mtree, root_node, node_name, alt_node_name, *stan_data.samples, stan_data.vars, likelihood_complexity);
-    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
   });
 
   handle_method("auto_merge", [&](json args) {
     auto_merge2(mrf, global_params, param_vertices, *mtree, root_node, *stan_data.samples, stan_data.vars, 1, likelihood_complexity);
-    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
-  });
-
-  handle_method("define_group", [&](json args) {
-    cout << "Handling group definition..." << endl;
-    std::string group_name = args.at("group_name");
-    vector<std::string> node_names = args.at("node_names");
-    set<string> node_names_set(node_names.begin(), node_names.end());
-    tree_groups.insert(std::make_pair(group_name, node_names_set));
-    return std::make_optional(serialize_groups(tree_groups, true));
-  });
-
-  handle_method("delete_group", [&](json args) {
-    cout << "Handling group deletion..." << endl;
-    std::string group_name = args.at("group_name");
-    tree_groups.erase(group_name);
-    return std::make_optional(serialize_groups(tree_groups, true));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
   });
 
   handle_method("reset_tree", [&](json args) {
@@ -321,7 +303,7 @@ int main(int argc, char* argv[]) {
       *stan_data.samples, stan_data.vars, likelihood_complexity, 1);
     mtree = std::move(init_tree.first);
     root_node = init_tree.second;
-    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, tree_groups));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
   });
 
   initialize_ws_client("localhost", ws_port);

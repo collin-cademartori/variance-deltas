@@ -66,3 +66,38 @@ export function restore_state_map(sid : string, state_prefix : string, default_i
     return new SvelteMap<string, name_t>();
   }
 }
+
+export function restore_state_groups(sid : string) : SvelteMap<string, Set<string>> {
+  if(browser) {
+    const str_value = localStorage.getItem(`${sid}-groups`);
+    if(str_value == null) {
+      return new SvelteMap();
+    }
+    try {
+      const restore_value = JSON.parse(str_value);
+      // Stored as array of [name, array_of_nodes] pairs
+      if(Array.isArray(restore_value)) {
+        const entries : Array<[string, Set<string>]> = restore_value.map(
+          ([name, nodes] : [string, string[]]) => [name, new Set(nodes)]
+        );
+        return new SvelteMap(entries);
+      }
+    } catch {
+      // Invalid JSON, return empty
+    }
+    return new SvelteMap();
+  } else {
+    return new SvelteMap();
+  }
+}
+
+export function store_state_groups(sid : string, groups : Map<string, Set<string>>) {
+  if(browser) {
+    const item_key = `${sid}-groups`;
+    // Convert Map<string, Set<string>> to array of [name, array] pairs
+    const serializable = [...groups.entries()].map(
+      ([name, nodes]) => [name, [...nodes]]
+    );
+    localStorage.setItem(item_key, JSON.stringify(serializable));
+  }
+}
