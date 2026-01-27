@@ -7,9 +7,6 @@
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/property_map/property_map.hpp>
 #include <nlohmann/json.hpp>
-#include <boost/process.hpp>
-#include <boost/asio.hpp>
-#include <boost/dll/runtime_symbol_info.hpp>
 
 #include <lik_complexity.hpp>
 #include <markov.hpp>
@@ -22,9 +19,8 @@
 #include <regression_rf.hpp>
 #include <serialize_tree.hpp>
 #include <parse_options.hpp>
+#include <run_model_parser.hpp>
 
-namespace proc = boost::process;
-namespace asio = boost::asio;
 using namespace std;
 using namespace markov;
 using json = nlohmann::json;
@@ -41,39 +37,11 @@ int main(int argc, char* argv[]) {
   }
   const Config& config = *result.config;
 
-  // Get executable directory for finding sibling executables
-  boost::filesystem::path exec_path = boost::dll::program_location();
-  boost::filesystem::path exec_dir = exec_path.parent_path();
-  boost::filesystem::path model_parser_path = exec_dir / "model_parser";
-
-  asio::io_context ioc;
-  asio::readable_pipe interp_pipe{ioc};
-
-  cout << "About to run parser: " << model_parser_path << endl;
-
-  proc::process interp_proc(
-    ioc,
-    model_parser_path.string(),
-    { config.model_file, "-d", config.data_file },
-    proc::process_stdio({{}, interp_pipe, {}})
-  );
-
-  string interp_data;
-  boost::system::error_code pipe_code;
-  asio::read(interp_pipe, asio::dynamic_buffer(interp_data), pipe_code);
-
-  if(pipe_code != asio::error::eof) {
-    cout << "Error reading interpreter output." << endl;
+  auto parser_output = run_model_parser(config.model_file, config.data_file);
+  if (!parser_output) {
     return 1;
   }
-
-  interp_proc.wait();
-
-  cout << "Parser ran" << endl;
-
-  const int tree_begin = interp_data.find("\n--");
-  const string fg_data = interp_data.substr(0, tree_begin);
-  const string tree_data = interp_data.substr(tree_begin + 4);
+  const auto& [fg_data, tree_data] = *parser_output;
 
   set<string> global_params = {};
   auto [root_name, leaves] = read_tree_data(tree_data);  
