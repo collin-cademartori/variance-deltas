@@ -20,10 +20,16 @@ std::optional<ParserOutput> run_model_parser(
   boost::filesystem::path exec_dir = exec_path.parent_path();
   boost::filesystem::path model_parser_path = exec_dir / "model_parser";
 
+  // Check that model_parser exists before trying to run it
+  if (!boost::filesystem::exists(model_parser_path)) {
+    cerr << "Error: model_parser executable not found at: " << model_parser_path << endl;
+    return std::nullopt;
+  }
+
   asio::io_context ioc;
   asio::readable_pipe interp_pipe{ioc};
 
-  cout << "About to run parser: " << model_parser_path << endl;
+  cout << "Running parser: " << model_parser_path << endl;
 
   proc::process interp_proc(
     ioc,
@@ -37,18 +43,35 @@ std::optional<ParserOutput> run_model_parser(
   asio::read(interp_pipe, asio::dynamic_buffer(interp_data), pipe_code);
 
   if (pipe_code != asio::error::eof) {
-    cerr << "Error reading interpreter output." << endl;
+    cerr << "Error reading model_parser output: " << pipe_code.message() << endl;
     return std::nullopt;
   }
 
-  interp_proc.wait();
+  int exit_code = interp_proc.wait();
 
-  cout << "Parser ran" << endl;
+  if (exit_code != 0) {
+    cerr << "Error: model_parser exited with code " << exit_code << endl;
+    if (!interp_data.empty()) {
+      cerr << "Parser output:\n" << interp_data << endl;
+    }
+    return std::nullopt;
+  }
+
+  cout << "Parser ran successfully" << endl;
+
+  // Check for empty output
+  if (interp_data.empty()) {
+    cerr << "Error: model_parser produced no output." << endl;
+    return std::nullopt;
+  }
 
   // Split output into factor graph data and tree data
   const size_t tree_begin = interp_data.find("\n--");
   if (tree_begin == string::npos) {
-    cerr << "Error: Parser output missing delimiter. Malformed output." << endl;
+    cerr << "Error: Parser output missing '--' delimiter. Malformed output." << endl;
+    cerr << "Output was:\n" << interp_data.substr(0, 500);
+    if (interp_data.size() > 500) cerr << "... (truncated)";
+    cerr << endl;
     return std::nullopt;
   }
 
