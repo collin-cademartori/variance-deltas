@@ -40,19 +40,12 @@ static boost::filesystem::path get_ranger_path() {
 
 // Helper to run ranger and capture output
 static string run_ranger(const vector<string>& args) {
-  boost::filesystem::path ranger_path = get_ranger_path();
-
-  // Check that ranger exists before trying to run it
-  if (!boost::filesystem::exists(ranger_path)) {
-    throw runtime_error("ranger executable not found at: " + ranger_path.string());
-  }
-
   asio::io_context ioc;
   asio::readable_pipe ranger_pipe{ioc};
 
   proc::process ranger_proc(
     ioc,
-    ranger_path.string(),
+    get_ranger_path().string(),
     args,
     proc::process_stdio({{}, ranger_pipe, {}})
   );
@@ -61,20 +54,11 @@ static string run_ranger(const vector<string>& args) {
   boost::system::error_code pipe_code;
   asio::read(ranger_pipe, asio::dynamic_buffer(ranger_output), pipe_code);
 
-  if (pipe_code != asio::error::eof) {
-    throw runtime_error("Error reading ranger output: " + pipe_code.message());
+  if(pipe_code != asio::error::eof) {
+    throw runtime_error("Error reading ranger output");
   }
 
-  int exit_code = ranger_proc.wait();
-
-  if (exit_code != 0) {
-    string error_msg = "ranger exited with code " + to_string(exit_code);
-    if (!ranger_output.empty()) {
-      error_msg += "\nOutput:\n" + ranger_output;
-    }
-    throw runtime_error(error_msg);
-  }
-
+  ranger_proc.wait();
   return ranger_output;
 }
 
