@@ -1,4 +1,5 @@
-import { SvelteMap } from "svelte/reactivity";
+import type { HierarchyNode } from "d3";
+import type { flat_node } from "./types.ts";
 import { restore_state_groups, store_state_groups } from "./store_state.ts";
 
 // TODO: Replace with real session ID when session saving is implemented.
@@ -55,3 +56,39 @@ export function prune_groups(valid_node_names : Set<string>) {
     save_groups();
   }
 }
+
+export function expand_groups(tree: HierarchyNode<flat_node>) {
+  let changed = false;
+
+  for (const [_group_name, node_set] of groups.entries()) {
+    const nodes_to_add = new Set<string>();
+
+    // For each node in the group, find all ancestors
+    for (const node_name of node_set) {
+      // Find this node in the tree
+      const node = tree.descendants().find(n => n.data.name === node_name);
+      if (!node) continue; // Node was deleted (should already be pruned)
+
+      // Walk up to root, adding all ancestors
+      let ancestor = node.parent;
+      while (ancestor) {
+        const ancestor_name = ancestor.data.name;
+        if (!node_set.has(ancestor_name)) {
+          nodes_to_add.add(ancestor_name);
+          changed = true;
+        }
+        ancestor = ancestor.parent;
+      }
+    }
+
+    // Add all discovered ancestors
+    for (const name of nodes_to_add) {
+      node_set.add(name);
+    }
+  }
+
+  if (changed) {
+    save_groups();
+  }
+}
+

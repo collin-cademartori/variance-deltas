@@ -12,7 +12,7 @@
   // import { setup_context } from "$lib/state/compute_width";
   import { selection } from "$lib/state/selection.svelte";
   import { user_state, setup_tree, update_names } from "$lib/state/user_state.svelte";
-  import { groups, make_group, prune_groups } from "$lib/state/groups";
+  import { expand_groups, groups, make_group, prune_groups } from "$lib/state/groups";
 
   import SelectionDialog from "$lib/components/SelectionDialog.svelte";
   import MultiSelectionDialog from "$lib/components/MultiSelectionDialog.svelte";
@@ -67,23 +67,26 @@
 
     ws.handle_message((tree_data, globals_data, global_limit, _groups_data) => {
       try {
+        // Extract all parameter names from tree and update the local list of parameter names
         const pnames = new Set([...tree_data].map((node) => node.params.map((n) => n.split("[")[0])).flat());
-        console.log("Step 1")
         update_names(pnames);
-        console.log("Step 2")
+
+        // Construct d3 hierarchy from array of tree nodes
         const tree = (d3.stratify<flat_node>()
                       .id((n : flat_node) => n.name.toString())
                       .parentId((n : flat_node) => n.parent.toString()))(tree_data);
-        console.log("Step 3")
-        // Prune groups that reference deleted nodes
+
+        // Update groups to reflect deleted and added nodes
         const valid_node_names = new Set(tree_data.map((node: flat_node) => node.name));
         prune_groups(valid_node_names);
-        console.log("Step 4")
+        expand_groups(tree);
+
+        // Update globals
         globals_data.forEach((global) => user_state.globals.push(global));
-        console.log("Step 5")
         user_state.global_limit = global_limit;
+
+        // Update tree in user state
         user_state.tree = tree;
-        console.log("Step 6")
       } catch (err) {
         console.error("Error while handling tree message:");
         console.error(err);
