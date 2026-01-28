@@ -1,4 +1,4 @@
-import { make_method_caller } from "./websocket.ts";
+import { make_method_caller } from "./websocket.svelte.ts";
 
 export const get_tree = make_method_caller("get_tree", []);
 export const divide_branch = make_method_caller("divide_branch", ["node_name", "params_kept"]);

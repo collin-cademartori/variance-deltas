@@ -4,7 +4,8 @@
 
 <script lang="ts">
   import { onMount } from "svelte";
-  import * as ws from "$lib/websocket";
+  import * as ws from "$lib/websocket.svelte";
+  import { connection } from "$lib/websocket.svelte";
   import * as d3 from "d3";
   import type { flat_node, flat_branch } from "$lib/state/types";
   import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge, delete_node } from "$lib/tree_methods";
@@ -18,6 +19,7 @@
   import GroupsDialog from "$lib/components/GroupsDialog.svelte";
   import ExportDialog from "$lib/components/ExportDialog.svelte";
   import SettingsDialog from "$lib/components/SettingsDialog.svelte";
+  import ConnectionOverlay from "$lib/components/ConnectionOverlay.svelte";
 
   let show_export = $state(false);
 
@@ -149,7 +151,9 @@
       </div>
     </div>
 
-    <div id="control_container">
+    <div id="control_container" class:frozen={connection.frozen}>
+      <ConnectionOverlay />
+      <div id="control_content">
       <div id="session_bar" class="button_bar">
         <button 
           onclick={() => {
@@ -325,6 +329,7 @@
       {:else if user_state.state === 'settings'}
         <SettingsDialog />
       {/if}
+      </div>
     </div>
   </div>
 
@@ -478,6 +483,20 @@
     padding-top: 2rem;
     padding-left: 1rem;
     width: 22rem;
+  }
+
+  #control_container.frozen {
+    pointer-events: none;
+  }
+
+  #control_container.frozen > #control_content {
+    opacity: 0.6;
+  }
+
+  #control_content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .placeholder {
