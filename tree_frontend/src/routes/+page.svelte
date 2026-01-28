@@ -463,17 +463,33 @@
     flex-direction: row;
     height: 95dvh;
     overflow-y: hidden;
+    overflow-x: hidden;
   }
 
   #vis_container {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    overflow-x: auto;
   }
 
   #tree_container {
     display: flex;
     flex-direction: row;
-    overflow-y: scroll;
+    overflow-y: auto;
+    overflow-x: clip;
+    flex-shrink: 0;
+    width: fit-content;
+  }
+
+  #tree {
+    flex-shrink: 0;
+  }
+
+  #axis_container {
+    overflow-y: hidden;
+    overflow-x: clip;
+    width: fit-content;
   }
 
   #control_container {
@@ -483,6 +499,7 @@
     padding-top: 2rem;
     padding-left: 1rem;
     width: 22rem;
+    flex-shrink: 0;
   }
 
   #control_container.frozen {
