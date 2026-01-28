@@ -74,6 +74,8 @@ double rf_oob_mse(
     return 1.0;
   }
 
+  int num_predictors = predictor_names.size();
+
   auto temp_dir = std::filesystem::temp_directory_path();
   auto train_file = temp_dir / "ranger_train.csv";
   auto test_file = temp_dir / "ranger_test.csv";
@@ -142,6 +144,12 @@ double rf_oob_mse(
   run_ranger({
     "--file", train_file_str,
     "--treetype", "3",  // Regression
+    "--ntree", "1000",
+    "--mtry", std::to_string(num_predictors),
+    "--splitrule", "5",
+    "--minbucket", "3",
+    "--noreplace",
+    "--fraction", "1",
     "--depvarname", sanitized_response,
     "--write",
     "--outprefix", forest_file_str,
