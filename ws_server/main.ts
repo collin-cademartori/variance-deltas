@@ -90,6 +90,8 @@ try {
     if (!status.success) {
       console.error(`Backend process exited with code: ${status.code}`);
     }
+    console.log("Backend process terminated. Shutting down server.");
+    Deno.exit(status.success ? 0 : 1);
   });
 } catch (err) {
   console.error("Failed to launch backend: ", err);
@@ -182,9 +184,19 @@ function attach_id(socket : WebSocketWithData, id : string) {
     socket.data.id = id;
     clients[id] = socket;
 
-    // Open browser when backend connects
+    // Handle disconnection based on client type
     if (id === "backend") {
+      socket.addEventListener("close", () => {
+        console.log("Backend WebSocket disconnected. Shutting down server.");
+        Deno.exit(1);
+      });
       open_browser();
+    } else if (id === "frontend") {
+      socket.addEventListener("close", () => {
+        console.log("Frontend disconnected.");
+        clients.frontend = undefined;
+        console.log(`Reconnect at: http://localhost:${PORT}/`);
+      });
     }
 
     let queued_msg = null;
