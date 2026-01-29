@@ -1,5 +1,3 @@
 .vscode
 build
-CLAUDE.local.md
-todo.md
-PLAN-frontend-groups.md
+*.md
