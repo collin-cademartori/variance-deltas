@@ -8,7 +8,6 @@ import { type name_t, make_short, global_latex } from "./names.ts";
 import { SvelteMap } from "svelte/reactivity";
 import { type branch_datum, type coordinates, make_config } from "./draw_data.ts";
 import { store_state, restore_state_bool, restore_state_map, restore_state_string } from "./store_state.ts";
-import { render } from "katex";
 
 type user_state_t = 'base' | 'extruding' | 'dividing' | 'auto-dividing' | 'merging' | 'auto-merging' | 'groups' | 'add-group' | 'settings' | 'deleting';
 
@@ -21,7 +20,8 @@ type state_t = {
   layout_format: 'long' | 'normal',
   show_globals: boolean,
   names: SvelteMap<string, name_t>,
-  svg_height: number
+  svg_height: number,
+  svg_width: number
 };
 
 const session_id = "1234";
@@ -37,6 +37,7 @@ let _group : string | undefined = $state(restore_state_string(session_id, "group
 let _layout_format : 'long' | 'normal' = $state(restore_state_string(session_id, "layout_format", 'normal') as 'long' | 'normal');
 let _show_globals : boolean = $state(restore_state_bool(session_id, "show_globals", true));
 let _svg_height = $state(0);
+let _svg_width = $state(0);
 let _create_tree : (data : flat_tree) => void = () => { console.warn("Tried to create tree before setup complete - ignoring"); }
 
 export const user_state : state_t = $state({ 
@@ -109,6 +110,9 @@ export const user_state : state_t = $state({
   },
   get svg_height() {
     return(_svg_height)
+  },
+  get svg_width() {
+    return(_svg_width)
   }
 });
 
@@ -203,7 +207,7 @@ export function setup_tree(coord: coordinates, l_height : number) {
     });
 
     data = attach_names(data, user_state.names, global_data, render_config);
-    data = draw_labels(data, render_config, coord); // Measures rendered labels and sets lwidth
+    _svg_width = draw_labels(data, render_config, coord); // Measures rendered labels and sets lwidth
     console.log(`Test width is: ${data[0].lwidth}`);
     const ann_tree = attach_positions(fil_data, coord, render_config);
     const ft : flat_tree = [...ann_tree].map((n) => n.data);

@@ -23,9 +23,9 @@
 
   let show_export = $state(false);
 
-  const width = 1150;
+  const width = 1000;
 
-  const x = d3.scaleLinear([0, 1], [0, 0.85 * width]);
+  const x = d3.scaleLinear([0, 1], [0, width]);
   const y = d3.scaleLinear([0, 1], [0, 1000]);
   const l_height = 50;
 
@@ -104,12 +104,12 @@
 
 <div id="v_container">
 
-  <ExportDialog bind:show_dialog={show_export} plot_width={width} {y} />
+  <ExportDialog bind:show_dialog={show_export} plot_width={Math.max(width, user_state.svg_width)} axis_width={width} {y} />
 
   <div id="main_view">
     <div id="vis_container">
       <div id="tree_container">
-        <svg id="tree" height={user_state.svg_height} width={width + 100}>
+        <svg id="tree" height={user_state.svg_height} width={40 + Math.max(width, user_state.svg_width)}>
           <rect width="100%" height="100%" fill="white"></rect>
 
           <g id="vert_line_container" transform="translate(20 0)">
@@ -128,13 +128,13 @@
             <g id="label_layer"></g>
           </g>
 
-          <g id="top_bar" transform="translate(20 0)">
+          <!-- <g id="top_bar" transform="translate(20 0)">
             <rect fill="white" height="40" width="100%" transform="translate(-20 0)"></rect> 
-          </g>
+          </g> -->
         </svg>
       </div>
       <div id="axis_container">
-        <svg id="axis" height={65} width={width + 100}>
+        <svg id="axis" height={65} width={width + 40}>
           <linearGradient id="grad" x1="0" x2="0" y1="0" y2="0.04">
             <stop class="stop1" offset="0%" stop-color="white" stop-opacity="0" />
             <stop class="stop2" offset="30%" stop-color="white"/>

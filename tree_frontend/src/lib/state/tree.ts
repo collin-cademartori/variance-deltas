@@ -84,6 +84,8 @@ function compute_xs_new(
   }
 
   const ordered_nodes = new Array<d3.HierarchyNode<flat_node>[]>();
+  const oni = (np : d3.HierarchyNode<flat_node>) => 
+    ordered_nodes.findIndex((ns) => ns.some((n) => n.data.name === np.data.name));
 
   // Construct vertical ordering of nodes, with ties
   tree.eachAfter((node) => {
@@ -101,7 +103,9 @@ function compute_xs_new(
       }
     } else {
       // Non-leaf node, calculate vertical space for each child (includes child's descendents)
-      const sorted_children = [...ch].sort(leaf_sort);
+      const sorted_children = [...ch].sort((n1, n2) => oni(n1) - oni(n2));
+      console.log("Sorted children are:")
+      console.log(sorted_children.map((node) => node.data.shortname))
       //const ch_vspace = sorted_children.reduce((p, c) => p + (c.data.vspace ?? 0), 0);
       const spaces = sorted_children.map((cnode) => cnode.data.vspace ?? 0);
       const space_above = spaces.reduceRight((p : number[], c) => [p[0] + c, ...p], [0]);
@@ -113,15 +117,21 @@ function compute_xs_new(
       const dev = nspaces.map((nspace) => Math.abs(nspace - 0.5));
       const node_pos = dev.indexOf(Math.min(...dev));
       const ins_node = sorted_children[node_pos];
-      const ins_pos = ordered_nodes.findIndex((node_list) => node_list.some((nodep) => nodep.data.name === ins_node.data.name));
 
       // Check whether we can insert in-line with child, or if we must insert above child to avoid
       // label collision. Also calculate vertical space corresponding to this node + descendents.
       if(node.data.lwidth && node.data.ered + node.data.lwidth < (ins_node.data.ered ?? 0)) {
         node.data.vspace = ch_vspace;
+        const ins_pos = ordered_nodes.findIndex(
+          (node_list) => node_list.some((nodep) => nodep.data.name === ins_node.data.name)
+        );
         ordered_nodes[ins_pos].push(node);
       } else {
         node.data.vspace = ch_vspace + label_size;
+        const desc_names = ins_node.descendants().map((desc) => desc.data.name);
+        const ins_pos = ordered_nodes.findIndex(
+          (node_list) => node_list.some((nodep) => desc_names.includes(nodep.data.name))
+        );
         ordered_nodes.splice(ins_pos, 0, [node]);
       }
     }
@@ -130,7 +140,7 @@ function compute_xs_new(
   // Use vertical ordering to calculate vertical positions
   for(let level = 0; level < ordered_nodes.length; ++level) {
     for(const node of ordered_nodes[level]) {
-      node.data.x_pos = 0.05 + 1.1 * y_scale.invert(label_size) * level;
+      node.data.x_pos = 1.1 * y_scale.invert(label_size) * level;
     }
   }
 

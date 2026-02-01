@@ -1,5 +1,5 @@
 import { type flat_tree } from "./state/types.ts";
-import { browser } from "$app/environment";
+import { browser, dev } from "$app/environment";
 
 // Reactive connection state
 let _connected = $state(false);
@@ -12,7 +12,7 @@ export const connection = {
 };
 
 // Connect to the same host/port that served the page
-const wsUrl = browser ? `ws://${window.location.host}` : 'ws://localhost:8000';
+const wsUrl = (browser && !dev) ? `ws://${window.location.host}` : 'ws://localhost:8765';
 export const ws = browser ? new WebSocket(wsUrl) : null;
 
 type tree_handler_t = (tree_data : flat_tree, globals_data : string[], global_limit : number, groups_data : object) => void;

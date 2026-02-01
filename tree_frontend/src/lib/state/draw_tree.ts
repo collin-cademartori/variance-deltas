@@ -209,7 +209,7 @@ export function draw_tree(
   // Setup data
   const id_mod = config.draw_static ? "_static" : "";
   console.warn([...tree.map((fn) => fn.label_y)])
-  const max_y = coord.y(tree.map((fn) => fn.label_y ?? 0).reduce((p,n) => Math.max(p,n))) + (2 * config.label_height);
+  const max_y = coord.y(tree.map((fn) => fn.label_y ?? 0).reduce((p,n) => Math.max(p,n))) + (1.6 * config.label_height);
 
   // Define pan behavior
   // const pan = d3.zoom();
@@ -569,11 +569,14 @@ export function draw_labels(tree : flat_tree, config : render_config, coord : co
       }
     )
 
+  let max_x = 0;
+
   label_selection.datum(function(d, index, groups) {
     d.lwidth = (groups[index] as SVGAElement)?.getElementsByClassName("label-div")[0].getBoundingClientRect().width;
+    max_x = Math.max(max_x, d.lwidth + coord.x(d.ered));
     d.lwidth = coord.x.invert(d.lwidth);
     return(d);
   });
 
-  return(tree);
+  return(max_x);
 }

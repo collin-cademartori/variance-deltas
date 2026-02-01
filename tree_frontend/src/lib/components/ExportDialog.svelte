@@ -6,7 +6,7 @@
   import { make_config } from "$lib/state/draw_data";
   import { scaleLinear, axisBottom, select } from "d3";
 
-  let { show_dialog = $bindable(), plot_width, y } : { show_dialog : boolean, plot_width : number, y : d3.ScaleLinear<number, number, never> } = $props();
+  let { show_dialog = $bindable(), plot_width, axis_width, y } : { show_dialog : boolean, plot_width : number, axis_width : number, y : d3.ScaleLinear<number, number, never> } = $props();
 
   let dialog : HTMLDialogElement;
   //svelte-ignore non_reactive_update
@@ -41,10 +41,10 @@
           .map((node) => node.data)
           .filter((node) => cur_group ? cur_group.has(node.name) : true);
         const max_y = flat_tree.map((tnode) => tnode.x_pos).reduce((p,n) => Math.max(p ?? 0, n ?? 0)) ?? 0;
-        const snapshot_height = y(max_y ?? 0) + y(0.1) + 2 * 36;
+        const snapshot_height = y(max_y ?? 0) + 80 + 1.6 * 36;
         svg_snapshot?.setAttribute('height', snapshot_height.toString());
         xaxis_g.setAttribute('transform', `translate(10 ${snapshot_height - 30})`);
-        const x = scaleLinear([0, 1], [0, 0.95 * plot_width]);
+        const x = scaleLinear([0, 1], [0, axis_width]);
         const xaxis = axisBottom(x).offset(10).tickPadding(15).tickSize(0);
         xaxis(select("#x_axis_static"));
         select("#x_axis_static").attr("font-size", (50 * (12 / 36)) + "px");
@@ -102,7 +102,7 @@
 
     <div id="snapshot_container">
       {#if show_dialog}
-        <svg id="tree_static" width={plot_width + 200} bind:this={svg_snapshot}>
+        <svg id="tree_static" width={100 + plot_width} bind:this={svg_snapshot}>
           <style id="export_styles"></style>
           <rect width="100%" height="100%" fill="white"></rect>
           
@@ -132,9 +132,9 @@
             <g id="x_axis_static"></g>
           </g>
 
-          <g id="top_bar_static" transform="translate(20 0)">
+          <!-- <g id="top_bar_static" transform="translate(20 0)">
             <rect fill="white" height="40" width="100%" transform="translate(-20 0)"></rect> 
-          </g>
+          </g> -->
         </svg>
       {/if}
     </div>
