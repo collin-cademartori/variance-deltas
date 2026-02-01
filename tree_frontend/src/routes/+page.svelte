@@ -152,6 +152,11 @@
           </g>
         </svg>
       </div>
+      <div id="measure_div" style:height="0" style:overflow="clip">
+        <svg id="measure_container" height={user_state.svg_height} width={width + 100} style="visibility: hidden">
+          <g id="label_measure_layer"></g>
+        </svg>
+      </div>
     </div>
 
     <div id="control_container" class:frozen={connection.frozen}>

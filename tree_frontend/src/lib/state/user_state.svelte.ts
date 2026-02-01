@@ -1,13 +1,14 @@
-import { draw_tree, draw_highlight, draw_geometry } from "./draw_tree.ts";
+import { draw_tree, draw_highlight, draw_geometry, draw_labels } from "./draw_tree.ts";
 import { stratify, type HierarchyNode, } from "d3";
 import type { flat_node, flat_tree } from "./types.ts";
 import { selector, selection, hover, selection_channels } from "./selection.svelte.ts";
 import { groups } from "./groups.ts";
-import { annotate_tree } from "./tree.ts";
+import { annotate_tree, attach_names, attach_positions } from "./tree.ts";
 import { type name_t, make_short, global_latex } from "./names.ts";
 import { SvelteMap } from "svelte/reactivity";
 import { type branch_datum, type coordinates, make_config } from "./draw_data.ts";
 import { store_state, restore_state_bool, restore_state_map, restore_state_string } from "./store_state.ts";
+import { render } from "katex";
 
 type user_state_t = 'base' | 'extruding' | 'dividing' | 'auto-dividing' | 'merging' | 'auto-merging' | 'groups' | 'add-group' | 'settings' | 'deleting';
 
@@ -200,7 +201,11 @@ export function setup_tree(coord: coordinates, l_height : number) {
       show_globals: user_state.show_globals,
       format: user_state.layout_format
     });
-    const ann_tree = annotate_tree(fil_data, user_state.names, coord, global_data, render_config);
+
+    data = attach_names(data, user_state.names, global_data, render_config);
+    data = draw_labels(data, render_config, coord); // Measures rendered labels and sets lwidth
+    console.log(`Test width is: ${data[0].lwidth}`);
+    const ann_tree = attach_positions(fil_data, coord, render_config);
     const ft : flat_tree = [...ann_tree].map((n) => n.data);
     _svg_height = draw_tree(ft, coord, global_data, render_config, handlers, user_state.names);
 

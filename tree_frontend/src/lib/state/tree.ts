@@ -7,6 +7,35 @@ import { consts } from "./draw_data.ts";
 import type { flat_node, flat_tree, tree_node } from "./types.ts";
 import type { coordinates, global_data, render_config } from "./draw_data.ts";
 
+export function attach_names(
+  ft : flat_tree,
+  names: SvelteMap<string, name_t>,
+  global: global_data,
+  config: render_config
+) {
+  for(const node of ft) {
+    const params = global.params == null ? node.params : [...node.params].filter((p) => !global.params.includes(p));
+    if([...node.params].some((p) => !global.params.includes(p)) && config.show_globals) {  
+      params.push("__globals__");
+    }
+    node.param_names = short_name(params, names);
+    node.shortname = node.param_names.join(", ");
+  }
+  return ft;
+}
+
+export function attach_positions(
+  ft : flat_tree,
+  coord: coordinates,
+  config: render_config
+) {
+  //const tree_with_xs = compute_xs(ft, coord.y, config.format, false, config.label_height + 8);
+  const tree_with_xs = compute_xs_new(ft, coord.y, config.label_height + 8);
+  const label_height_y = coord.y.invert(config.label_height);
+  compute_label_pos(tree_with_xs, label_height_y, coord.y, 1, config.format);
+  return(tree_with_xs);
+}
+
 export function annotate_tree(
   ft : flat_tree,
   names: SvelteMap<string, name_t>,
@@ -26,6 +55,86 @@ export function annotate_tree(
   const label_height_y = coord.y.invert(config.label_height);
   compute_label_pos(tree_with_xs, label_height_y, coord.y, 1, config.format);
   return(tree_with_xs);
+}
+
+function compute_xs_new(
+  ft : flat_tree,
+  y_scale : d3.ScaleLinear<number, number, never>,
+  label_size : number
+) {
+  const tree = (d3.stratify<flat_node>()
+            .id((n : flat_node) => n.name.toString())
+            .parentId((n : flat_node) => n.parent.toString()))(ft);
+
+  for(const node of tree) {
+    node.data.sortname = node.ancestors()
+      .map((n) => n.data.shortname)
+      .reverse()
+      .reduce((p : string, n) => p + n, "");
+  }
+
+  const leaf_sort = (l1 : tree_node, l2 : tree_node) => {
+    if(l1.data.sortname == null) {
+      return(-1);
+    } else if(l2.data.sortname == null) {
+      return(1);
+    } else {
+      return(l1.data.sortname > l2.data.sortname ? 1 : -1);
+    }
+  }
+
+  const ordered_nodes = new Array<d3.HierarchyNode<flat_node>[]>();
+
+  // Construct vertical ordering of nodes, with ties
+  tree.eachAfter((node) => {
+    const ch = node.children;
+
+    if(ch == null) {
+      // Leaf node, add to ordered_nodes in DFS-lexicographic order
+      node.data.vspace = label_size;
+
+      const no = ordered_nodes.length;
+      if(no === 0 || leaf_sort(node, ordered_nodes[0][0]) < 0) {
+        ordered_nodes.push([node]);
+      } else {
+        ordered_nodes.splice(0, 0, [node]);
+      }
+    } else {
+      // Non-leaf node, calculate vertical space for each child (includes child's descendents)
+      const sorted_children = [...ch].sort(leaf_sort);
+      //const ch_vspace = sorted_children.reduce((p, c) => p + (c.data.vspace ?? 0), 0);
+      const spaces = sorted_children.map((cnode) => cnode.data.vspace ?? 0);
+      const space_above = spaces.reduceRight((p : number[], c) => [p[0] + c, ...p], [0]);
+      space_above.pop();
+      const ch_vspace = space_above[0];
+      const nspaces = space_above.map((space) => space / space_above[0]);
+
+      // Find child node closest to vertical middle of children, set insertion point here
+      const dev = nspaces.map((nspace) => Math.abs(nspace - 0.5));
+      const node_pos = dev.indexOf(Math.min(...dev));
+      const ins_node = sorted_children[node_pos];
+      const ins_pos = ordered_nodes.findIndex((node_list) => node_list.some((nodep) => nodep.data.name === ins_node.data.name));
+
+      // Check whether we can insert in-line with child, or if we must insert above child to avoid
+      // label collision. Also calculate vertical space corresponding to this node + descendents.
+      if(node.data.lwidth && node.data.ered + node.data.lwidth < (ins_node.data.ered ?? 0)) {
+        node.data.vspace = ch_vspace;
+        ordered_nodes[ins_pos].push(node);
+      } else {
+        node.data.vspace = ch_vspace + label_size;
+        ordered_nodes.splice(ins_pos, 0, [node]);
+      }
+    }
+  });
+
+  // Use vertical ordering to calculate vertical positions
+  for(let level = 0; level < ordered_nodes.length; ++level) {
+    for(const node of ordered_nodes[level]) {
+      node.data.x_pos = 0.05 + 1.1 * y_scale.invert(label_size) * level;
+    }
+  }
+
+  return(tree);
 }
 
 function compute_xs(
@@ -125,12 +234,13 @@ function compute_label_pos(
   for(const desc of ft) {
     const node = desc.data;
     const bottom_y = [(node.x_pos ?? 0) + y_scale.invert(scale * consts.node_size / 2) + label_gap, label_height]
-    if(layout_format == "long") {
-      node.label_y = bottom_y[0];
-    } else {
-      const top_y = [bottom_y[0] - y_scale.invert(scale * consts.node_size) - bottom_y[1] - 2*label_gap, bottom_y[1]]
-      node.label_y = (node.depth ?? 0) % 2 == 0 ? top_y[0] : bottom_y[0];
-    }
+    node.label_y = bottom_y[0];
+    // if(layout_format == "long") {
+    //   node.label_y = bottom_y[0];
+    // } else {
+    //   const top_y = [bottom_y[0] - y_scale.invert(scale * consts.node_size) - bottom_y[1] - 2*label_gap, bottom_y[1]]
+    //   node.label_y = (node.depth ?? 0) % 2 == 0 ? top_y[0] : bottom_y[0];
+    // }
   }
 }
 

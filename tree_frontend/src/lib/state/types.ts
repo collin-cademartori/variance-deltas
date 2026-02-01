@@ -5,6 +5,8 @@ export type flat_node = {
   parent: string,
   ered: number,
   params: string[],
+  lwidth? : number,
+  vspace?: number,
   depth? : number,
   sortname?: string,
   shortname?: string,

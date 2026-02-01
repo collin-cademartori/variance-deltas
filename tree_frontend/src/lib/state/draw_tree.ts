@@ -366,85 +366,9 @@ export function draw_tree(
   const tree_nodes = d3.select("#label_layer").selectAll(".tree_node_label")
                               .data(tree, (d) => (d as flat_node).name);
   // Define node labels
-  const label_selection = tree_nodes.join((enter) => {
-
-      const g = enter.append("g")
-                    .attr("id", (d) => {
-                      console.log(`New node label for ${d.name}`);
-                      return(`${d.name}${id_mod}`)
-                    })
-                    .attr("class", "tree_node_label");
-
-      if(!config.draw_static) {
-        g.transition().duration(config.transition_dur).attr("opacity", 1);
-      }
-
-      const fo = g.append("foreignObject")
-        .attr("class", "label_fo")
-        .attr("x", (d : flat_node) => coord.x(0.003 + d.ered))
-        .attr("y", (d: flat_node) => coord.y(d.label_y ?? 0))
-        .attr("height", () => config.label_height + "px") //y(l_height)
-        .attr("width", "1000px");
-
-      const ldd = fo.append("xhtml:div")
-                    .style("height", "100%")
-                    .style("padding", "1px");
-
-      const ld = ldd.append("xhtml:div")
-        .attr("id", (d) => `${d.name}_div${id_mod}`)
-        .attr("class", "label-div")
-        .style("display", "flex")
-        .style("flex-direction", "row")
-        .style("background", "#fcfcfcff")
-        .style("border-color", "black")
-        .style("align-items", "center")
-        .style("font-family", "sans-serif")
-        .style("box-sizing", "border-box")
-        .style("border-width", "0.12rem")
-        .style("border-style", "solid")
-        .style("border-radius", "8px")
-        .style("border-top-left-radius", (d) => ((d.x_pos ?? 0) > (d.label_y ?? 0)) ? "8px" : "2px")
-        .style("border-bottom-left-radius", (d) => (d.x_pos ?? 0) > (d.label_y ?? 0) ? "2px" : "8px")
-        .style("font-size", (1.2 * config.label_height * 14 / 36) + "px")
-        .style("font-weight", "bold")
-        .style("width", "fit-content")
-        .style("height", (config.label_height - 2) + "px")
-        
-      if(!config.draw_static) {
-        fo.on("mousedown", (_ev, d) => handlers.node_select(d));
-
-        ld.on("mouseover", (_ev, d) => handlers.node_hover(d));
-
-        ld.on("mouseleave", (_ev, d) => handlers.node_unhover(d));
-      }
-
-      ld.append("xhtml:div")
-        .attr("class", "depth_tag")
-        .style("height", "100%")
-        .style("display", "flex")
-        .style("flex-direction", "row")
-        .style("align-items", "center")
-        .style("padding-left", "6px")
-        .style("padding-right", "0px")
-        .style("font-weight", "normal")
-        .style("font-size", "0.7em")
-        .style("user-select", "none")
-        .html((d : flat_node) => d.depth?.toString() || "");
-
-      ld.append("xhtml:div")
-        .attr("class", "params_list")
-        .style("height", "100%")
-        .style("display", "flex")
-        .style("flex-direction", "row")
-        .style("gap", "6px")
-        .style("align-items", "center")
-        .style("padding-left", "6px")
-        .style("padding-right", "6px")
-        .style("font-weight", "normal")
-        .style("user-select", "none")
-        .style("border-color", "blue")
-      
-      return g;
+  const label_selection = tree_nodes.join(
+  (enter) => {
+    return make_label_container(enter, id_mod, config, coord, handlers);
   },
   (update) => {
     update.select(".label_fo").transition().duration(config.transition_dur)
@@ -453,11 +377,11 @@ export function draw_tree(
     update.select(".label-div")
       .style("border-top-left-radius", (d) => (d.x_pos ?? 0) > (d.label_y ?? 0) ? "8px" : "2px")
       .style("border-bottom-left-radius", (d) => (d.x_pos ?? 0) > (d.label_y ?? 0) ? "2px" : "8px");
-    update.select(".depth_tag")
-      .html((d : flat_node) => {
-        console.log(`Updating node label for ${d.name}`);
-        return(d.depth?.toString() ?? "")
-    });
+    // update.select(".depth_tag")
+    //   .html((d : flat_node) => {
+    //     console.log(`Updating node label for ${d.name}`);
+    //     return(d.depth?.toString() ?? "")
+    //   });
     return update
   },
   (exit) => {
@@ -469,51 +393,12 @@ export function draw_tree(
   if(params_lists.size() > 0) {
     params_lists.selectAll(".param_name")
     .data((d : flat_node) => {
-          return(d.param_names ?? []);
-        }, (d) => (d as flat_node).param_names?.join(",") ?? "none")
-        .join((enter) => {
-          const pdiv = enter.append("div")
-            .attr("class", "param_name")
-            .style("border-radius", "3px")
-            .style("background", "#ffffffff")
-            .style("border", "1px solid #3b3b3bff")
-            .style("height", "70%")
-            .style("display", "flex")
-            .style("flex-direction", "row")
-            .style("overflow-y", "hidden")
-            
-          pdiv.append("div")
-            .attr("class", "pname_div")
-            .style("font-weight", "bold")
-            .style("padding-left", "8px")
-            .style("padding-right", "8px")
-            .style("height", "100%")
-            .style("display", "flex")
-            .style("flex-direction", "row")
-            .style("align-items", "center")
-            .html((d : string) => d.split("[")[0])
-
-          pdiv.append("div")
-            .attr("class", "pindex_div")
-            .style("display", "flex")
-            .style("flex-direction", "row")
-            .style("align-items", "center")
-            .style("padding-left", (d : string) => d.split("[").length > 1 ? "8px" : "0px")
-            .style("padding-right", (d : string) => d.split("[").length > 1 ? "8px" : "0px")
-            .style("border-left", "1px solid #979797ff")
-            .style("visibility", (d : string) => d.split("[").length > 1 ? "visible" : "hidden")
-            .style("font-size", "0.7em")
-            .style("font-family", "Verdana")
-            .html((d : string) => {
-              const end_str = d.split("[");
-              if(end_str.length > 1) {
-                return(end_str[1].substring(0, end_str[1].length - 1));
-              } else {
-                return("");
-              }
-            })
-          return(pdiv)
-        },
+        return(d.param_names ?? []);
+      }, (d) => (d as flat_node).param_names?.join(",") ?? "none")
+    .join(
+      (enter) => {
+        return make_label_content(enter);
+      },
       (update) => {
         update.select(".pname_div")
           .html((d : string) => {
@@ -530,4 +415,165 @@ export function draw_tree(
   }
 
   return(max_y)
+}
+
+function make_label_content(selection : d3.Selection<d3.EnterElement, string, d3.BaseType, flat_node>) {
+  const pdiv = selection.append("div")
+    .attr("class", "param_name")
+    .style("border-radius", "3px")
+    .style("background", "#ffffffff")
+    .style("border", "1px solid #3b3b3bff")
+    .style("height", "70%")
+    .style("display", "flex")
+    .style("flex-direction", "row")
+    .style("overflow-y", "hidden")
+    
+  pdiv.append("div")
+    .attr("class", "pname_div")
+    .style("font-weight", "bold")
+    .style("padding-left", "8px")
+    .style("padding-right", "8px")
+    .style("height", "100%")
+    .style("display", "flex")
+    .style("flex-direction", "row")
+    .style("align-items", "center")
+    .html(d => d.split("[")[0])
+
+  pdiv.append("div")
+    .attr("class", "pindex_div")
+    .style("display", "flex")
+    .style("flex-direction", "row")
+    .style("align-items", "center")
+    .style("padding-left", (d) => d.split("[").length > 1 ? "8px" : "0px")
+    .style("padding-right", (d) => d.split("[").length > 1 ? "8px" : "0px")
+    .style("border-left", "1px solid #979797ff")
+    .style("visibility", (d) => d.split("[").length > 1 ? "visible" : "hidden")
+    .style("font-size", "0.7em")
+    .style("font-family", "Verdana")
+    .html((d) => {
+      const end_str = d.split("[");
+      if(end_str.length > 1) {
+        return(end_str[1].substring(0, end_str[1].length - 1));
+      } else {
+        return("");
+      }
+    })
+  return(pdiv)
+}
+
+function make_label_container(
+  selection : d3.Selection<d3.EnterElement, flat_node, d3.BaseType, unknown>,
+  id_mod : string,
+  config : render_config,
+  coord : coordinates,
+  handlers? : event_handlers
+) {
+  const g = selection.append("g")
+                .attr("id", (d) => {
+                  console.log(`New node label for ${d.name}`);
+                  return(`${d.name}${id_mod}`)
+                })
+                .attr("class", "tree_node_label");
+
+  if(!config.draw_static) {
+    g.transition().duration(config.transition_dur).attr("opacity", 1);
+  }
+
+  const fo = g.append("foreignObject")
+    .attr("class", "label_fo")
+    .attr("x", (d : flat_node) => coord.x(0.003 + d.ered))
+    .attr("y", (d: flat_node) => coord.y(d.label_y ?? 0))
+    .attr("height", () => config.label_height + "px")
+    .attr("width", "1000px");
+
+  const ldd = fo.append("xhtml:div")
+                .style("height", "100%")
+                .style("padding", "1px");
+
+  const ld = ldd.append("xhtml:div")
+    .attr("id", (d) => `${d.name}_div${id_mod}`)
+    .attr("class", "label-div")
+    .style("display", "flex")
+    .style("flex-direction", "row")
+    .style("background", "#fcfcfcff")
+    .style("border-color", "black")
+    .style("align-items", "center")
+    .style("font-family", "sans-serif")
+    .style("box-sizing", "border-box")
+    .style("border-width", "0.12rem")
+    .style("border-style", "solid")
+    .style("border-radius", "8px")
+    .style("border-top-left-radius", (d) => ((d.x_pos ?? 0) > (d.label_y ?? 0)) ? "8px" : "2px")
+    .style("border-bottom-left-radius", (d) => (d.x_pos ?? 0) > (d.label_y ?? 0) ? "2px" : "8px")
+    .style("font-size", (1.2 * config.label_height * 14 / 36) + "px")
+    .style("font-weight", "bold")
+    .style("width", "fit-content")
+    .style("height", (config.label_height - 2) + "px")
+    
+  if(!config.draw_static && handlers) {
+    fo.on("mousedown", (_ev, d) => handlers.node_select(d));
+
+    ld.on("mouseover", (_ev, d) => handlers.node_hover(d));
+
+    ld.on("mouseleave", (_ev, d) => handlers.node_unhover(d));
+  }
+
+  ld.append("xhtml:div")
+    .attr("class", "depth_tag")
+    .style("height", "100%")
+    .style("display", "flex")
+    .style("flex-direction", "row")
+    .style("align-items", "center")
+    .style("padding-left", "6px")
+    .style("padding-right", "0px")
+    .style("font-weight", "normal")
+    .style("font-size", "0.7em")
+    .style("user-select", "none")
+    // .html((d : flat_node) => d.depth?.toString() || "");
+
+  ld.append("xhtml:div")
+    .attr("class", "params_list")
+    .style("height", "100%")
+    .style("display", "flex")
+    .style("flex-direction", "row")
+    .style("gap", "6px")
+    .style("align-items", "center")
+    .style("padding-left", "6px")
+    .style("padding-right", "6px")
+    .style("font-weight", "normal")
+    .style("user-select", "none")
+    .style("border-color", "blue")
+  
+  return g;
+}
+
+export function draw_labels(tree : flat_tree, config : render_config, coord : coordinates) {
+  const measure_config = Object.assign({}, config);
+  measure_config.draw_static = true;
+
+  const label_selection = 
+    d3.select("#label_measure_layer").selectAll(".test_label")
+      .data(tree, (d) => (d as flat_node).name)
+      .join(
+        (enter) => {
+          return make_label_container(enter, "", measure_config, coord);
+        }
+      );
+    label_selection.select(".params_list").selectAll(".param_name")
+    .data((d : flat_node) => {
+        return(d.param_names ?? []);
+      }, (d) => (d as flat_node).param_names?.join(",") ?? "none")
+    .join(
+      (enter) => {
+        return make_label_content(enter);
+      }
+    )
+
+  label_selection.datum(function(d, index, groups) {
+    d.lwidth = (groups[index] as SVGAElement)?.getElementsByClassName("label-div")[0].getBoundingClientRect().width;
+    d.lwidth = coord.x.invert(d.lwidth);
+    return(d);
+  });
+
+  return(tree);
 }
