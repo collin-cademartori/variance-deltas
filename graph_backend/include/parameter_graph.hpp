@@ -20,6 +20,11 @@ struct MarkovNode {
   int depth;
   std::set<int> chain_nums;
   int name;
+
+  template<class Archive>
+  void serialize(Archive& ar, const unsigned int version) {
+    ar & parameters & ered & depth & chain_nums & name;
+  }
 };
 
 typedef boost::adjacency_list<boost::listS, boost::listS, boost::directedS, MarkovNode> MTree;

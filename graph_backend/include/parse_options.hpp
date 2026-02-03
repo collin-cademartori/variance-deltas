@@ -4,11 +4,12 @@
 #include <optional>
 
 struct Config {
-  std::string model_file;
-  std::string data_file;
-  std::string stan_file_prefix;
-  int num_chains;
+  std::optional<std::string> model_file;   // Required unless archive_file is set
+  std::optional<std::string> data_file;    // Required unless archive_file is set
+  std::string stan_file_prefix;            // Always required
+  int num_chains;                          // Always required
   int ws_port;
+  std::optional<std::string> archive_file; // If set, load state from archive
 };
 
 struct ParseResult {

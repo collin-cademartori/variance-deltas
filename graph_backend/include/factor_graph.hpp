@@ -9,6 +9,11 @@ struct ModelQuantity {
   std::string name;
   bool is_factor;
   bool is_lik;
+
+  template<class Archive>
+  void serialize(Archive& ar, const unsigned int version) {
+    ar & name & is_factor & is_lik;
+  }
 };
 
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, ModelQuantity> FG;

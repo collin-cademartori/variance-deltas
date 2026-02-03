@@ -16,15 +16,15 @@ void save_tree(const MTree& tree, Node root, const std::string& filename) {
     oa << root_name << tree;
 }
 
-std::pair<MTree, Node> load_tree(const std::string& filename) {
-    MTree tree;
+std::pair<std::unique_ptr<MTree>, Node> load_tree(const std::string& filename) {
+    auto tree = std::make_unique<MTree>();
     int root_name;
     std::ifstream ifs(filename);
     boost::archive::text_iarchive ia(ifs);
-    ia >> root_name >> tree;
+    ia >> root_name >> *tree;
 
-    for (auto vi = vertices(tree).first; vi != vertices(tree).second; ++vi) {
-        if (tree[*vi].name == root_name) {
+    for (auto vi = vertices(*tree).first; vi != vertices(*tree).second; ++vi) {
+        if ((*tree)[*vi].name == root_name) {
             return {std::move(tree), *vi};
         }
     }
@@ -56,8 +56,8 @@ void save_state(const MTree& tree, Node root,
     oa << root_name << tree << fg << fg_params << fg_factors;
 }
 
-std::tuple<MTree, Node, FG, FG_Map, FG_Map> load_state(const std::string& filename) {
-    MTree tree;
+std::tuple<std::unique_ptr<MTree>, Node, FG, FG_Map, FG_Map> load_state(const std::string& filename) {
+    auto tree = std::make_unique<MTree>();
     int root_name;
     FG fg;
     FG_Map fg_params;
@@ -65,10 +65,10 @@ std::tuple<MTree, Node, FG, FG_Map, FG_Map> load_state(const std::string& filena
 
     std::ifstream ifs(filename);
     boost::archive::text_iarchive ia(ifs);
-    ia >> root_name >> tree >> fg >> fg_params >> fg_factors;
+    ia >> root_name >> *tree >> fg >> fg_params >> fg_factors;
 
-    for (auto vi = vertices(tree).first; vi != vertices(tree).second; ++vi) {
-        if (tree[*vi].name == root_name) {
+    for (auto vi = vertices(*tree).first; vi != vertices(*tree).second; ++vi) {
+        if ((*tree)[*vi].name == root_name) {
             return {std::move(tree), *vi, std::move(fg), std::move(fg_params), std::move(fg_factors)};
         }
     }

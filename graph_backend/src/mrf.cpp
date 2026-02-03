@@ -20,10 +20,53 @@
 #include <serialize_tree.hpp>
 #include <parse_options.hpp>
 #include <run_model_parser.hpp>
+#include <save_state.hpp>
 
 using namespace std;
 using namespace markov;
 using json = nlohmann::json;
+
+struct InitState {
+  FG fg;
+  FG_Map fg_params;
+  FG_Map fg_facs;
+  std::optional<std::pair<std::unique_ptr<MTree>, Node>> tree;  // populated only for archive
+  std::optional<std::string> root_name;   // populated only for files
+  std::optional<std::vector<std::set<std::string>>> leaves;  // populated only for files
+};
+
+InitState init_from_files(const Config& config) {
+  auto parser_output = run_model_parser(*config.model_file, *config.data_file);
+  if (!parser_output) {
+    throw std::runtime_error("Failed to parse model files");
+  }
+  const auto& [fg_data, tree_data] = *parser_output;
+
+  auto [root_name, leaves] = read_tree_data(tree_data);
+  auto [fg, fg_params, fg_facs] = read_fg(fg_data);
+
+  return InitState{
+    std::move(fg),
+    std::move(fg_params),
+    std::move(fg_facs),
+    std::nullopt,  // tree not yet constructed
+    root_name,
+    leaves
+  };
+}
+
+InitState init_from_archive(const std::string& archive_path) {
+  auto [tree, root_node, fg, fg_params, fg_facs] = load_state(archive_path);
+
+  return InitState{
+    std::move(fg),
+    std::move(fg_params),
+    std::move(fg_facs),
+    std::make_pair(std::move(tree), root_node),
+    std::nullopt,  // no root_name in archive mode
+    std::nullopt   // no leaves in archive mode
+  };
+}
 
 int main(int argc, char* argv[]) {
 
@@ -37,30 +80,57 @@ int main(int argc, char* argv[]) {
   }
   const Config& config = *result.config;
 
-  auto parser_output = run_model_parser(config.model_file, config.data_file);
-  if (!parser_output) {
+  // Initialize state from either archive or files
+  InitState state;
+  try {
+    state = config.archive_file
+      ? init_from_archive(*config.archive_file)
+      : init_from_files(config);
+  } catch (const std::exception& e) {
+    std::cerr << "Initialization failed: " << e.what() << std::endl;
     return 1;
   }
-  const auto& [fg_data, tree_data] = *parser_output;
 
-  auto [root_name, leaves] = read_tree_data(tree_data);  
-  auto [fg, fg_params, fg_facs] = read_fg(fg_data);
-
-  const auto likelihood_complexity = get_complexity(fg, fg_params, fg_facs);
-  auto [mrf, param_vertices] = mrf_from_fg(fg, fg_params, fg_facs);
+  // Derive quantities needed for tree construction and method handlers
+  const auto likelihood_complexity = get_complexity(state.fg, state.fg_params, state.fg_facs);
+  auto [mrf, param_vertices] = mrf_from_fg(state.fg, state.fg_params, state.fg_facs);
   auto stan_data = read_stan_file(config.stan_file_prefix, config.num_chains);
 
   set<string> global_params = {};
-  auto global_adj_r = rf_oob_mse(global_params, root_name, *stan_data.samples, stan_data.vars);
+  // Note: global_adj_r needs root_name. In archive mode, get it from the tree.
+  string root_name_for_global;
+  if (state.root_name) {
+    root_name_for_global = *state.root_name;
+  } else {
+    // In archive mode, extract from tree's root node
+    root_name_for_global = to_string(state.tree->first->operator[](state.tree->second).name);
+  }
+  auto global_adj_r = rf_oob_mse(global_params, root_name_for_global, *stan_data.samples, stan_data.vars);
 
-  auto [mtree, root_node] = make_tree(
-    mrf, root_name, { leaves },
-    global_params, param_vertices,
-    *stan_data.samples, stan_data.vars, likelihood_complexity, 1.01); // 0.66
+  // Get or construct tree
+  std::unique_ptr<MTree> mtree;
+  Node root_node;
+  if (state.tree) {
+    mtree = std::move(state.tree->first);
+    root_node = state.tree->second;
+  } else {
+    auto [t, r] = make_tree(
+      mrf, *state.root_name, { *state.leaves },
+      global_params, param_vertices,
+      *stan_data.samples, stan_data.vars, likelihood_complexity, 1.01);
+    mtree = std::move(t);
+    root_node = r;
+  }
 
   handle_method("get_tree", [&](json _data){
     cout << "Sending tree to server..." << endl;
     return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
+  });
+
+  handle_method("save_state", [&](json args){
+    cout << "Saving backend state to archive." << endl;
+    save_state(*mtree, root_node, state.fg, state.fg_params, state.fg_facs, "vd_save.vds");
+    return std::nullopt;
   });
 
   handle_method("divide_branch", [&](json args) {
@@ -108,8 +178,12 @@ int main(int argc, char* argv[]) {
   });
 
   handle_method("reset_tree", [&](json args) {
+    if (!state.root_name || !state.leaves) {
+      std::cerr << "reset_tree is not available when loaded from archive" << std::endl;
+      return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
+    }
     auto init_tree = make_tree(
-      mrf, root_name, leaves,
+      mrf, *state.root_name, *state.leaves,
       global_params, param_vertices,
       *stan_data.samples, stan_data.vars, likelihood_complexity, 1);
     mtree = std::move(init_tree.first);

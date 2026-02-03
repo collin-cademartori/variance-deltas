@@ -12,8 +12,9 @@ ParseResult parse_options(int argc, char* argv[]) {
   options::options_description ops_desc("Command line options.");
   auto ops = ops_desc.add_options();
   ops("help", "print this help message")
-  ("model_file,M", options::value<string>()->required(), "specify the model file")
-  ("data_file,D", options::value<string>()->required(), "specify the data file")
+  ("model_file,M", options::value<string>(), "specify the model file (required unless -A is set)")
+  ("data_file,D", options::value<string>(), "specify the data file (required unless -A is set)")
+  ("archive,A", options::value<string>(), "load state from archive file (alternative to -M and -D)")
   ("stan_file_prefix,S", options::value<string>()->required(), "specify the prefix of Stan's MCMC output CSV files")
   ("num_chains,N", options::value<int>()->required(), "specify the number of MCMC chains, i.e. the number of MCMC CSV files to read")
   ("port,P", options::value<int>()->default_value(8765), "specify the WebSocket server port (default: 8765)");
@@ -35,23 +36,49 @@ ParseResult parse_options(int argc, char* argv[]) {
   }
 
   Config config;
-  config.model_file = user_input["model_file"].as<string>();
-  config.data_file = user_input["data_file"].as<string>();
   config.stan_file_prefix = user_input["stan_file_prefix"].as<string>();
   config.num_chains = user_input["num_chains"].as<int>();
   config.ws_port = user_input["port"].as<int>();
 
+  // Check for archive mode vs file mode
+  bool has_archive = user_input.count("archive") > 0;
+  bool has_model = user_input.count("model_file") > 0;
+  bool has_data = user_input.count("data_file") > 0;
+
+  if (has_archive) {
+    if (has_model || has_data) {
+      std::cerr << "Error: Cannot specify both --archive and model/data files." << endl;
+      return {std::nullopt, 1};
+    }
+    config.archive_file = user_input["archive"].as<string>();
+  } else {
+    if (!has_model || !has_data) {
+      std::cerr << "Error: Must specify either --archive OR both -M and -D options." << endl;
+      std::cerr << "Run with --help for details." << endl;
+      return {std::nullopt, 1};
+    }
+    config.model_file = user_input["model_file"].as<string>();
+    config.data_file = user_input["data_file"].as<string>();
+  }
+
   // Verify input files exist
   bool files_missing = false;
 
-  if (!std::filesystem::exists(config.model_file)) {
-    std::cerr << "Error: Model file does not exist: " << config.model_file << endl;
-    files_missing = true;
-  }
+  if (config.archive_file) {
+    if (!std::filesystem::exists(*config.archive_file)) {
+      std::cerr << "Error: Archive file does not exist: " << *config.archive_file << endl;
+      files_missing = true;
+    }
+  } else {
+    if (!std::filesystem::exists(*config.model_file)) {
+      std::cerr << "Error: Model file does not exist: " << *config.model_file << endl;
+      files_missing = true;
+    }
 
-  if (!std::filesystem::exists(config.data_file)) {
-    std::cerr << "Error: Data file does not exist: " << config.data_file << endl;
-    files_missing = true;
+    if (!std::filesystem::exists(*config.data_file)) {
+      std::cerr << "Error: Data file does not exist: " << *config.data_file << endl;
+      files_missing = true;
+    }
   }
 
   // Check if Stan output files exist (check for first chain)
