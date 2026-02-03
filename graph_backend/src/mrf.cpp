@@ -43,13 +43,14 @@ int main(int argc, char* argv[]) {
   }
   const auto& [fg_data, tree_data] = *parser_output;
 
-  set<string> global_params = {};
   auto [root_name, leaves] = read_tree_data(tree_data);  
   auto [fg, fg_params, fg_facs] = read_fg(fg_data);
+
   const auto likelihood_complexity = get_complexity(fg, fg_params, fg_facs);
   auto [mrf, param_vertices] = mrf_from_fg(fg, fg_params, fg_facs);
   auto stan_data = read_stan_file(config.stan_file_prefix, config.num_chains);
 
+  set<string> global_params = {};
   auto global_adj_r = rf_oob_mse(global_params, root_name, *stan_data.samples, stan_data.vars);
 
   auto [mtree, root_node] = make_tree(

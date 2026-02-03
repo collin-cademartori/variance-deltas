@@ -21,7 +21,8 @@ type state_t = {
   show_globals: boolean,
   names: SvelteMap<string, name_t>,
   svg_height: number,
-  svg_width: number
+  svg_width: number,
+  session_name?: string
 };
 
 const session_id = "1234";
