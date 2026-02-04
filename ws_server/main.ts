@@ -163,7 +163,7 @@ function create_message_handler(socket : WebSocketWithData) {
             try_send("backend", event.data);
             break;
           case "tree":
-            handle_tree(pdata.tree, pdata.globals, pdata.global_limit, pdata.groups);
+            handle_tree(pdata);
             break;
           case "groups":
             handle_groups(pdata.groups);
@@ -251,14 +251,13 @@ function try_send(client_name : "frontend" | "backend", message : string) {
   }
 }
 
-function handle_tree(tree : object, globals : object, global_limit : number, groups : object) {
-  const tree_message = JSON.stringify({
-    "type" : "tree",
-    "tree" : JSON.stringify(tree),
-    "globals" : JSON.stringify(globals),
-    "global_limit" : JSON.stringify(global_limit),
-    "groups" : JSON.stringify(groups)
-  });
+function handle_tree(msg_data : object) { //tree : object, globals : object, global_limit : number, groups : object
+  const msg_data_strings = Object.fromEntries(
+    Object.entries(msg_data).map(([k,v]) => [k, JSON.stringify(v)])
+  );
+  const tree_message = JSON.stringify(Object.assign(msg_data_strings, {
+    "type" : "tree"
+  }));
   try_send("frontend", tree_message);
 }
 

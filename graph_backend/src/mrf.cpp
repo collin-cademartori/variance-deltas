@@ -6,6 +6,7 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/property_map/property_map.hpp>
+#include <boost/uuid.hpp>
 #include <nlohmann/json.hpp>
 
 #include <lik_complexity.hpp>
@@ -33,6 +34,7 @@ struct InitState {
   std::optional<std::pair<std::unique_ptr<MTree>, Node>> tree;  // populated only for archive
   std::optional<std::string> root_name;   // populated only for files
   std::optional<std::vector<std::set<std::string>>> leaves;  // populated only for files
+  std::string sid;
 };
 
 InitState init_from_files(const Config& config) {
@@ -45,18 +47,21 @@ InitState init_from_files(const Config& config) {
   auto [root_name, leaves] = read_tree_data(tree_data);
   auto [fg, fg_params, fg_facs] = read_fg(fg_data);
 
+  const string& sid = boost::uuids::to_string(boost::uuids::random_generator()());
+
   return InitState{
     std::move(fg),
     std::move(fg_params),
     std::move(fg_facs),
     std::nullopt,  // tree not yet constructed
     root_name,
-    leaves
+    leaves,
+    sid
   };
 }
 
 InitState init_from_archive(const std::string& archive_path) {
-  auto [tree, root_node, fg, fg_params, fg_facs] = load_state(archive_path);
+  auto [tree, root_node, fg, fg_params, fg_facs, sid] = load_state(archive_path);
 
   return InitState{
     std::move(fg),
@@ -64,7 +69,8 @@ InitState init_from_archive(const std::string& archive_path) {
     std::move(fg_facs),
     std::make_pair(std::move(tree), root_node),
     std::nullopt,  // no root_name in archive mode
-    std::nullopt   // no leaves in archive mode
+    std::nullopt,   // no leaves in archive mode
+    sid
   };
 }
 
@@ -124,12 +130,14 @@ int main(int argc, char* argv[]) {
 
   handle_method("get_tree", [&](json _data){
     cout << "Sending tree to server..." << endl;
-    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, state.sid));
   });
 
   handle_method("save_state", [&](json args){
     cout << "Saving backend state to archive." << endl;
-    save_state(*mtree, root_node, state.fg, state.fg_params, state.fg_facs, "vd_save.vds");
+    std::string fname = args.at("fname");
+    std::replace(fname.begin(), fname.end(), ' ', '_');
+    save_state(*mtree, root_node, state.fg, state.fg_params, state.fg_facs, state.sid, fname + ".vds");
     return std::nullopt;
   });
 
@@ -140,13 +148,13 @@ int main(int argc, char* argv[]) {
       params_kept.insert(param);
     }
     divide_branch(*mtree, root_node, node_name, params_kept, *stan_data.samples, stan_data.vars);
-    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, std::nullopt));
   });
 
   handle_method("auto_divide", [&](json args) {
     int node_name = args.at("node_name");
     auto_divide(*mtree, root_node, node_name, *stan_data.samples, stan_data.vars);
-    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, std::nullopt));
   });
 
   handle_method("extrude_branch", [&](json args) {
@@ -156,31 +164,31 @@ int main(int argc, char* argv[]) {
       params_kept.insert(param);
     }
     extrude_branch(*mtree, root_node, node_name, params_kept, *stan_data.samples, stan_data.vars);
-    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, std::nullopt));
   });
 
   handle_method("delete_node", [&](json args) {
     int node_name = args.at("node_name");
     delete_node(*mtree, root_node, node_name);
-    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, std::nullopt));
   });
 
   handle_method("merge_nodes", [&](json args) {
     int node_name = args.at("node_name");
     int alt_node_name = args.at("alt_node_name");
     merge_nodes(mrf, global_params, param_vertices, *mtree, root_node, node_name, alt_node_name, *stan_data.samples, stan_data.vars, likelihood_complexity);
-    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, std::nullopt));
   });
 
   handle_method("auto_merge", [&](json args) {
     auto_merge2(mrf, global_params, param_vertices, *mtree, root_node, *stan_data.samples, stan_data.vars, 1, likelihood_complexity);
-    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, std::nullopt));
   });
 
   handle_method("reset_tree", [&](json args) {
     if (!state.root_name || !state.leaves) {
       std::cerr << "reset_tree is not available when loaded from archive" << std::endl;
-      return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
+      return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, std::nullopt));
     }
     auto init_tree = make_tree(
       mrf, *state.root_name, *state.leaves,
@@ -188,7 +196,7 @@ int main(int argc, char* argv[]) {
       *stan_data.samples, stan_data.vars, likelihood_complexity, 1);
     mtree = std::move(init_tree.first);
     root_node = init_tree.second;
-    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r));
+    return std::make_optional(serialize_tree(root_node, *mtree, global_params, global_adj_r, std::nullopt));
   });
 
   initialize_ws_client("localhost", config.ws_port);

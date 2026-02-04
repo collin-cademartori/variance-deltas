@@ -54,7 +54,8 @@ string serialize_set(const set<string>& str_set) {
 
 string serialize_tree(
   const Node& root, const MTree& tree,
-  const set<string>& globals, double global_limit
+  const set<string>& globals, double global_limit,
+  std::optional<std::string> sid
 ) {
 
   queue<pair<Node, string>> node_queue{};
@@ -88,6 +89,9 @@ string serialize_tree(
   tree_str += "\"globals\":" + serialized_globals + ",";
   tree_str += "\"global_limit\":" + std::to_string(global_limit) + ",";
   tree_str += "\"groups\":{}";  // Groups are now managed by frontend
+  if(sid) {
+    tree_str += ",\"sid\":\"" + *sid + "\"";
+  }
   tree_str += "}";
   cout << tree_str << endl;
   return tree_str;

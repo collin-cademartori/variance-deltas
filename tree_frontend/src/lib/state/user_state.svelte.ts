@@ -22,21 +22,20 @@ type state_t = {
   names: SvelteMap<string, name_t>,
   svg_height: number,
   svg_width: number,
-  session_name?: string
+  session_id: string | undefined
 };
 
-const session_id = "1234";
-
+let _session_id : string | undefined = $state(undefined);
 let _user_state : user_state_t = $state('base');
-let _names : SvelteMap<string, name_t> = $state(restore_state_map(session_id, "names", [["__globals__", {
+let _names : SvelteMap<string, name_t> = $state(restore_state_map(_session_id, "names", [["__globals__", {
   type: 'latex',
   name: '\\bar{g}',
   formatted_name: global_latex
 }]]));
 let _tree : HierarchyNode<flat_node> | undefined;
-let _group : string | undefined = $state(restore_state_string(session_id, "group", undefined));
-let _layout_format : 'long' | 'normal' = $state(restore_state_string(session_id, "layout_format", 'normal') as 'long' | 'normal');
-let _show_globals : boolean = $state(restore_state_bool(session_id, "show_globals", true));
+let _group : string | undefined = $state(restore_state_string(_session_id, "group", undefined));
+let _layout_format : 'long' | 'normal' = $state(restore_state_string(_session_id, "layout_format", 'normal') as 'long' | 'normal');
+let _show_globals : boolean = $state(restore_state_bool(_session_id, "show_globals", true));
 let _svg_height = $state(0);
 let _svg_width = $state(0);
 let _create_tree : (data : flat_tree) => void = () => { console.warn("Tried to create tree before setup complete - ignoring"); }
@@ -70,7 +69,7 @@ export const user_state : state_t = $state({
   set group(group : string | undefined) {
     _group = group;
     if(group != null) {
-      store_state(session_id, "group", group);
+      store_state(_session_id, "group", group);
     }
     selection.clear();
     if(_tree != null) {
@@ -84,7 +83,7 @@ export const user_state : state_t = $state({
   },
   set layout_format(fmt : 'long' | 'normal') {
     _layout_format = fmt;
-    store_state(session_id, "layout_format", fmt)
+    store_state(_session_id, "layout_format", fmt)
     if(_tree != null) {
       _create_tree([..._tree].map((n) => n.data));
     }
@@ -94,7 +93,7 @@ export const user_state : state_t = $state({
   },
   set show_globals(show: boolean) {
     _show_globals = show;
-    store_state(session_id, "show_globals", show);
+    store_state(_session_id, "show_globals", show);
     if(_tree != null) {
       _create_tree([..._tree].map((n) => n.data));
     }
@@ -104,7 +103,7 @@ export const user_state : state_t = $state({
   },
   set names(new_names : SvelteMap<string, name_t>) {
     _names = new_names;
-    store_state(session_id, "names", new_names)
+    store_state(_session_id, "names", new_names)
    if(_tree != null) {
       _create_tree([..._tree].map((n) => n.data));
     }
@@ -114,6 +113,24 @@ export const user_state : state_t = $state({
   },
   get svg_width() {
     return(_svg_width)
+  },
+  get session_id() {
+    return(_session_id);
+  },
+  set session_id(sid : string | undefined) {
+    if(!sid) {
+      throw new Error("Cannot set session id to undefined!");
+    }
+    console.info(`Session id set to ${sid}`);
+    _session_id = sid;
+    _group = restore_state_string(_session_id, "group", undefined);
+    _layout_format = restore_state_string(_session_id, "layout_format", 'normal') as "long" | "normal";
+    _show_globals = restore_state_bool(_session_id, "show_globals", true);
+    _names = restore_state_map(_session_id, "names", [["__globals__", {
+      type: 'latex',
+      name: '\\bar{g}',
+      formatted_name: global_latex
+    }]]);
   }
 });
 

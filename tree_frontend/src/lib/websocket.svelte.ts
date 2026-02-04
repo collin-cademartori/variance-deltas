@@ -15,7 +15,8 @@ export const connection = {
 const wsUrl = (browser && !dev) ? `ws://${window.location.host}` : 'ws://localhost:8765';
 export const ws = browser ? new WebSocket(wsUrl) : null;
 
-type tree_handler_t = (tree_data : flat_tree, globals_data : string[], global_limit : number, groups_data : object) => void;
+type tree_handler_t = 
+  (tree_data : flat_tree, globals_data : string[], global_limit : number, groups_data : object, sid: string | undefined) => void;
 
 const tree_handlers : tree_handler_t[] = [];
 const queue : string[] = [];
@@ -72,9 +73,16 @@ if (browser && ws) {
     }
     try {
       const pdata = JSON.parse(event.data);
+      console.log("Got message:", pdata);
       switch(pdata.type) {
         case "tree":
-          tree_handlers.forEach((h) => h(JSON.parse(pdata.tree), JSON.parse(pdata.globals), JSON.parse(pdata.global_limit), JSON.parse(pdata.groups)));
+          tree_handlers.forEach((h) => h(
+            JSON.parse(pdata.tree),
+            JSON.parse(pdata.globals),
+            JSON.parse(pdata.global_limit),
+            JSON.parse(pdata.groups),
+            pdata.sid ? JSON.parse(pdata.sid) : undefined
+          ));
           _busy = false;
           break;
         default:

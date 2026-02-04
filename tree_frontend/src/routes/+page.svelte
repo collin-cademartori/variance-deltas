@@ -65,8 +65,13 @@
 
     setup_tree({x: x, y: y}, l_height);
 
-    ws.handle_message((tree_data, globals_data, global_limit, _groups_data) => {
+    ws.handle_message((tree_data, globals_data, global_limit, _groups_data, sid) => {
+      console.log("Message received from backend.")
       try {
+        // Set sid if present
+        if(sid) {
+          user_state.session_id = sid;
+        }
         // Extract all parameter names from tree and update the local list of parameter names
         const pnames = new Set([...tree_data].map((node) => node.params.map((n) => n.split("[")[0])).flat());
         update_names(pnames);
@@ -93,6 +98,7 @@
       }
 
     });
+
     get_tree([]);
 
     // document.addEventListener("keydown", (ev) => {

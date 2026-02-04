@@ -49,27 +49,29 @@ std::tuple<FG, FG_Map, FG_Map> load_fg(const std::string& filename) {
 
 void save_state(const MTree& tree, Node root,
                 const FG& fg, const FG_Map& fg_params, const FG_Map& fg_factors,
+                const std::string& sid,
                 const std::string& filename) {
     std::ofstream ofs(filename);
     boost::archive::text_oarchive oa(ofs);
     int root_name = tree[root].name;
-    oa << root_name << tree << fg << fg_params << fg_factors;
+    oa << sid << root_name << tree << fg << fg_params << fg_factors;
 }
 
-std::tuple<std::unique_ptr<MTree>, Node, FG, FG_Map, FG_Map> load_state(const std::string& filename) {
+std::tuple<std::unique_ptr<MTree>, Node, FG, FG_Map, FG_Map, std::string> load_state(const std::string& filename) {
     auto tree = std::make_unique<MTree>();
     int root_name;
     FG fg;
     FG_Map fg_params;
     FG_Map fg_factors;
+    std::string sid;
 
     std::ifstream ifs(filename);
     boost::archive::text_iarchive ia(ifs);
-    ia >> root_name >> *tree >> fg >> fg_params >> fg_factors;
+    ia >> sid >> root_name >> *tree >> fg >> fg_params >> fg_factors;
 
     for (auto vi = vertices(*tree).first; vi != vertices(*tree).second; ++vi) {
         if ((*tree)[*vi].name == root_name) {
-            return {std::move(tree), *vi, std::move(fg), std::move(fg_params), std::move(fg_factors)};
+            return {std::move(tree), *vi, std::move(fg), std::move(fg_params), std::move(fg_factors), sid};
         }
     }
     throw std::runtime_error("Root node not found in loaded state");
