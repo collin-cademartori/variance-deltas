@@ -8,7 +8,7 @@
   import { connection } from "$lib/websocket.svelte";
   import * as d3 from "d3";
   import type { flat_node, flat_branch } from "$lib/state/types";
-  import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge, delete_node } from "$lib/tree_methods";
+  import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge, delete_node, save_state } from "$lib/tree_methods";
   // import { setup_context } from "$lib/state/compute_width";
   import { selection } from "$lib/state/selection.svelte";
   import { user_state, setup_tree, update_names } from "$lib/state/user_state.svelte";
@@ -20,6 +20,7 @@
   import ExportDialog from "$lib/components/ExportDialog.svelte";
   import SettingsDialog from "$lib/components/SettingsDialog.svelte";
   import ConnectionOverlay from "$lib/components/ConnectionOverlay.svelte";
+    import InlineEditor from "$lib/components/InlineEditor.svelte";
 
   let show_export = $state(false);
 
@@ -111,6 +112,11 @@
 <div id="v_container">
 
   <ExportDialog bind:show_dialog={show_export} plot_width={Math.max(width, user_state.svg_width)} axis_width={width} {y} />
+
+  <div id="session_top">
+    <InlineEditor bind:title={user_state.title} />
+    <button id="save_button" onclick={() => save_state({"fname": "save_file"})}>Save</button>
+  </div>
 
   <div id="main_view">
     <div id="vis_container">
@@ -480,6 +486,19 @@
     overflow-x: hidden;
   }
 
+  #session_top {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    align-items: center;
+    height: 3rem;
+  }
+
+  #save_button {
+    /* margin: 0.5rem 0 0.5rem 0; */
+    height: fit-content;
+  }
+
   #vis_container {
     display: flex;
     flex-direction: column;
@@ -494,6 +513,7 @@
     overflow-x: clip;
     flex-shrink: 0;
     width: fit-content;
+    padding-top: 1rem;
   }
 
   #tree {

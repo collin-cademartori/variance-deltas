@@ -1,6 +1,7 @@
 import { make_method_caller } from "./websocket.svelte.ts";
 
 export const get_tree = make_method_caller("get_tree", []);
+export const save_state = make_method_caller("save_state", ["fname"]);
 export const divide_branch = make_method_caller("divide_branch", ["node_name", "params_kept"]);
 export const auto_divide = make_method_caller("auto_divide", ["node_name"]);
 export const extrude_branch = make_method_caller("extrude_branch", ["node_name", "params_kept"]);

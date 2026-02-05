@@ -43,14 +43,14 @@ const queues : Queues = {
 };
 
 const args = parseArgs(Deno.args, {
-  string: ["M", "D", "S", "N", "port"],
+  string: ["M", "D", "S", "N", "A", "port"],
   default: {
     port: "8765"
   }
 });
 
-if(args.M == null || args.D == null || args.S == null || args.N == null) {
-  console.error("All arguments mandatory.")
+if(args.A == null && (args.M == null || args.D == null || args.S == null || args.N == null)) {
+  console.error("Must either initialize from archive (by specifying -A) or initialize from model specification and data (by specifying all of -M, -D, -S, and -N.");
   Deno.exit(1);
 }
 
@@ -74,11 +74,23 @@ Deno.serve({ port: PORT }, (req) => {
 
 console.log("Starting client subprocess.");
 try {
+  const passed_args = (args.A != null) ?
+    [
+      "-A", args.A,
+      "-N", args.N,
+      "-S", args.S,
+      "-P", PORT.toString()
+    ] :
+    [
+      "-M", args.M,
+      "-D", args.D,
+      "-S", args.S,
+      "-N", args.N,
+      "-P", PORT.toString()
+    ];
   const command = new Deno.Command(graph_test_path,
     {
-      args: [
-        "-M", args.M, "-D", args.D, "-S", args.S, "-N", args.N, "-P", PORT.toString()
-      ],
+      args: passed_args as string[],
       stdout: "inherit",
       stderr: "inherit"
     }
