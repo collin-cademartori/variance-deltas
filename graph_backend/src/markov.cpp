@@ -14,16 +14,14 @@ using namespace std;
 using namespace boost;
 using namespace markov;
 
-// STOP GAP SOLUTION
-int max_id = 0;
-map<string, int> id_map;
-int get_id(string set_name) {
-  int id;
-  try {
-    id = id_map.at(set_name);
-  } catch (out_of_range err) {
-    id = ++max_id;
+int next_available_id(const MTree& tree) {
+  set<int> used;
+  auto [vi, vi_end] = vertices(tree);
+  for (; vi != vi_end; ++vi) {
+    used.insert(tree[*vi].name);
   }
+  int id = 1;
+  while (used.count(id)) ++id;
   return id;
 }
 
@@ -375,8 +373,8 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
   unique_ptr<MTree> markov_tree = make_unique<MTree>(0);
 
   vertex_names params = { root };
-  auto name_hash = get_id(root);
-  Node root_node = add_vertex({ 
+  auto name_hash = next_available_id(*markov_tree);
+  Node root_node = add_vertex({
     .name = name_hash,
     .parameters = params,
     .ered = 0,
@@ -400,8 +398,8 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
         std::optional<Node> next_node = search_children(cur_node, chain_parameters, markov_tree);
         if(next_node == nullopt) {
           double ered = rf_oob_mse(chain_parameters, root, stan_matrix, stan_vars);
-          auto name_hash = get_id(std::reduce<vertex_names::iterator, string>(chain_parameters.begin(), chain_parameters.end(), ""));
-          Node new_node = add_vertex({ 
+          auto name_hash = next_available_id(*markov_tree);
+          Node new_node = add_vertex({
             .name = name_hash,
             .parameters = chain_parameters,
             .ered = ered,
@@ -573,8 +571,8 @@ void markov::divide_branch(
     params_kept.insert(child_params.begin(), child_params.end());
     string root_name = *tree[root].parameters.begin();
     double ered = rf_oob_mse(params_kept, root_name, stan_matrix, stan_vars);
-    auto name_hash = get_id(std::reduce<vertex_names::iterator, string>(params_kept.begin(), params_kept.end(), ""));
-    Node split_node = add_vertex({ 
+    auto name_hash = next_available_id(tree);
+    Node split_node = add_vertex({
       .name = name_hash,
       .parameters = params_kept,
       .ered = ered,
@@ -649,8 +647,8 @@ void markov::auto_divide(
       }
     }
 
-    auto name_hash = get_id(std::reduce<vertex_names::iterator, string>(best_params.begin(), best_params.end(), ""));
-    Node split_node = add_vertex({ 
+    auto name_hash = next_available_id(tree);
+    Node split_node = add_vertex({
       .name = name_hash,
       .parameters = best_params,
       .ered = best_ered,
@@ -675,9 +673,9 @@ void markov::extrude_branch(
 
   string root_name = *tree[root].parameters.begin();
   double ered = rf_oob_mse(params_kept, root_name, stan_matrix, stan_vars);
-  auto name_hash = get_id(std::reduce<vertex_names::iterator, string>(params_kept.begin(), params_kept.end(), ""));
+  auto name_hash = next_available_id(tree);
 
-  Node new_node = add_vertex({ 
+  Node new_node = add_vertex({
     .name = name_hash,
     .parameters = params_kept,
     .ered = ered,
@@ -752,7 +750,7 @@ void markov::merge_nodes(
   string root_param = *tree[root].parameters.begin();
   Node prev_node = parent_node;
   std::for_each(std::next(new_chain.begin()), new_chain.end(), [&](vertex_names& param_names) {
-    int name_hash = get_id(std::reduce<vertex_names::iterator, string>(param_names.begin(), param_names.end(), ""));
+    int name_hash = next_available_id(tree);
     Node new_node = add_vertex({
       .name = name_hash,
       .parameters = param_names,
@@ -787,14 +785,14 @@ void markov::merge_nodes(
   // }, tree);
 
   Node child1_copy = add_vertex({
-    .name = get_id(std::reduce<vertex_names::iterator, string>(child_params_1.begin(), child_params_1.end(), "")),
+    .name = next_available_id(tree),
     .parameters = child_params_1,
     .ered = tree[node].ered,
     .depth = tree[prev_node].depth + 1,
     .chain_nums = {}
   }, tree);
   Node child2_copy = add_vertex({
-    .name = get_id(std::reduce<vertex_names::iterator, string>(child_params_2.begin(), child_params_2.end(), "")),
+    .name = next_available_id(tree),
     .parameters = child_params_2,
     .ered = tree[alt_node].ered,
     .depth = tree[prev_node].depth + 1,

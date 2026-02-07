@@ -177,8 +177,8 @@ function create_message_handler(socket : WebSocketWithData) {
           case "tree":
             handle_tree(pdata);
             break;
-          case "groups":
-            handle_groups(pdata.groups);
+          case "io":
+            try_send("frontend", JSON.stringify(pdata));
             break;
           default:
             console.log("Received message! ", pdata);

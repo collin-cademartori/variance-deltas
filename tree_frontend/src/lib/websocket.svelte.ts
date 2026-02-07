@@ -19,6 +19,7 @@ type tree_handler_t =
   (tree_data : flat_tree, globals_data : string[], global_limit : number, groups_data : object, sid: string | undefined) => void;
 
 const tree_handlers : tree_handler_t[] = [];
+let save_handler : (succ : boolean) => void = () => {};
 const queue : string[] = [];
 
 function send_message(msg : string) {
@@ -27,6 +28,10 @@ function send_message(msg : string) {
   } else {
     queue.push(msg);
   }
+}
+
+export function handle_save(handler: (succ : boolean) => void) {
+  save_handler = handler;
 }
 
 export function handle_message(handler : tree_handler_t) {
@@ -83,6 +88,12 @@ if (browser && ws) {
             JSON.parse(pdata.groups),
             pdata.sid ? JSON.parse(pdata.sid) : undefined
           ));
+          _busy = false;
+          break;
+        case "io":
+          console.log("Got IO message!")
+          const succ = pdata.status;
+          save_handler(succ);
           _busy = false;
           break;
         default:

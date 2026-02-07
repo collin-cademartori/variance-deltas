@@ -137,8 +137,13 @@ int main(int argc, char* argv[]) {
     cout << "Saving backend state to archive." << endl;
     std::string fname = args.at("fname");
     std::replace(fname.begin(), fname.end(), ' ', '_');
-    save_state(*mtree, root_node, state.fg, state.fg_params, state.fg_facs, state.sid, fname + ".vds");
-    return std::nullopt;
+    try {
+      save_state(*mtree, root_node, state.fg, state.fg_params, state.fg_facs, state.sid, fname + ".vds");
+    } catch (std::runtime_error e) {
+      cerr << "Error while attempting to write archive file: " << e.what() << "\n";
+      return("{\"type\":\"io\",\"status\":false}");
+    }
+    return("{\"type\":\"io\",\"status\":true}");
   });
 
   handle_method("divide_branch", [&](json args) {

@@ -23,7 +23,8 @@ type state_t = {
   svg_height: number,
   svg_width: number,
   session_id: string | undefined,
-  title: string | undefined
+  title: string | undefined,
+  fname: string | undefined
 };
 
 let _session_id : string | undefined = $state(undefined);
@@ -35,6 +36,7 @@ let _names : SvelteMap<string, name_t> = $state(restore_state_map(_session_id, "
 }]]));
 let _tree : HierarchyNode<flat_node> | undefined;
 let _title : string | undefined = $state(restore_state_string(_session_id, "title", undefined));
+let _fname : string | undefined = $state(restore_state_string(_session_id, "fname", undefined));
 let _group : string | undefined = $state(restore_state_string(_session_id, "group", undefined));
 let _layout_format : 'long' | 'normal' = $state(restore_state_string(_session_id, "layout_format", 'normal') as 'long' | 'normal');
 let _show_globals : boolean = $state(restore_state_bool(_session_id, "show_globals", true));
@@ -124,6 +126,7 @@ export const user_state : state_t = $state({
       throw new Error("Cannot set session id to undefined!");
     }
     _session_id = sid;
+    _fname = restore_state_string(_session_id, "fname", undefined);
     _group = restore_state_string(_session_id, "group", undefined);
     _layout_format = restore_state_string(_session_id, "layout_format", 'normal') as "long" | "normal";
     _show_globals = restore_state_bool(_session_id, "show_globals", true);
@@ -142,6 +145,15 @@ export const user_state : state_t = $state({
   },
   get title() {
     return(_title);
+  },
+  set fname(fname_str : string | undefined) {
+    _fname = fname_str;
+    if(fname_str) {
+      store_state(_session_id, "fname", fname_str);
+    }
+  },
+  get fname() {
+    return(_fname)
   }
 });
 

@@ -8,7 +8,7 @@
   import { connection } from "$lib/websocket.svelte";
   import * as d3 from "d3";
   import type { flat_node, flat_branch } from "$lib/state/types";
-  import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge, delete_node, save_state } from "$lib/tree_methods";
+  import { get_tree, reset_tree, divide_branch, extrude_branch, auto_divide, merge_nodes, auto_merge, delete_node } from "$lib/tree_methods";
   // import { setup_context } from "$lib/state/compute_width";
   import { selection } from "$lib/state/selection.svelte";
   import { user_state, setup_tree, update_names } from "$lib/state/user_state.svelte";
@@ -20,7 +20,8 @@
   import ExportDialog from "$lib/components/ExportDialog.svelte";
   import SettingsDialog from "$lib/components/SettingsDialog.svelte";
   import ConnectionOverlay from "$lib/components/ConnectionOverlay.svelte";
-    import InlineEditor from "$lib/components/InlineEditor.svelte";
+  import InlineEditor from "$lib/components/InlineEditor.svelte";
+    import SaveButton from "$lib/components/SaveButton.svelte";
 
   let show_export = $state(false);
 

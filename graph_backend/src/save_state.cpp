@@ -52,9 +52,13 @@ void save_state(const MTree& tree, Node root,
                 const std::string& sid,
                 const std::string& filename) {
     std::ofstream ofs(filename);
-    boost::archive::text_oarchive oa(ofs);
-    int root_name = tree[root].name;
-    oa << sid << root_name << tree << fg << fg_params << fg_factors;
+    if(ofs) {
+        boost::archive::text_oarchive oa(ofs);
+        int root_name = tree[root].name;
+        oa << sid << root_name << tree << fg << fg_params << fg_factors;
+    } else {
+        throw std::ios_base::failure("Failed to open arhive file for writing.");
+    }
 }
 
 std::tuple<std::unique_ptr<MTree>, Node, FG, FG_Map, FG_Map, std::string> load_state(const std::string& filename) {
