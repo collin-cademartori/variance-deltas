@@ -116,7 +116,14 @@
 
   <div id="session_top">
     <InlineEditor bind:title={user_state.title} />
-    <button id="save_button" onclick={() => save_state({"fname": "save_file"})}>Save</button>
+    <button 
+      onclick={() => {
+        show_export = true;
+      }}
+    >
+      Export Image
+    </button>
+    <SaveButton />
   </div>
 
   <div id="main_view">
@@ -176,13 +183,6 @@
       <ConnectionOverlay />
       <div id="control_content">
       <div id="session_bar" class="button_bar">
-        <button 
-          onclick={() => {
-            show_export = true;
-          }}
-        >
-          Export Image
-        </button>
         <div class="button_group">
           <button
             class:menu_enabled={user_state.state === 'groups'}
@@ -403,8 +403,8 @@
 
   :global(button) {
     appearance: none;
-    border: 0.1rem solid black;
-    background-color: white;
+    border: 0.1rem solid rgb(129, 129, 129);
+    background-color: rgb(250, 250, 250);
     border-radius: 0.2rem;
     padding: 0.2rem 0.4rem 0.2rem 0.4rem;  
     margin: 0.05rem 0 0.05rem 0;
@@ -444,19 +444,11 @@
     border-right: none;
   }
 
-  #instruction_bar {
-    height: 1.5rem;
-    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 0.8rem;
-    padding: 0.2rem;
-    display: flex;
-    flex-direction: row;
-  }
-
   :global(button.menu_enabled) {
     color: rgb(0, 0, 136);
     border-color: rgb(29, 29, 212);
     background-color: rgb(224, 235, 255);
+    box-shadow: 0 0 0.1rem rgb(187, 209, 250);
     /* border-color: rgb(65, 125, 255);
     background-color: rgb(65, 125, 255);
     color: white; */
@@ -470,19 +462,30 @@
     color: white; */
   }
 
+  #instruction_bar {
+    height: 1.5rem;
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 0.8rem;
+    padding: 0.2rem;
+    display: flex;
+    flex-direction: row;
+  }
+
   #v_container { 
     display: flex;
     flex-direction: column;
-    padding-left: 2rem;
+    /* padding-left: 2rem;
     padding-right: 2rem;
     padding-top: 0.5rem;
-    padding-bottom: 2rem;
+    padding-bottom: 2rem; */
+    background-color: rgb(251, 251, 251);
+    padding-left: 2rem;
   }
 
   #main_view {
     display: flex;
     flex-direction: row;
-    height: 95dvh;
+    height: 93dvh;
     overflow-y: hidden;
     overflow-x: hidden;
   }
@@ -493,11 +496,7 @@
     gap: 0.5rem;
     align-items: center;
     height: 3rem;
-  }
-
-  #save_button {
-    /* margin: 0.5rem 0 0.5rem 0; */
-    height: fit-content;
+    padding: 0.5rem 0 0.5rem 0;
   }
 
   #vis_container {
@@ -505,6 +504,12 @@
     flex-direction: column;
     min-width: 0;
     overflow-x: auto;
+    background-color: white;
+    border-radius: 0.2rem;
+    padding: 0 2rem 0 2rem;
+    border: 0.1rem solid rgb(106, 106, 106); 
+    box-shadow: 0rem 0.1rem 0.3rem 0rem rgb(213, 213, 213);
+    height: fit-content;
   }
 
   #tree_container {
@@ -514,7 +519,7 @@
     overflow-x: clip;
     flex-shrink: 0;
     width: fit-content;
-    padding-top: 1rem;
+    padding-top: 2rem;
   }
 
   #tree {
@@ -531,8 +536,8 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    padding-top: 2rem;
-    padding-left: 1rem;
+    padding-top: 1rem;
+    padding-left: 1.5rem;
     width: 22rem;
     flex-shrink: 0;
   }

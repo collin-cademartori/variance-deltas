@@ -44,14 +44,17 @@
 </div>
 
 <style>
-  #dialog {
+  #dialog { 
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 1rem;
-    border: 0.1rem solid black;
+    gap: 1rem;
+    padding: 1.5rem;
     border-radius: 0.2rem;
     width: 16rem;
+    border: 0.1rem solid rgb(106, 106, 106); 
+    /* rgb(119, 119, 119) */
+    box-shadow: 0rem 0.1rem 0.3rem 0rem rgb(213, 213, 213);
+    background: white;
   }
 
   #param_list {

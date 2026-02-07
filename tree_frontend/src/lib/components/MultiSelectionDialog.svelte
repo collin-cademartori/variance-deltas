@@ -35,14 +35,6 @@
 </script>
 
 <div id="dialog">
-  <button 
-    disabled={selected == null || selected.length == 0}
-    onclick={() => {
-      selection.clear();
-    }}
-  >
-    Clear Selection
-  </button>
   <div class="button_group" id="sel_type">
     <button 
       class:menu_enabled={selector.type === 'anc'}
@@ -57,8 +49,18 @@
       Exclude Nodes
     </button>
   </div>
-  <label for="text_input">{input_text}</label>
-  <input type="text" name="text_input" bind:value={user_text} />
+  <button 
+    disabled={selected == null || selected.length == 0}
+    onclick={() => {
+      selection.clear();
+    }}
+  >
+    Clear Selection
+  </button>
+  <div class="option">
+    <label for="text_input">{input_text}</label>
+    <input type="text" name="text_input" bind:value={user_text} />
+  </div>
   <button 
     id="submit_button" 
     disabled={selected == null || selected.length == 0}
@@ -83,14 +85,26 @@
   #dialog {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 1rem;
-    border: 0.1rem solid black;
+    gap: 1rem;
+    padding: 1.5rem;
     border-radius: 0.2rem;
     width: 16rem;
+    border: 0.1rem solid rgb(106, 106, 106); 
+    box-shadow: 0rem 0.1rem 0.3rem 0rem rgb(213, 213, 213);
+    background: white;
+  }
+
+  .option {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   #sel_type {
     width: 100%;
+  }
+
+  #sel_type > button {
+    width: 50%;
   }
 </style>

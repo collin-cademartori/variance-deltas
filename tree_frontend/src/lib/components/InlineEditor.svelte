@@ -49,9 +49,12 @@
   }
 
   #session_title_span {
-    text-decoration: underline;
     font-size: 1.2rem;
     white-space: nowrap;
+  }
+
+  #session_title_span:hover {
+    text-decoration: underline;
   }
 
   #session_title_input {
