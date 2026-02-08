@@ -236,7 +236,7 @@ export function setup_tree(coord: coordinates, l_height : number) {
     _tree = (stratify<flat_node>()
               .id((n : flat_node) => n.name.toString())
               .parentId((n : flat_node) => n.parent.toString()))(data);
-    const fil_data = (user_state.group == null) ? data : data.filter((node) => groups.get(user_state.group as string)?.has(node.name));
+    let fil_data = (user_state.group == null) ? data : data.filter((node) => groups.get(user_state.group as string)?.has(node.name));
     const global_data = {
       limit: user_state.global_limit,
       params: user_state.globals
@@ -247,9 +247,8 @@ export function setup_tree(coord: coordinates, l_height : number) {
       format: user_state.layout_format
     });
 
-    data = attach_names(data, user_state.names, global_data, render_config);
-    _svg_width = draw_labels(data, render_config, coord); // Measures rendered labels and sets lwidth
-    console.log(`Test width is: ${data[0].lwidth}`);
+    fil_data = attach_names(fil_data, user_state.names, global_data, render_config);
+    _svg_width = draw_labels(fil_data, render_config, coord); // Measures rendered labels and sets lwidth
     const ann_tree = attach_positions(fil_data, coord, render_config);
     const ft : flat_tree = [...ann_tree].map((n) => n.data);
     _svg_height = draw_tree(ft, coord, global_data, render_config, handlers, user_state.names);

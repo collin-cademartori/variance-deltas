@@ -66,11 +66,14 @@ function compute_xs_new(
             .id((n : flat_node) => n.name.toString())
             .parentId((n : flat_node) => n.parent.toString()))(ft);
 
+  let it = 1;
   for(const node of tree) {
     node.data.sortname = node.ancestors()
       .map((n) => n.data.shortname)
       .reverse()
       .reduce((p : string, n) => p + n, "");
+    node.data.depth = it;
+    ++it;
   }
 
   const leaf_sort = (l1 : tree_node, l2 : tree_node) => {
@@ -180,9 +183,8 @@ function compute_xs(
     for(const [nindex, node] of test_tree.descendants().sort(leaf_sort).entries()) {
       console.warn(`Can't compress past ${y_scale.invert(label_size)}, but fitting height is ${(0.9 / (num_nodes - 1))}`)
       node.data.x_pos = 0.05 + nindex * 1.1 * y_scale.invert(label_size); //Math.max((0.9 / (num_nodes - 1)), y_scale.invert(44));
-      if(node.data.depth == null) {
-        node.data.depth = node.ancestors().length;
-      }
+      console.error("SETTING DEPTH")
+      node.data.depth = 2;
     } 
   } else {
     const spacing_factor = compact ? 1.2 : 2.2;
@@ -203,10 +205,10 @@ function compute_xs(
         0);
         d.data.x_pos = x_tot / children.length;
       }
-
-      if(d.data.depth == null) {
-        d.data.depth = d.ancestors().length;
-      }
+      d.data.depth = 2;
+      // if(d.data.depth == null) {
+      //   d.data.depth = d.ancestors().length;
+      // }
     });
   }
 

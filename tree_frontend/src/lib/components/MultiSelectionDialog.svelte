@@ -2,6 +2,7 @@
   import type { flat_node } from "../state/types";
   import { selector, selection } from "$lib/state/selection.svelte";
   import { user_state } from "$lib/state/user_state.svelte";
+  import { slide } from "svelte/transition";
 
   type props_t = { 
     selected : Array<flat_node | undefined> | null,
@@ -34,77 +35,114 @@
 
 </script>
 
-<div id="dialog">
-  <div class="button_group" id="sel_type">
-    <button 
-      class:menu_enabled={selector.type === 'anc'}
-      onclick={() => selector.type = 'anc'}
-    >
-      Include Nodes
-    </button>
-    <button 
-      class:menu_enabled={selector.type === 'desc'}
-      onclick={() => selector.type = 'desc'}
-    >
-      Exclude Nodes
-    </button>
+<div id="dialog" transition:slide={{ duration: 200 }}>
+  <div class="option_container">
+    <span>Selection</span>
+    <div class="button_group" id="sel_type">
+      <button 
+        class:menu_enabled={selector.type === 'anc'}
+        onclick={() => selector.type = 'anc'}
+      >
+        Include Nodes
+      </button>
+      <button 
+        class:menu_enabled={selector.type === 'desc'}
+        onclick={() => selector.type = 'desc'}
+      >
+        Exclude Nodes
+      </button>
+    </div>
   </div>
-  <button 
-    disabled={selected == null || selected.length == 0}
-    onclick={() => {
-      selection.clear();
-    }}
-  >
-    Clear Selection
-  </button>
-  <div class="option">
-    <label for="text_input">{input_text}</label>
+  <div class="option_container">
+    <span>{input_text}</span>
     <input type="text" name="text_input" bind:value={user_text} />
   </div>
-  <button 
-    id="submit_button" 
-    disabled={selected == null || selected.length == 0}
-    onclick={() => button_action(user_text, node_names ?? [])}
-  >
-    {button_text}
-  </button>
+
+  <div id="final_buttons">
+    <button 
+      disabled={selected == null || selected.length == 0}
+      onclick={() => {
+        selection.clear();
+      }}
+      class="minor_button"
+    >
+      Clear Selection
+    </button>
+    <button 
+      id="submit_button" 
+      disabled={selected == null || selected.length == 0}
+      onclick={() => button_action(user_text, node_names ?? [])}
+    >
+      {button_text}
+    </button>
+  </div>
 </div>
 
 <style>
-  label {
+  .option_container {
+    display: flex;
+    flex-direction: row;
+    /* gap: 0.5rem; */
+    /* padding: 0 1.5rem 0.5rem 1.5rem; */
+    align-items: center;
+  }
+
+  .option_container > span {
+    margin-right: auto;
+  }
+
+  #sel_type {
+    width: 13.5rem;
+  }
+
+  span {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     font-size: 0.8rem;
   }
 
   input[type="text"] {
+    box-sizing: border-box;
     border: 0.1rem solid black;
     border-radius: 0.2rem;
     padding: 0.2rem;
+    width: 13.5rem;
+  }
+
+  #final_buttons {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: right;
+    gap: 0.5rem;
+  }
+
+  #final_buttons > .minor_button {
+    background: none;
+    border: none;
+  }
+
+  #final_buttons > .minor_button:hover {
+    background: none;
+    border: none;
+    text-decoration: underline;
   }
 
   #dialog {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    padding: 1.5rem;
-    border-radius: 0.2rem;
+    padding: 1rem 1rem 1rem 1rem;
+    /* border-radius: 0.2rem;
     width: 16rem;
     border: 0.1rem solid rgb(106, 106, 106); 
     box-shadow: 0rem 0.1rem 0.3rem 0rem rgb(213, 213, 213);
-    background: white;
+    background: white; */
   }
 
-  .option {
+  /* .option {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-  }
+  } */
 
-  #sel_type {
-    width: 100%;
-  }
-
-  #sel_type > button {
-    width: 50%;
-  }
 </style>

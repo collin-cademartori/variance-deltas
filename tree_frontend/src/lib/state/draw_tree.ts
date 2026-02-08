@@ -377,11 +377,10 @@ export function draw_tree(
     update.select(".label-div")
       .style("border-top-left-radius", (d) => (d.x_pos ?? 0) > (d.label_y ?? 0) ? "8px" : "2px")
       .style("border-bottom-left-radius", (d) => (d.x_pos ?? 0) > (d.label_y ?? 0) ? "2px" : "8px");
-    // update.select(".depth_tag")
-    //   .html((d : flat_node) => {
-    //     console.log(`Updating node label for ${d.name}`);
-    //     return(d.depth?.toString() ?? "")
-    //   });
+    update.select(".depth_tag")
+      .html((d : flat_node) => {
+        return(d.depth?.toString() ?? "")
+      });
     return update
   },
   (exit) => {
@@ -403,7 +402,7 @@ export function draw_tree(
         update.select(".pname_div")
           .html((d : string) => {
             return(d.split("[")[0])
-          })
+          });
         return(update)
       },
       (exit) => {
@@ -529,7 +528,7 @@ function make_label_container(
     .style("font-weight", "normal")
     .style("font-size", "0.7em")
     .style("user-select", "none")
-    // .html((d : flat_node) => d.depth?.toString() || "");
+    .html((d : flat_node) => d.depth?.toString() || "");
 
   ld.append("xhtml:div")
     .attr("class", "params_list")
