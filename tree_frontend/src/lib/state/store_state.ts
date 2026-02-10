@@ -2,7 +2,7 @@ import { SvelteMap } from "svelte/reactivity";
 import { browser } from "$app/environment";
 import { type name_t } from "./names.ts";
 
-export function store_state(sid : string | undefined, state_prefix : string, state : boolean | string | object) {
+export function store_state(sid : string | undefined, state_prefix : string, state : boolean | string | object | undefined) {
   if(browser && sid) {
     const item_key = `${sid}-${state_prefix}`;
     if(state instanceof SvelteMap) {

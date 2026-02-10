@@ -136,7 +136,7 @@ int main(int argc, char* argv[]) {
   handle_method("save_state", [&](json args){
     cout << "Saving backend state to archive." << endl;
     std::string fname = args.at("fname");
-    std::replace(fname.begin(), fname.end(), ' ', '_');
+    cout << fname << endl;
     try {
       save_state(*mtree, root_node, state.fg, state.fg_params, state.fg_facs, state.sid, fname + ".vds");
     } catch (std::runtime_error e) {

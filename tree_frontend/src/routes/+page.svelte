@@ -276,14 +276,16 @@
     padding-bottom: 2rem; */
     background-color: rgb(251, 251, 251);
     padding-left: 2rem;
+    height: 100dvh;
   }
 
   #main_view {
     display: flex;
     flex-direction: row;
-    height: 93dvh;
     overflow-y: hidden;
     overflow-x: hidden;
+    height: 100%;
+    padding-bottom: 2rem;
   }
 
   #session_top {
@@ -300,30 +302,41 @@
     flex-direction: column;
     min-width: 0;
     overflow-x: auto;
+    overflow-y: clip;
     background-color: white;
     border-radius: 0.2rem;
-    padding: 0 2rem 0 2rem;
+    /* padding: 0 2rem 0 2rem; */
     border: 0.1rem solid rgb(106, 106, 106); 
     box-shadow: 0rem 0.1rem 0.3rem 0rem rgb(213, 213, 213);
     height: fit-content;
+    max-height: 100%;
   }
 
   #tree_container {
+    flex-basis: auto;
+    flex-shrink: 2;
+    flex-grow: 1;
     display: flex;
     flex-direction: row;
     overflow-y: auto;
     overflow-x: clip;
-    flex-shrink: 0;
     width: fit-content;
     padding-top: 2rem;
+    /* height: 100%; */
   }
 
-  #tree {
-    flex-shrink: 0;
+  #vis_container > * {
+    padding: 0 2rem 0 2rem;
   }
+
+  /* #tree {
+    flex-shrink: 0;
+  } */
 
   #axis_container {
-    overflow-y: hidden;
+    flex-basis: 5rem;
+    flex-shrink: 1;
+    overflow-y: clip;
     overflow-x: clip;
     width: fit-content;
   }
@@ -333,7 +346,7 @@
     flex-direction: column;
     gap: 0.5rem;
     /* padding-top: 1rem; */
-    padding-left: 1.5rem;
+    padding: 0 1.5rem 0 1.5rem;
     width: 22rem;
     flex-shrink: 0;
   }

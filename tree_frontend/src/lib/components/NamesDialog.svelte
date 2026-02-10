@@ -2,6 +2,7 @@
   import { user_state } from "$lib/state/user_state.svelte";
   import { SvelteMap } from "svelte/reactivity";
   import NameEditor from "./NameEditor.svelte";
+  import { onMount, untrack } from "svelte";
 
   type ptype = {
     fullname : string,
@@ -18,6 +19,7 @@
   
   $effect(() => {
     if(show_dialog) {
+      untrack(reset_names);
       dialog.showModal();
     } else {
       dialog.close();
@@ -46,8 +48,6 @@
         });
     });
   }
-
-  reset_names();
 </script>
 
 <dialog id="names_dialog" bind:this={dialog}>

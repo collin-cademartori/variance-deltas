@@ -72,9 +72,7 @@ export const user_state : state_t = $state({
   },
   set group(group : string | undefined) {
     _group = group;
-    if(group != null) {
-      store_state(_session_id, "group", group);
-    }
+    store_state(_session_id, "group", group);
     selection.clear();
     if(_tree != null) {
       _create_tree([..._tree].map((n) => n.data));
@@ -108,7 +106,7 @@ export const user_state : state_t = $state({
   set names(new_names : SvelteMap<string, name_t>) {
     _names = new_names;
     store_state(_session_id, "names", new_names)
-   if(_tree != null) {
+    if(_tree != null) {
       _create_tree([..._tree].map((n) => n.data));
     }
   },
@@ -129,7 +127,7 @@ export const user_state : state_t = $state({
     _fname = restore_state_string(_session_id, "fname", undefined);
     _group = restore_state_string(_session_id, "group", undefined);
     _layout_format = restore_state_string(_session_id, "layout_format", 'normal') as "long" | "normal";
-    _show_globals = restore_state_bool(_session_id, "show_globals", true);
+    _show_globals = restore_state_bool(_session_id, "show_globals", false);
     _names = restore_state_map(_session_id, "names", [["__globals__", {
       type: 'latex',
       name: '\\bar{g}',

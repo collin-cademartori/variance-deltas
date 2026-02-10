@@ -20,10 +20,10 @@
   }
 
   function run_save(e : KeyboardEvent | MouseEvent, fname? : string) {
-    if(!user_state.fname && fname && fname.length > 0) {
-      user_state.fname = fname;
-    }
     if(!is_key_event(e) || e.key === "Enter") {
+      if(!user_state.fname && fname && fname.length > 0) {
+        user_state.fname = fname;
+      }
       if(user_state.fname) {
         saving = true;
         failed = false;
@@ -53,7 +53,7 @@
 </dialog>
 
 <div id="save_container">
-  <button id="save_button" onclick={run_save}>Save</button>
+  <button id="save_button" onclick={(e) => run_save(e, save_input.value)}>Save</button>
   {#if failed}
     <span id="failed_indicator">
       Failed to save!
