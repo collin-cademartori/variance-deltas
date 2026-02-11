@@ -23,11 +23,14 @@ let rec typeof_stmt env = function
       let farg_type, fret_type = List.assoc f func_types in
       let arg_types = (List.map (fun x -> typeof_stmt env x) args) in
       if List.for_all2 (fun a fa  -> a = fa) arg_types farg_type then fret_type else
-        let find_bad_arg = (fun i a -> if a <> (List.nth farg_type i) then Some (a, List.nth farg_type i, i) else None) in
-        let _, _, i = Option.get (List.find_mapi find_bad_arg arg_types) in
+        (* let find_bad_arg = (fun i a -> if a <> (List.nth farg_type i) then Some (a, List.nth farg_type i, i) else None) in *)
+        raise (TypeError (
+          "Argument has incorrect type.",
+          loc))
+        (* let _, _, i = Option.get (List.find_mapi find_bad_arg arg_types) in
         raise (TypeError (
           "Argument at position " ^ (string_of_int i) ^ " has incorrect type.",
-          loc))
+          loc)) *)
     with
       | Not_found -> raise (TypeError ("No such function.", loc))
     end
