@@ -237,7 +237,11 @@ print_info "Building graph_backend (C++)..."
 cd "$SCRIPT_DIR/graph_backend"
 mkdir -p build
 cd build
-if cmake -DCMAKE_BUILD_TYPE=Release ../src; then
+CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Release"
+if [ -n "$CMAKE_PREFIX_PATH" ]; then
+    CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH"
+fi
+if cmake $CMAKE_ARGS ../src; then
     print_success "CMake configuration completed (Release mode)"
 else
     print_error "CMake configuration failed"
