@@ -121,7 +121,7 @@ else
 
     # nlohmann_json check (package name varies)
     if pkg-config --exists nlohmann_json 2>/dev/null; then
-        local version=$(pkg-config --modversion nlohmann_json 2>/dev/null || echo "unknown")
+        version=$(pkg-config --modversion nlohmann_json 2>/dev/null || echo "unknown")
         print_success "nlohmann_json found via pkg-config (version: $version)"
     elif [ -f "/usr/include/nlohmann/json.hpp" ] || [ -f "/usr/local/include/nlohmann/json.hpp" ] || [ -f "/opt/homebrew/include/nlohmann/json.hpp" ]; then
         print_success "nlohmann_json found (header detected)"
