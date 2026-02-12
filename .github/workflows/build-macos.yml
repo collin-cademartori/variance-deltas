@@ -38,7 +38,7 @@ jobs:
 
       - name: Build
         run: |
-          export CMAKE_PREFIX_PATH="$(brew --prefix openssl@3)"
+          export CMAKE_PREFIX_PATH="$(brew --prefix openssl@3):$(brew --prefix boost)"
           eval $(opam env)
           ./build.sh
 
