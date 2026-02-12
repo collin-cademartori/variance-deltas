@@ -9,7 +9,7 @@ set(OPENSSL_USE_STATIC_LIBS True)
 set(ZLIB_USE_STATIC_LIBS On)
 
 find_package(Boost REQUIRED COMPONENTS filesystem process program_options serialization)
-find_package(Eigen3 REQUIRED NO_MODULE)
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(nlohmann_json 3.12.0 REQUIRED)
