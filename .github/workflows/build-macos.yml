@@ -22,7 +22,11 @@ jobs:
           submodules: recursive
 
       - name: Install C++ libraries
-        run: brew install boost eigen openssl@3 zlib nlohmann-json
+        run: |
+          brew install boost eigen openssl@3 zlib nlohmann-json
+          git clone --depth 1 https://gitlab.com/eidheim/Simple-WebSocket-Server.git /tmp/simple-ws
+          sudo mkdir -p /usr/local/include/simple-websocket-server
+          sudo cp /tmp/simple-ws/*.hpp /usr/local/include/simple-websocket-server/
 
       - name: Set up OCaml
         uses: ocaml/setup-ocaml@v3
