@@ -18,7 +18,6 @@ depends: [
   "yojson"
   "ppx_sexp_conv"
   "ppx_yojson_conv"
-  "owl"
   "menhir"
   "menhirLib"
   "odoc" {with-doc}

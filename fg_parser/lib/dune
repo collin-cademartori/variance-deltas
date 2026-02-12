@@ -19,6 +19,6 @@
  (public_name fg_parser)
  (preprocess
   (pps ppx_sexp_conv ppx_yojson_conv))
- (modules ast simppl_parser simppl_lexer semantic static_env interpreter read_data simppl_errors parse_file lib_types)
- (libraries core owl menhirLib))
+ (modules ast simppl_parser simppl_lexer semantic static_env interpreter read_data simppl_errors parse_file lib_types ndarray)
+ (libraries core menhirLib))
  

@@ -1,14 +1,12 @@
 (* open! Ppx_yojson_conv_lib.Yojson_conv.Primitives *)
 
-module Arr = Owl.Dense.Ndarray.Generic
-
 exception RuntimeError of string * Ast.meta
 exception BoundsError of string
 exception DataError of string
 
 type factor_graph = (string * (string list)) list
 
-type int_data = (int, Bigarray.int_elt) Arr.t
+type int_data = (int, Bigarray.int_elt) Ndarray.t
 let int_kind = Bigarray.Int16_unsigned
 
 type data_environment = (string * int_data) list
@@ -20,7 +18,7 @@ type tree_data = {
   leaves: string list list
 }
 
-let index_from_array arr = Arr.init int_kind [|Array.length arr|] (fun i -> arr.(i))
+let index_from_array arr = Ndarray.init int_kind [|Array.length arr|] (fun i -> arr.(i))
 
 let append_dim grid new_dim =
   List.concat (List.map (fun x -> List.map (fun y -> x :: y) grid) new_dim)
@@ -32,7 +30,7 @@ let rec expand_grid = function
 
 let get_fancy_int ind_exts arr = (* let indices = expand_grid ind_exts in *)
   let dims = Array.map (fun ext -> Array.length ext) ind_exts in
-  Arr.init_nd int_kind dims (fun index -> try Arr.get arr (
+  Ndarray.init_nd int_kind dims (fun index -> try Ndarray.get arr (
     Array.mapi (fun ai a -> 
       try ind_exts.(ai).(a) - 1
       with Invalid_argument _ -> begin
@@ -54,50 +52,48 @@ let form_indexed_names vname indices param_ctx =
   ) expanded_indices
 
 let can_flatten arr = 
-  (Array.fold_left (fun count dim -> if(dim > 1) then count+1 else count) 0 (Arr.shape arr)) <= 1
+  (Array.fold_left (fun count dim -> if(dim > 1) then count+1 else count) 0 (Ndarray.shape arr)) <= 1
 
 let to_int_lists index_arrs = List.map
-  (fun i_arr -> if (can_flatten i_arr) then Array.to_list (Arr.to_array i_arr)
+  (fun i_arr -> if (can_flatten i_arr) then Array.to_list (Ndarray.to_array i_arr)
   else raise (DataError (
     "Cannot convert multi-dimensional array to index list: " 
-    ^ String.concat ", " (Array.to_list (Array.map string_of_int (Arr.shape i_arr)))
+    ^ String.concat ", " (Array.to_list (Array.map string_of_int (Ndarray.shape i_arr)))
   ))) 
   index_arrs
 
-let to_index_list index_arrs = List.map (fun int_l -> Owl_types_common.L int_l) (to_int_lists index_arrs)
+let ar_singleton i = Ndarray.create int_kind [|1|] i
 
-let ar_singleton i = Arr.create int_kind [|1|] i
-
-let ar_seq sv ev = if (sv <= ev) then Arr.sequential int_kind ~a:sv ~step:1 [|(ev-sv+1)|]
+let ar_seq sv ev = if (sv <= ev) then Ndarray.sequential int_kind ~a:sv ~step:1 [|(ev-sv+1)|]
   else raise (DataError "Sequence start value must be less or equal to end value.")
 
 let apply2_arr f = function
-  | [a1; a2] -> if (Arr.shape a1 = [|1|] && Arr.shape a2 = [|1|]) then f (Arr.get a1 [|0|]) (Arr.get a2 [|0|]) else
+  | [a1; a2] -> if (Ndarray.shape a1 = [|1|] && Ndarray.shape a2 = [|1|]) then f (Ndarray.get a1 [|0|]) (Ndarray.get a2 [|0|]) else
       raise (DataError "Arguments not scalars.")
   | _ -> raise (DataError "Wrong number of arguments.")
 
 let rec expand_extent data_env = function
   | Ast.Lit (_, loc) -> raise (RuntimeError ("Loop extents must have integer type.", loc))
-  | Ast.LitInt (i, _) -> Arr.create int_kind [|1|] i
+  | Ast.LitInt (i, _) -> Ndarray.create int_kind [|1|] i
   | Ast.Range (vl, vu, loc) -> let vle = expand_extent data_env vl in
     let vue = expand_extent data_env vu in
-    if(Arr.shape vle = [|1|] && Arr.shape vue = [|1|]) then try
-      ar_seq (Arr.get vle [|0|]) (Arr.get vue [|0|])
+    if(Ndarray.shape vle = [|1|] && Ndarray.shape vue = [|1|]) then try
+      ar_seq (Ndarray.get vle [|0|]) (Ndarray.get vue [|0|])
     with DataError msg -> raise (RuntimeError (msg, loc))
     else raise (RuntimeError ("Sequence lower and upper bounds must have integer type.", loc))
   | Ast.Func (f, arg_stmts, loc) -> 
     let args = List.map (fun ars -> expand_extent data_env ars) arg_stmts in
     begin try match f with
-      | Add -> Arr.create int_kind [|1|] (apply2_arr (+) args)
-      | Max -> Arr.create int_kind [|1|] (apply2_arr max args)
-      | Min -> Arr.create int_kind [|1|] (apply2_arr min args)
-      | Sub -> Arr.create int_kind [|1|] (apply2_arr (-) args)
+      | Add -> Ndarray.create int_kind [|1|] (apply2_arr (+) args)
+      | Max -> Ndarray.create int_kind [|1|] (apply2_arr max args)
+      | Min -> Ndarray.create int_kind [|1|] (apply2_arr min args)
+      | Sub -> Ndarray.create int_kind [|1|] (apply2_arr (-) args)
     with
       | DataError err -> raise (RuntimeError ("Error applying function: " ^ err, loc))
     end
   | Ast.Var (vn, i_stmts, loc) -> 
     let indices = List.map (fun i_stmt -> expand_extent data_env i_stmt) i_stmts in
-    let index_list = Array.of_list (List.map (fun ind -> Arr.to_array ind) indices) in try
+    let index_list = Array.of_list (List.map (fun ind -> Ndarray.to_array ind) indices) in try
     let v_array_opt =  List.assoc vn data_env in
       let v_array = Option.get v_array_opt in
       match index_list with
@@ -120,9 +116,9 @@ let rec expand_extent data_env = function
 
 let expand_integer data_env stmt =
   let maybe_int = expand_extent data_env stmt in
-  if (Arr.shape maybe_int = [|1|]) then begin 
+  if (Ndarray.shape maybe_int = [|1|]) then begin 
     try 
-      Arr.get maybe_int [|0|]
+      Ndarray.get maybe_int [|0|]
     with
       | Not_found -> raise (DataError "Variable not found.")
     end
@@ -156,7 +152,7 @@ let rec eval_sample fg param_ctx data_env = function
     let d_name = if is_data then (String.concat ";" v_name) ^"_lik" else (String.concat ";" v_name) ^ "_dist" in
       (d_name, (if is_data then [] else v_name) @ p_names) :: fg
   | Ast.For (l_index, l_extent, l_body, _) -> 
-    let ext_list = Array.to_list (Arr.to_array (expand_extent data_env l_extent)) in
+    let ext_list = Array.to_list (Ndarray.to_array (expand_extent data_env l_extent)) in
     let stmt_vals = List.map (fun i_val -> 
         eval_samples_with [] param_ctx data_env l_index i_val l_body
       ) ext_list in
@@ -183,7 +179,7 @@ let rec eval_tree_stmt tree param_ctx data_env = function
       | DataError _ -> raise (RuntimeError ("All arguments to leaf declaration must be model parameters, not input data.", l_loc))
     end
   | Ast.TreeFor (l_index, l_extent, l_body, _) -> 
-    let ext_list = Array.to_list (Arr.to_array (expand_extent data_env l_extent)) in
+    let ext_list = Array.to_list (Ndarray.to_array (expand_extent data_env l_extent)) in
     let stmt_vals = List.map (fun i_val -> 
         eval_tree_stmts_with {root = tree.root; leaves = []} param_ctx data_env l_index i_val l_body
       ) ext_list in

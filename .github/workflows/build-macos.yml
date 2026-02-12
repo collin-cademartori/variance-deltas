@@ -22,7 +22,7 @@ jobs:
           submodules: recursive
 
       - name: Install C++ libraries
-        run: brew install boost eigen openssl@3 zlib nlohmann-json openblas libomp
+        run: brew install boost eigen openssl@3 zlib nlohmann-json
 
       - name: Set up OCaml
         uses: ocaml/setup-ocaml@v3
@@ -39,9 +39,6 @@ jobs:
       - name: Build
         run: |
           export CMAKE_PREFIX_PATH="$(brew --prefix openssl@3)"
-          export PKG_CONFIG_PATH="$(brew --prefix openblas)/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
-          export CFLAGS="-I$(brew --prefix libomp)/include $CFLAGS"
-          export LDFLAGS="-L$(brew --prefix libomp)/lib -lomp $LDFLAGS"
           eval $(opam env)
           ./build.sh
 

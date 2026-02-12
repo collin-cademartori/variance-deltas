@@ -1,7 +1,5 @@
 open Yojson.Basic.Util
 
-module Arr = Owl.Dense.Ndarray.Generic
-
 exception DataError of string * Ast.meta
 exception ConversionError of string * int
 exception IndexError of int * int
@@ -33,7 +31,7 @@ let rec to_int_lists n json = if n = 0 then try
   else raise (LocalError "Cannot parse integer lists of dimensions less than 1.")
 
 let to_marray dims ints = if ints = L [||] then None else Some
- (Arr.init_nd Interpreter.int_kind dims (fun index -> 
+ (Ndarray.init_nd Interpreter.int_kind dims (fun index -> 
    try get_from_int_lists (Array.to_list index) ints
    with IndexError (i_err, n_rem) -> raise (LocalError (
       "Error indexing dimension "
