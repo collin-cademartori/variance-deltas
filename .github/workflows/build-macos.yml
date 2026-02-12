@@ -22,7 +22,7 @@ jobs:
           submodules: recursive
 
       - name: Install C++ libraries
-        run: brew install boost eigen openssl@3 zlib nlohmann-json openblas
+        run: brew install boost eigen openssl@3 zlib nlohmann-json openblas libomp
 
       - name: Set up OCaml
         uses: ocaml/setup-ocaml@v3
