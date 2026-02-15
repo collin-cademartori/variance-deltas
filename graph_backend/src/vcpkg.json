@@ -1,4 +1,5 @@
 {
+  "builtin-baseline": "e1b30bc33f9b985be5eeb7b0d5d52b70d5a3ec23",
   "dependencies": [
     "boost-filesystem",
     "boost-process",
@@ -8,5 +9,8 @@
     "nlohmann-json",
     "openssl",
     "zlib"
+  ],
+  "overrides": [
+    { "name": "eigen3", "version": "3.4.0", "port-version": 5 }
   ]
 }
