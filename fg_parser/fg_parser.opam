@@ -14,7 +14,7 @@ bug-reports: "https://github.com/username/reponame/issues"
 depends: [
   "dune" {>= "3.20"}
   "ocaml"
-  "core"
+  "sexplib"
   "yojson"
   "ppx_sexp_conv"
   "ppx_yojson_conv"
