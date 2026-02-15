@@ -1,4 +1,4 @@
-open Sexplib.Std
+open! Sexplib.Std
 open Lexing
 open Lib_types
 

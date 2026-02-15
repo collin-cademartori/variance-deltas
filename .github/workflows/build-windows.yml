@@ -36,8 +36,9 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Cache vcpkg packages
-        uses: actions/cache@v4
+      - name: Restore vcpkg cache
+        id: vcpkg-cache-restore
+        uses: actions/cache/restore@v4
         with:
           path: ${{ github.workspace }}\.vcpkg-archives
           key: vcpkg-x64-windows-static-${{ hashFiles('graph_backend/src/vcpkg.json') }}
@@ -50,6 +51,14 @@ jobs:
           vcpkg install --triplet x64-windows-static
         env:
           VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\.vcpkg-archives
+          VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}\\.vcpkg-archives,readwrite"
+
+      - name: Save vcpkg cache
+        if: steps.vcpkg-cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}\.vcpkg-archives
+          key: vcpkg-x64-windows-static-${{ hashFiles('graph_backend/src/vcpkg.json') }}
 
       - name: Install Simple-WebSocket-Server headers
         run: |
