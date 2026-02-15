@@ -49,6 +49,16 @@ jobs:
           dune-cache: true
           opam-local-packages: fg_parser/*.opam
 
+      - name: Fix base_bigstring Windows availability
+        # The opam-repository entry for base_bigstring v0.17.0 has a stale
+        # `available: os != "win32"` condition that blocks core on Windows.
+        # The v0.17.0 source itself has the correct metadata (no OS restriction).
+        # Pinning to the stable tag makes opam read availability from source.
+        run: opam pin add --no-action base_bigstring git+https://github.com/janestreet/base_bigstring.git#v0.17.0
+
+      - name: Install fg_parser OCaml dependencies
+        run: opam install fg_parser --deps-only -y
+
       - name: Set up Deno
         uses: denoland/setup-deno@v2
         with:
