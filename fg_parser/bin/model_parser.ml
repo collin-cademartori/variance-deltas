@@ -3,7 +3,6 @@ open Fg_parser.Semantic
 open Fg_parser.Interpreter
 open Fg_parser.Read_data
 open Lexing
-open Sexplib
 open Format
 open Yojson.Basic
 open Fg_parser.Parse_file
