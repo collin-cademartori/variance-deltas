@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if(WIN32)
-  add_compile_definitions(_WIN32_WINNT=0x0A00)
+  add_compile_definitions(_WIN32_WINNT=0x0A00 WIN32_LEAN_AND_MEAN)
 endif()
 set(Boost_USE_STATIC_LIBS True)
 set(OPENSSL_USE_STATIC_LIBS True)
