@@ -43,7 +43,6 @@ function Check-Tool {
 }
 
 Check-Tool "opam"  "Install opam for Windows: https://github.com/ocaml/opam/releases"
-Check-Tool "dune"  "Install dune: opam install dune"
 Check-Tool "cmake" "Install cmake via Visual Studio Build Tools or https://cmake.org"
 Check-Tool "deno"  "Install deno: winget install DenoLand.Deno"
 
@@ -53,9 +52,7 @@ if ($MissingTools.Count -gt 0) {
     exit 1
 }
 
-Print-Success "All required build tools found!"
-
-# Set up opam environment
+# Set up opam environment before checking for dune (dune lives in the opam switch)
 Print-Info "Setting up opam environment..."
 try {
     $opamEnv = opam env --shell=powershell | Out-String
@@ -65,6 +62,16 @@ try {
     Print-Warning "Could not configure opam environment automatically: $_"
     Print-Warning "Continuing — opam exec will be used for OCaml builds"
 }
+
+Check-Tool "dune" "Install dune: opam install dune"
+
+if ($MissingTools.Count -gt 0) {
+    Print-Error "Missing required tools: $($MissingTools -join ', ')"
+    Print-Error "Please install the missing tools and try again."
+    exit 1
+}
+
+Print-Success "All required build tools found!"
 
 # ============================================================================
 # Phase 1.5: C++ Library Dependency Check
