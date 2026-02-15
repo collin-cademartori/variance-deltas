@@ -24,15 +24,17 @@ jobs:
       - name: Cache vcpkg packages
         uses: actions/cache@v4
         with:
-          path: ${{ runner.temp }}\vcpkg-archives
+          path: ${{ github.workspace }}\.vcpkg-archives
           key: vcpkg-x64-windows-static-${{ hashFiles('graph_backend/src/vcpkg.json') }}
           restore-keys: vcpkg-x64-windows-static-
 
       - name: Install vcpkg dependencies
         working-directory: graph_backend/src
-        run: vcpkg install --triplet x64-windows-static
+        run: |
+          New-Item -ItemType Directory -Path "${{ github.workspace }}\.vcpkg-archives" -Force | Out-Null
+          vcpkg install --triplet x64-windows-static
         env:
-          VCPKG_DEFAULT_BINARY_CACHE: ${{ runner.temp }}\vcpkg-archives
+          VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\.vcpkg-archives
 
       - name: Install Simple-WebSocket-Server headers
         run: |
