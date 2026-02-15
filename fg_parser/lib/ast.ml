@@ -4,9 +4,9 @@ open Lib_types
 
 type meta = position * position
 
-let sexp_of_meta (st, en) = Sexp.List [
-  Sexp.Atom (string_of_int st.pos_cnum);
-  Sexp.Atom (string_of_int en.pos_cnum)
+let sexp_of_meta (st, en) = Sexplib0.Sexp.List [
+  Sexplib0.Sexp.Atom (string_of_int st.pos_cnum);
+  Sexplib0.Sexp.Atom (string_of_int en.pos_cnum)
 ]
 
 type datatype = Bool | Int | IArray | Real | Array

@@ -42,7 +42,7 @@ let () =
   let data_json = from_file file_name in
   let tree, text = parse_model !spec_file in (*"./test_spec"*)
     try begin
-      if print_tree then fprintf std_formatter "%a@." Sexp.pp_hum (sexp_of_model sexp_of_meta tree);
+      if print_tree then fprintf std_formatter "%a@." Sexplib0.Sexp.pp_hum (sexp_of_model sexp_of_meta tree);
       check_model tree;
       let data_env = parse_data tree.data_block data_json in
       let fg = eval_model data_env tree.data_block tree.params_block tree.model_block in
