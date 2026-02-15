@@ -21,27 +21,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Cache vcpkg packages
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}\.vcpkg-archives
-          key: vcpkg-x64-windows-static-${{ hashFiles('graph_backend/src/vcpkg.json') }}
-          restore-keys: vcpkg-x64-windows-static-
-
-      - name: Install vcpkg dependencies
-        working-directory: graph_backend/src
-        run: |
-          New-Item -ItemType Directory -Path "${{ github.workspace }}\.vcpkg-archives" -Force | Out-Null
-          vcpkg install --triplet x64-windows-static
-        env:
-          VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\.vcpkg-archives
-
-      - name: Install Simple-WebSocket-Server headers
-        run: |
-          git clone --depth 1 https://gitlab.com/eidheim/Simple-WebSocket-Server.git $env:TEMP\simple-ws
-          New-Item -ItemType Directory -Path "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static\include\simple-websocket-server" -Force | Out-Null
-          Copy-Item "$env:TEMP\simple-ws\*.hpp" "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static\include\simple-websocket-server\"
-
       - name: Set up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
@@ -63,6 +42,27 @@ jobs:
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+
+      - name: Cache vcpkg packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}\.vcpkg-archives
+          key: vcpkg-x64-windows-static-${{ hashFiles('graph_backend/src/vcpkg.json') }}
+          restore-keys: vcpkg-x64-windows-static-
+
+      - name: Install vcpkg dependencies
+        working-directory: graph_backend/src
+        run: |
+          New-Item -ItemType Directory -Path "${{ github.workspace }}\.vcpkg-archives" -Force | Out-Null
+          vcpkg install --triplet x64-windows-static
+        env:
+          VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\.vcpkg-archives
+
+      - name: Install Simple-WebSocket-Server headers
+        run: |
+          git clone --depth 1 https://gitlab.com/eidheim/Simple-WebSocket-Server.git $env:TEMP\simple-ws
+          New-Item -ItemType Directory -Path "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static\include\simple-websocket-server" -Force | Out-Null
+          Copy-Item "$env:TEMP\simple-ws\*.hpp" "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static\include\simple-websocket-server\"
 
       - name: Build
         shell: pwsh
