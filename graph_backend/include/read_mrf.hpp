@@ -1,6 +1,8 @@
 #pragma once
 
-#include<factor_graph.hpp>
+#include <string>
+#include <utility>
+#include <factor_graph.hpp>
 
 std::pair<MRF, VertexMap> read_mrf(std::string mrf_file_path);
 

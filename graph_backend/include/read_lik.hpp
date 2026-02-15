@@ -2,6 +2,8 @@
 
 #include <map>
 #include <set>
+#include <string>
+#include <tuple>
 #include <factor_graph.hpp>
 
 typedef std::map<std::string, std::set<std::string>> lik_facs;

@@ -1,3 +1,6 @@
+#include <functional>
+#include <optional>
+#include <string>
 #include <nlohmann/json.hpp>
 
 void initialize_ws_client(const std::string& host, int port);

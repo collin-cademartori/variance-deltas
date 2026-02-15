@@ -1,6 +1,9 @@
 #pragma once
 
 #include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 typedef std::vector<std::set<std::string>> leaves_t;
 

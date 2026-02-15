@@ -1,3 +1,6 @@
+#include <map>
+#include <set>
+#include <string>
 #include <read_stan.hpp>
 #include <Eigen/Dense>
 

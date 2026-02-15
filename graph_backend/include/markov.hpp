@@ -1,3 +1,11 @@
+#include <functional>
+#include <list>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 #include <parameter_graph.hpp>
 #include <read_stan.hpp>
 #include <Eigen/Dense>

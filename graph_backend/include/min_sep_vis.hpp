@@ -1,4 +1,6 @@
+#include <map>
 #include <set>
+#include <string>
 #include <boost/graph/breadth_first_search.hpp>
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/graph/adjacency_list.hpp>

@@ -63,8 +63,8 @@ jobs:
       - name: Install Simple-WebSocket-Server headers
         run: |
           git clone --depth 1 https://gitlab.com/eidheim/Simple-WebSocket-Server.git $env:TEMP\simple-ws
-          New-Item -ItemType Directory -Path "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static\include\simple-websocket-server" -Force | Out-Null
-          Copy-Item "$env:TEMP\simple-ws\*.hpp" "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static\include\simple-websocket-server\"
+          New-Item -ItemType Directory -Path "${{ github.workspace }}\graph_backend\include\simple-websocket-server" -Force | Out-Null
+          Copy-Item "$env:TEMP\simple-ws\*.hpp" "${{ github.workspace }}\graph_backend\include\simple-websocket-server\"
 
       - name: Build
         shell: pwsh

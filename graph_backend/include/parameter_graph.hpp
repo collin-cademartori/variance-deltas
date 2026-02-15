@@ -1,5 +1,10 @@
 #pragma once
 
+#include <map>
+#include <optional>
+#include <set>
+#include <string>
+#include <vector>
 #include <boost/graph/adjacency_list.hpp>
 
 typedef std::set<std::string> vertex_names;
