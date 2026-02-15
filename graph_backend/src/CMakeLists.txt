@@ -12,7 +12,7 @@ find_package(Boost REQUIRED COMPONENTS filesystem process program_options serial
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
-find_package(nlohmann_json 3.12.0 REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 set(GRAPH_SOURCES mrf.cpp markov.cpp ws_client.cpp read_mrf.cpp read_lik.cpp read_stan.cpp regression.cpp serialize_tree.cpp lik_complexity.cpp read_tree_data.cpp regression_rf.cpp parse_options.cpp run_model_parser.cpp save_state.cpp)
 add_executable(graph_test ${GRAPH_SOURCES})
