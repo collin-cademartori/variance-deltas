@@ -173,8 +173,7 @@ $CmakeArgs = @(
     "-G", "Visual Studio 17 2022",
     "-A", "x64",
     "-DCMAKE_BUILD_TYPE=Release",
-    "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded",
-    "-DVCPKG_MANIFEST_INSTALL=OFF"
+    "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded"
 )
 if ($env:VCPKG_ROOT) {
     $CmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake"

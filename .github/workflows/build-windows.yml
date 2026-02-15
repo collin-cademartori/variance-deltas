@@ -71,6 +71,9 @@ jobs:
         run: |
           $env:VCPKG_ROOT = $env:VCPKG_INSTALLATION_ROOT
           .\build.ps1
+        env:
+          VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\.vcpkg-archives
+          VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}\\.vcpkg-archives,readwrite"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
