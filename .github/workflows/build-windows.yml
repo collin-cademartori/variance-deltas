@@ -29,7 +29,8 @@ jobs:
           restore-keys: vcpkg-x64-windows-static-
 
       - name: Install vcpkg dependencies
-        run: vcpkg install --triplet x64-windows-static --manifest-root graph_backend/src
+        working-directory: graph_backend/src
+        run: vcpkg install --triplet x64-windows-static
         env:
           VCPKG_DEFAULT_BINARY_CACHE: ${{ runner.temp }}\vcpkg-archives
 
