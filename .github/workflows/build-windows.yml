@@ -1,0 +1,82 @@
+name: Build Windows
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (Windows x64)
+    runs-on: windows-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install vcpkg dependencies
+        run: |
+          vcpkg install boost-filesystem boost-process boost-program-options boost-serialization openssl zlib nlohmann-json --triplet x64-windows-static
+        env:
+          VCPKG_ROOT: ${{ env.VCPKG_INSTALLATION_ROOT }}
+
+      - name: Install Eigen 3.4.0
+        run: |
+          curl -sL https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz -o $env:TEMP\eigen.tar.gz
+          tar xz -f $env:TEMP\eigen.tar.gz -C $env:TEMP
+          cmake -S $env:TEMP\eigen-3.4.0 -B $env:TEMP\eigen-build -DCMAKE_INSTALL_PREFIX="$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static" -DBUILD_TESTING=OFF
+          cmake --install $env:TEMP\eigen-build
+
+      - name: Install Simple-WebSocket-Server headers
+        run: |
+          git clone --depth 1 https://gitlab.com/eidheim/Simple-WebSocket-Server.git $env:TEMP\simple-ws
+          New-Item -ItemType Directory -Path "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static\include\simple-websocket-server" -Force | Out-Null
+          Copy-Item "$env:TEMP\simple-ws\*.hpp" "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static\include\simple-websocket-server\"
+
+      - name: Set up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 5
+          dune-cache: true
+          opam-local-packages: fg_parser/*.opam
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Build
+        shell: pwsh
+        run: |
+          $env:VCPKG_ROOT = $env:VCPKG_INSTALLATION_ROOT
+          .\build.ps1
+        env:
+          VCPKG_ROOT: ${{ env.VCPKG_INSTALLATION_ROOT }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: variance-deltas-windows-x64
+          path: build/
+          retention-days: 3
+
+      - name: Create release zip
+        if: startsWith(github.ref, 'refs/tags/')
+        run: Compress-Archive -Path build\* -DestinationPath variance-deltas-windows-x64.zip
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" `
+            variance-deltas-windows-x64.zip `
+            --title "Release ${{ github.ref_name }}" `
+            --prerelease

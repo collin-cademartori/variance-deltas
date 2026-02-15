@@ -1,0 +1,12 @@
+{
+  "dependencies": [
+    "boost-filesystem",
+    "boost-process",
+    "boost-program-options",
+    "boost-serialization",
+    "eigen3",
+    "nlohmann-json",
+    "openssl",
+    "zlib"
+  ]
+}
