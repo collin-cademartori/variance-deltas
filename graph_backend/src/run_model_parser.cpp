@@ -1,13 +1,13 @@
 #include <iostream>
 #include <string>
 
-#include <boost/process.hpp>
+#include <boost/process/v2.hpp>
 #include <boost/asio.hpp>
 #include <boost/dll/runtime_symbol_info.hpp>
 
 #include <run_model_parser.hpp>
 
-namespace proc = boost::process;
+namespace proc = boost::process::v2;
 namespace asio = boost::asio;
 using namespace std;
 

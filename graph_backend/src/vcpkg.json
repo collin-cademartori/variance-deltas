@@ -4,6 +4,7 @@
     "boost-dll",
     "boost-filesystem",
     "boost-graph",
+    "boost-uuid",
     "boost-process",
     "boost-program-options",
     "boost-serialization",

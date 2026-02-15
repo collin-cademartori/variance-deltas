@@ -3,6 +3,7 @@
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/property_map/property_map.hpp>
 #include <numeric>
+#include <queue>
 #include <Eigen/Dense>
 
 #include <markov.hpp>
@@ -375,11 +376,11 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
   vertex_names params = { root };
   auto name_hash = next_available_id(*markov_tree);
   Node root_node = add_vertex({
-    .name = name_hash,
     .parameters = params,
     .ered = 0,
     .depth = 0,
-    .chain_nums = int_range(0, num_leaves)
+    .chain_nums = int_range(0, num_leaves),
+    .name = name_hash
   }, *markov_tree);
   node_stack.push(root_node);
 
@@ -400,11 +401,11 @@ std::pair<unique_ptr<MTree>, Node> markov::make_tree(
           double ered = rf_oob_mse(chain_parameters, root, stan_matrix, stan_vars);
           auto name_hash = next_available_id(*markov_tree);
           Node new_node = add_vertex({
-            .name = name_hash,
             .parameters = chain_parameters,
             .ered = ered,
             .depth = cur_depth + 1,
-            .chain_nums = { ci }
+            .chain_nums = { ci },
+            .name = name_hash
           }, *markov_tree);
           cout << "Connecting " << print_set((*markov_tree)[cur_node].parameters) 
                << " to " << print_set((*markov_tree)[new_node].parameters) << "." << endl;
@@ -573,11 +574,11 @@ void markov::divide_branch(
     double ered = rf_oob_mse(params_kept, root_name, stan_matrix, stan_vars);
     auto name_hash = next_available_id(tree);
     Node split_node = add_vertex({
-      .name = name_hash,
       .parameters = params_kept,
       .ered = ered,
       .depth = tree[par_node].depth + 1,
-      .chain_nums = { }
+      .chain_nums = { },
+      .name = name_hash
     }, tree);
 
     add_edge(par_node, split_node, tree);
@@ -649,11 +650,11 @@ void markov::auto_divide(
 
     auto name_hash = next_available_id(tree);
     Node split_node = add_vertex({
-      .name = name_hash,
       .parameters = best_params,
       .ered = best_ered,
       .depth = tree[par_node].depth + 1,
-      .chain_nums = { }
+      .chain_nums = { },
+      .name = name_hash
     }, tree);
 
     add_edge(par_node, split_node, tree);
@@ -676,11 +677,11 @@ void markov::extrude_branch(
   auto name_hash = next_available_id(tree);
 
   Node new_node = add_vertex({
-    .name = name_hash,
     .parameters = params_kept,
     .ered = ered,
     .depth = tree[node].depth + 1,
-    .chain_nums = { }
+    .chain_nums = { },
+    .name = name_hash
   }, tree);
 
   add_edge(node, new_node, tree);
@@ -752,11 +753,11 @@ void markov::merge_nodes(
   std::for_each(std::next(new_chain.begin()), new_chain.end(), [&](vertex_names& param_names) {
     int name_hash = next_available_id(tree);
     Node new_node = add_vertex({
-      .name = name_hash,
       .parameters = param_names,
       .ered = rf_oob_mse(param_names, root_param, stan_matrix, stan_vars),
       .depth = tree[prev_node].depth + 1,
-      .chain_nums = {}
+      .chain_nums = {},
+      .name = name_hash
     }, tree);
     add_edge(prev_node, new_node, tree);
     prev_node = new_node;
@@ -785,18 +786,18 @@ void markov::merge_nodes(
   // }, tree);
 
   Node child1_copy = add_vertex({
-    .name = next_available_id(tree),
     .parameters = child_params_1,
     .ered = tree[node].ered,
     .depth = tree[prev_node].depth + 1,
-    .chain_nums = {}
+    .chain_nums = {},
+    .name = next_available_id(tree)
   }, tree);
   Node child2_copy = add_vertex({
-    .name = next_available_id(tree),
     .parameters = child_params_2,
     .ered = tree[alt_node].ered,
     .depth = tree[prev_node].depth + 1,
-    .chain_nums = {}
+    .chain_nums = {},
+    .name = next_available_id(tree)
   }, tree);
   add_edge(prev_node, child1_copy, tree);
   add_edge(prev_node, child2_copy, tree);
