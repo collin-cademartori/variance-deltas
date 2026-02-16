@@ -27,7 +27,7 @@ jobs:
           sudo apt-get install -y libeigen3-dev libssl-dev zlib1g-dev nlohmann-json3-dev
           curl -sL https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.gz | tar xz -C /tmp
           cd /tmp/boost_1_86_0
-          ./bootstrap.sh --prefix=/usr/local --with-libraries=filesystem,program_options,serialization
+          ./bootstrap.sh --prefix=/usr/local --with-libraries=filesystem,process,program_options,serialization
           sudo ./b2 install -j$(nproc) link=static
           git clone --depth 1 https://gitlab.com/eidheim/Simple-WebSocket-Server.git /tmp/simple-ws
           sudo mkdir -p /usr/local/include/simple-websocket-server
