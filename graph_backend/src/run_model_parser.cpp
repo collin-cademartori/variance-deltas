@@ -46,7 +46,12 @@ std::optional<ParserOutput> run_model_parser(
   boost::system::error_code pipe_code;
   asio::read(interp_pipe, asio::dynamic_buffer(interp_data), pipe_code);
 
-  if (pipe_code != asio::error::eof) {
+  bool pipe_done = (pipe_code == asio::error::eof);
+#ifdef _WIN32
+  // On Windows, ERROR_BROKEN_PIPE (109) is the equivalent of EOF for pipes
+  pipe_done = pipe_done || (pipe_code.value() == 109);
+#endif
+  if (!pipe_done) {
     cerr << "Error reading model_parser output: " << pipe_code.message() << endl;
     return std::nullopt;
   }
