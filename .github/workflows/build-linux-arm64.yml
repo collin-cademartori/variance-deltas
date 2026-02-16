@@ -1,0 +1,72 @@
+name: Build Linux ARM64
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (Linux ARM64)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install C++ libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libeigen3-dev libssl-dev zlib1g-dev nlohmann-json3-dev
+          curl -sL https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.gz | tar xz -C /tmp
+          cd /tmp/boost_1_86_0
+          ./bootstrap.sh --prefix=/usr/local --with-libraries=filesystem,process,program_options,serialization
+          sudo ./b2 install -j$(nproc) link=static
+          git clone --depth 1 https://gitlab.com/eidheim/Simple-WebSocket-Server.git /tmp/simple-ws
+          sudo mkdir -p /usr/local/include/simple-websocket-server
+          sudo cp /tmp/simple-ws/*.hpp /usr/local/include/simple-websocket-server/
+
+      - name: Set up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 5
+          dune-cache: true
+          opam-local-packages: fg_parser/*.opam
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Build
+        run: |
+          eval $(opam env)
+          ./build.sh
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: variance-deltas-linux-arm64
+          path: build/
+          retention-days: 3
+
+      - name: Create release tarball
+        if: startsWith(github.ref, 'refs/tags/')
+        run: tar -czf variance-deltas-linux-arm64.tar.gz -C build .
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            variance-deltas-linux-arm64.tar.gz \
+            --title "Release ${{ github.ref_name }}" \
+            --prerelease
