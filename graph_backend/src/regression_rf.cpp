@@ -58,11 +58,8 @@ static string run_ranger(const vector<string>& args) {
   boost::system::error_code pipe_code;
   asio::read(ranger_pipe, asio::dynamic_buffer(ranger_output), pipe_code);
 
-  bool pipe_done = (pipe_code == asio::error::eof);
-#ifdef _WIN32
-  // On Windows, ERROR_BROKEN_PIPE (109) is the equivalent of EOF for pipes
-  pipe_done = pipe_done || (pipe_code.value() == 109);
-#endif
+  bool pipe_done = (pipe_code == asio::error::eof)
+    || (pipe_code == asio::error::broken_pipe);
   if(!pipe_done) {
     throw runtime_error("Error reading ranger output");
   }

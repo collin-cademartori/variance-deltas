@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <string>
 
@@ -46,11 +47,8 @@ std::optional<ParserOutput> run_model_parser(
   boost::system::error_code pipe_code;
   asio::read(interp_pipe, asio::dynamic_buffer(interp_data), pipe_code);
 
-  bool pipe_done = (pipe_code == asio::error::eof);
-#ifdef _WIN32
-  // On Windows, ERROR_BROKEN_PIPE (109) is the equivalent of EOF for pipes
-  pipe_done = pipe_done || (pipe_code.value() == 109);
-#endif
+  bool pipe_done = (pipe_code == asio::error::eof)
+    || (pipe_code == asio::error::broken_pipe);
   if (!pipe_done) {
     cerr << "Error reading model_parser output: " << pipe_code.message() << endl;
     return std::nullopt;
@@ -67,6 +65,11 @@ std::optional<ParserOutput> run_model_parser(
   }
 
   cout << "Parser ran successfully" << endl;
+
+  // Strip \r characters (Windows pipes may produce \r\n line endings)
+  interp_data.erase(
+    std::remove(interp_data.begin(), interp_data.end(), '\r'),
+    interp_data.end());
 
   // Check for empty output
   if (interp_data.empty()) {
