@@ -10,6 +10,7 @@ if(WIN32)
   add_compile_definitions(_WIN32_WINNT=0x0A00 WIN32_LEAN_AND_MEAN)
 endif()
 set(Boost_USE_STATIC_LIBS True)
+set(Boost_NO_BOOST_CMAKE ON)
 set(OPENSSL_USE_STATIC_LIBS True)
 set(ZLIB_USE_STATIC_LIBS On)
 
