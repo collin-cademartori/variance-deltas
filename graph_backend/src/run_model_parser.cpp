@@ -18,7 +18,11 @@ std::optional<ParserOutput> run_model_parser(
   // Get executable directory for finding sibling executables
   boost::filesystem::path exec_path = boost::dll::program_location();
   boost::filesystem::path exec_dir = exec_path.parent_path();
+#ifdef _WIN32
+  boost::filesystem::path model_parser_path = exec_dir / "model_parser.exe";
+#else
   boost::filesystem::path model_parser_path = exec_dir / "model_parser";
+#endif
 
   // Check that model_parser exists before trying to run it
   if (!boost::filesystem::exists(model_parser_path)) {

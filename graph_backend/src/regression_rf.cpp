@@ -33,7 +33,11 @@ static boost::filesystem::path get_ranger_path() {
   static boost::filesystem::path ranger_path;
   if (ranger_path.empty()) {
     boost::filesystem::path exec_path = boost::dll::program_location();
+#ifdef _WIN32
+    ranger_path = exec_path.parent_path() / "ranger.exe";
+#else
     ranger_path = exec_path.parent_path() / "ranger";
+#endif
   }
   return ranger_path;
 }
