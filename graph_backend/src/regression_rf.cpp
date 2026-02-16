@@ -6,11 +6,20 @@
 #include <regex>
 #include <iostream>
 
-#include <boost/process/v2.hpp>
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 108800
+  #include <boost/process.hpp>
+#else
+  #include <boost/process/v2.hpp>
+#endif
 #include <boost/asio.hpp>
 #include <boost/dll/runtime_symbol_info.hpp>
 
+#if BOOST_VERSION >= 108800
+namespace proc = boost::process;
+#else
 namespace proc = boost::process::v2;
+#endif
 namespace asio = boost::asio;
 using namespace std;
 using Eigen::MatrixXd;
