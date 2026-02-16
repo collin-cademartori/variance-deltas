@@ -201,7 +201,7 @@ Set-Location "build"
 cmake -G "Visual Studio 17 2022" -A x64 `
     -DCMAKE_BUILD_TYPE=Release `
     -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded `
-    -DCMAKE_CXX_FLAGS="/DWIN_R_BUILD" `
+    -DCMAKE_CXX_FLAGS="/DWIN_R_BUILD /I$ScriptDir\ranger\cpp_version\src\getopt" `
     ..
 if ($LASTEXITCODE -ne 0) { Print-Error "ranger CMake configuration failed"; exit 1 }
 Print-Success "ranger CMake configuration completed"
