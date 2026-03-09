@@ -31,50 +31,68 @@ print_section() {
     echo -e "${BLUE}========================================${NC}"
 }
 
-# Get script directory
+# Parse arguments
+INSTALL_PREFIX="${HOME}/.local"
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --prefix)
+            INSTALL_PREFIX="$2"
+            shift 2
+            ;;
+        --prefix=*)
+            INSTALL_PREFIX="${1#*=}"
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 [--prefix <path>]"
+            echo ""
+            echo "Install variance-deltas to the specified prefix (default: ~/.local)"
+            echo ""
+            echo "Options:"
+            echo "  --prefix <path>  Installation prefix (default: \$HOME/.local)"
+            echo "                   App files go to <prefix>/share/variance-deltas/"
+            echo "                   Symlink goes to <prefix>/bin/vd"
+            exit 0
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            echo "Usage: $0 [--prefix <path>]"
+            exit 1
+            ;;
+    esac
+done
+
+# Get script directory (where the archive was extracted)
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Installation paths
-INSTALL_PREFIX="${HOME}/.local"
 APP_DIR="${INSTALL_PREFIX}/share/variance-deltas"
 BIN_DIR="${INSTALL_PREFIX}/bin"
 SYMLINK_PATH="${BIN_DIR}/vd"
 
 print_section "Variance Deltas Installation Script"
 
-# Check if build directory exists
-if [ ! -d "$SCRIPT_DIR/build" ]; then
-    print_error "Build directory not found. Please run ./build.sh first."
-    exit 1
-fi
+print_info "Install prefix: $INSTALL_PREFIX"
+print_info "Application directory: $APP_DIR"
+print_info "Symlink: $SYMLINK_PATH"
 
-# Verify build artifacts exist
-print_info "Verifying build artifacts..."
+# Verify build artifacts exist (look in script's own directory)
+print_section "Verifying build artifacts"
 MISSING_FILES=()
 
-if [ ! -f "$SCRIPT_DIR/build/ws_server" ]; then
-    MISSING_FILES+=("ws_server")
-fi
+for file in ws_server graph_test model_parser ranger; do
+    if [ ! -f "$SCRIPT_DIR/$file" ]; then
+        MISSING_FILES+=("$file")
+    fi
+done
 
-if [ ! -f "$SCRIPT_DIR/build/graph_test" ]; then
-    MISSING_FILES+=("graph_test")
-fi
-
-if [ ! -f "$SCRIPT_DIR/build/model_parser" ]; then
-    MISSING_FILES+=("model_parser")
-fi
-
-if [ ! -f "$SCRIPT_DIR/build/ranger" ]; then
-    MISSING_FILES+=("ranger")
-fi
-
-if [ ! -d "$SCRIPT_DIR/build/client" ]; then
+if [ ! -d "$SCRIPT_DIR/client" ]; then
     MISSING_FILES+=("client/")
 fi
 
 if [ ${#MISSING_FILES[@]} -ne 0 ]; then
-    print_error "Missing build artifacts: ${MISSING_FILES[*]}"
-    print_error "Please run ./build.sh first."
+    print_error "Missing files: ${MISSING_FILES[*]}"
+    print_error "Make sure you are running this script from the extracted archive directory."
     exit 1
 fi
 
@@ -112,27 +130,27 @@ print_success "Created bin directory: $BIN_DIR"
 print_section "Installing application files"
 
 print_info "Copying ws_server as vd..."
-cp "$SCRIPT_DIR/build/ws_server" "$APP_DIR/vd"
+cp "$SCRIPT_DIR/ws_server" "$APP_DIR/vd"
 chmod +x "$APP_DIR/vd"
 print_success "Installed vd (main executable)"
 
 print_info "Copying graph_test..."
-cp "$SCRIPT_DIR/build/graph_test" "$APP_DIR/"
+cp "$SCRIPT_DIR/graph_test" "$APP_DIR/"
 chmod +x "$APP_DIR/graph_test"
 print_success "Installed graph_test"
 
 print_info "Copying model_parser..."
-cp "$SCRIPT_DIR/build/model_parser" "$APP_DIR/"
+cp "$SCRIPT_DIR/model_parser" "$APP_DIR/"
 chmod +x "$APP_DIR/model_parser"
 print_success "Installed model_parser"
 
 print_info "Copying ranger..."
-cp "$SCRIPT_DIR/build/ranger" "$APP_DIR/"
+cp "$SCRIPT_DIR/ranger" "$APP_DIR/"
 chmod +x "$APP_DIR/ranger"
 print_success "Installed ranger"
 
 print_info "Copying client files..."
-cp -r "$SCRIPT_DIR/build/client" "$APP_DIR/"
+cp -r "$SCRIPT_DIR/client" "$APP_DIR/"
 print_success "Installed client files"
 
 # Create symlink
@@ -158,7 +176,7 @@ else
     print_warning "$BIN_DIR is not in your PATH"
     echo ""
     print_info "Add the following line to your ~/.bashrc or ~/.zshrc:"
-    echo "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+    echo "  export PATH=\"${BIN_DIR}:\$PATH\""
     echo ""
     print_info "Then reload your shell or run: source ~/.bashrc"
     echo ""

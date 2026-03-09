@@ -44,6 +44,9 @@ jobs:
           eval $(opam env)
           ./build.sh
 
+      - name: Include install script
+        run: cp install.sh build/
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:

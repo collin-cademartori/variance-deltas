@@ -70,6 +70,9 @@ jobs:
           VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\.vcpkg-archives
           VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}\\.vcpkg-archives,readwrite"
 
+      - name: Include install script
+        run: Copy-Item install.ps1 build\
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
