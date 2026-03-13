@@ -10,42 +10,6 @@
     <span>Settings</span>
   </div>
   <div class="option_container">
-    <span>Layout type</span>
-    <div class="button_group" id="layout_type">
-      <button 
-        class:menu_enabled={user_state.layout_format === 'long'}
-        onclick={() => user_state.layout_format = 'long'}
-      >
-        Hierarchy 
-      </button>
-      <button 
-        class:menu_enabled={user_state.layout_format === 'normal'}
-        onclick={() => user_state.layout_format = 'normal'}
-      >
-        Tree
-      </button>
-    </div>
-  </div>
-
-  <div class="option_container">
-    <span>Globals parameters</span>
-    <div class="button_group" id="layout_type">
-      <button 
-        class:menu_enabled={user_state.show_globals === true}
-        onclick={() => user_state.show_globals = true}
-      >
-        Show 
-      </button>
-      <button 
-        class:menu_enabled={user_state.show_globals === false}
-        onclick={() => user_state.show_globals = false}
-      >
-        Hide
-      </button>
-    </div>
-  </div>
-
-  <div class="option_container">
     <span>Quantity Names</span>
     <button 
       onclick={() => show_names = true}
