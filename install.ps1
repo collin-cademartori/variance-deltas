@@ -31,7 +31,7 @@ Print-Info "Application directory: $AppDir"
 Print-Section "Verifying build artifacts"
 $MissingFiles = @()
 
-foreach ($file in @("ws_server.exe", "graph_test.exe", "model_parser.exe", "ranger.exe")) {
+foreach ($file in @("ws_server.exe", "backend.exe", "model_parser.exe", "ranger.exe")) {
     if (-not (Test-Path (Join-Path $ScriptDir $file))) {
         $MissingFiles += $file
     }
@@ -73,9 +73,9 @@ Print-Info "Copying ws_server.exe as vd.exe..."
 Copy-Item (Join-Path $ScriptDir "ws_server.exe") (Join-Path $AppDir "vd.exe")
 Print-Success "Installed vd.exe (main executable)"
 
-Print-Info "Copying graph_test.exe..."
-Copy-Item (Join-Path $ScriptDir "graph_test.exe") (Join-Path $AppDir "graph_test.exe")
-Print-Success "Installed graph_test.exe"
+Print-Info "Copying backend.exe..."
+Copy-Item (Join-Path $ScriptDir "backend.exe") (Join-Path $AppDir "backend.exe")
+Print-Success "Installed backend.exe"
 
 Print-Info "Copying model_parser.exe..."
 Copy-Item (Join-Path $ScriptDir "model_parser.exe") (Join-Path $AppDir "model_parser.exe")

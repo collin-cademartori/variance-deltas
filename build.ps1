@@ -242,9 +242,9 @@ Copy-Item "$ScriptDir\fg_parser\_build\default\bin\model_parser.exe" `
 Print-Success "Copied model_parser.exe"
 
 Print-Info "Copying graph_backend executable..."
-Copy-Item "$ScriptDir\graph_backend\build\Release\graph_test.exe" `
-          "$ScriptDir\build\graph_test.exe" -ErrorAction Stop
-Print-Success "Copied graph_test.exe"
+Copy-Item "$ScriptDir\graph_backend\build\Release\backend.exe" `
+          "$ScriptDir\build\backend.exe" -ErrorAction Stop
+Print-Success "Copied backend.exe"
 
 Print-Info "Copying ranger executable..."
 Copy-Item "$ScriptDir\ranger\cpp_version\build\Release\ranger.exe" `
@@ -259,6 +259,11 @@ Print-Success "Copied ws_server.exe"
 Print-Info "Copying tree_frontend static files..."
 Copy-Item "$ScriptDir\tree_frontend\build\*" "$ScriptDir\build\client\" -Recurse -ErrorAction Stop
 Print-Success "Copied frontend files"
+
+Print-Info "Copying install scripts..."
+Copy-Item "$ScriptDir\install.sh"  "$ScriptDir\build\install.sh"  -ErrorAction Stop
+Copy-Item "$ScriptDir\install.ps1" "$ScriptDir\build\install.ps1" -ErrorAction Stop
+Print-Success "Copied install scripts"
 
 Print-Success "Build directory assembled"
 
@@ -280,7 +285,7 @@ function Verify-File {
 }
 
 Verify-File "$ScriptDir\build\ws_server.exe"             "ws_server.exe"
-Verify-File "$ScriptDir\build\graph_test.exe"            "graph_test.exe"
+Verify-File "$ScriptDir\build\backend.exe"               "backend.exe"
 Verify-File "$ScriptDir\build\model_parser.exe"          "model_parser.exe"
 Verify-File "$ScriptDir\build\ranger.exe"                "ranger.exe"
 Verify-File "$ScriptDir\build\client\index.html"         "Frontend index.html"

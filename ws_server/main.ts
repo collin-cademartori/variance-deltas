@@ -7,7 +7,7 @@ const execPath = Deno.realPathSync(Deno.execPath());
 const execDir = path.dirname(execPath);
 
 // Construct paths relative to executable location
-const graph_test_path = path.join(execDir, "graph_test");
+const backend_path = path.join(execDir, "backend");
 const site_root = path.join(execDir, "client");
 
 type WSData = {
@@ -88,7 +88,7 @@ try {
       "-N", args.N,
       "-P", PORT.toString()
     ];
-  const command = new Deno.Command(graph_test_path,
+  const command = new Deno.Command(backend_path,
     {
       args: passed_args as string[],
       stdout: "inherit",

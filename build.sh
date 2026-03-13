@@ -316,10 +316,10 @@ else
 fi
 
 print_info "Copying graph_backend executable..."
-if cp "$SCRIPT_DIR/graph_backend/build/graph_test" "$SCRIPT_DIR/build/"; then
-    print_success "Copied graph_test"
+if cp "$SCRIPT_DIR/graph_backend/build/backend" "$SCRIPT_DIR/build/"; then
+    print_success "Copied backend"
 else
-    print_error "Failed to copy graph_test"
+    print_error "Failed to copy backend"
     exit 1
 fi
 
@@ -346,6 +346,11 @@ else
     print_error "Failed to copy frontend files"
     exit 1
 fi
+
+print_info "Copying install scripts..."
+cp "$SCRIPT_DIR/install.sh" "$SCRIPT_DIR/build/"
+cp "$SCRIPT_DIR/install.ps1" "$SCRIPT_DIR/build/"
+print_success "Copied install scripts"
 
 print_success "Build directory assembled"
 
@@ -389,7 +394,7 @@ verify_executable() {
 }
 
 verify_executable "$SCRIPT_DIR/build/ws_server" "ws_server"
-verify_executable "$SCRIPT_DIR/build/graph_test" "graph_test"
+verify_executable "$SCRIPT_DIR/build/backend" "backend"
 verify_executable "$SCRIPT_DIR/build/model_parser" "model_parser"
 verify_executable "$SCRIPT_DIR/build/ranger" "ranger"
 verify_file "$SCRIPT_DIR/build/client/index.html" "Frontend index.html"

@@ -80,7 +80,7 @@ print_info "Symlink: $SYMLINK_PATH"
 print_section "Verifying build artifacts"
 MISSING_FILES=()
 
-for file in ws_server graph_test model_parser ranger; do
+for file in ws_server backend model_parser ranger; do
     if [ ! -f "$SCRIPT_DIR/$file" ]; then
         MISSING_FILES+=("$file")
     fi
@@ -134,10 +134,10 @@ cp "$SCRIPT_DIR/ws_server" "$APP_DIR/vd"
 chmod +x "$APP_DIR/vd"
 print_success "Installed vd (main executable)"
 
-print_info "Copying graph_test..."
-cp "$SCRIPT_DIR/graph_test" "$APP_DIR/"
-chmod +x "$APP_DIR/graph_test"
-print_success "Installed graph_test"
+print_info "Copying backend..."
+cp "$SCRIPT_DIR/backend" "$APP_DIR/"
+chmod +x "$APP_DIR/backend"
+print_success "Installed backend"
 
 print_info "Copying model_parser..."
 cp "$SCRIPT_DIR/model_parser" "$APP_DIR/"
