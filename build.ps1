@@ -107,14 +107,14 @@ deno install --node-modules-dir
 if ($LASTEXITCODE -ne 0) { Print-Error "Failed to install client dependencies"; exit 1 }
 Print-Success "client dependencies installed"
 
-# ws_server dependencies
-Print-Info "Caching ws_server (Deno) dependencies..."
-Set-Location "$ScriptDir\ws_server"
+# server dependencies
+Print-Info "Caching server (Deno) dependencies..."
+Set-Location "$ScriptDir\server"
 deno cache main.ts
 if ($LASTEXITCODE -ne 0) {
-    Print-Warning "Failed to cache ws_server dependencies (may still work)"
+    Print-Warning "Failed to cache server dependencies (may still work)"
 }
-Print-Success "ws_server dependencies cached"
+Print-Success "server dependencies cached"
 
 Set-Location $ScriptDir
 
@@ -140,9 +140,9 @@ Print-Info "Cleaning client..."
 Remove-Item -Path "$ScriptDir\client\build" -Recurse -Force -ErrorAction SilentlyContinue
 Print-Success "Cleaned client"
 
-Print-Info "Cleaning ws_server..."
-Remove-Item -Path "$ScriptDir\ws_server\build" -Recurse -Force -ErrorAction SilentlyContinue
-Print-Success "Cleaned ws_server"
+Print-Info "Cleaning server..."
+Remove-Item -Path "$ScriptDir\server\build" -Recurse -Force -ErrorAction SilentlyContinue
+Print-Success "Cleaned server"
 
 Print-Info "Cleaning ranger..."
 Remove-Item -Path "$ScriptDir\ranger\cpp_version\build" -Recurse -Force -ErrorAction SilentlyContinue
@@ -217,13 +217,13 @@ deno run -A npm:vite build
 if ($LASTEXITCODE -ne 0) { Print-Error "Failed to build client"; exit 1 }
 Print-Success "client built successfully"
 
-# Build ws_server
-Print-Info "Building ws_server (Deno)..."
-Set-Location "$ScriptDir\ws_server"
+# Build server
+Print-Info "Building server (Deno)..."
+Set-Location "$ScriptDir\server"
 New-Item -ItemType Directory -Path "build" -Force | Out-Null
-deno compile --allow-net --allow-read --allow-run --output build\ws_server.exe main.ts
-if ($LASTEXITCODE -ne 0) { Print-Error "Failed to build ws_server"; exit 1 }
-Print-Success "ws_server built successfully"
+deno compile --allow-net --allow-read --allow-run --output build\server.exe main.ts
+if ($LASTEXITCODE -ne 0) { Print-Error "Failed to build server"; exit 1 }
+Print-Success "server built successfully"
 
 Set-Location $ScriptDir
 Print-Success "All components built successfully"
@@ -251,8 +251,8 @@ Copy-Item "$ScriptDir\ranger\cpp_version\build\Release\ranger.exe" `
           "$ScriptDir\build\ranger.exe" -ErrorAction Stop
 Print-Success "Copied ranger.exe"
 
-Print-Info "Copying ws_server executable..."
-Copy-Item "$ScriptDir\ws_server\build\ws_server.exe" `
+Print-Info "Copying server executable..."
+Copy-Item "$ScriptDir\server\build\server.exe" `
           "$ScriptDir\build\vd.exe" -ErrorAction Stop
 Print-Success "Copied vd.exe"
 

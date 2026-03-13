@@ -166,14 +166,14 @@ else
     exit 1
 fi
 
-# ws_server dependencies (if deno.json has dependencies)
-print_info "Installing ws_server (deno) dependencies..."
-cd "$SCRIPT_DIR/ws_server"
+# server dependencies (if deno.json has dependencies)
+print_info "Installing server (deno) dependencies..."
+cd "$SCRIPT_DIR/server"
 # Deno automatically downloads dependencies on first run, but we can cache them
 if deno cache main.ts; then
-    print_success "ws_server dependencies cached"
+    print_success "server dependencies cached"
 else
-    print_warning "Failed to cache ws_server dependencies (may still work)"
+    print_warning "Failed to cache server dependencies (may still work)"
 fi
 
 cd "$SCRIPT_DIR"
@@ -202,10 +202,10 @@ cd "$SCRIPT_DIR/client"
 rm -rf build/
 print_success "Cleaned client"
 
-print_info "Cleaning ws_server..."
-cd "$SCRIPT_DIR/ws_server"
+print_info "Cleaning server..."
+cd "$SCRIPT_DIR/server"
 rm -rf build/
-print_success "Cleaned ws_server"
+print_success "Cleaned server"
 
 print_info "Cleaning ranger..."
 cd "$SCRIPT_DIR/ranger/cpp_version"
@@ -285,14 +285,14 @@ else
     exit 1
 fi
 
-# Build ws_server
-print_info "Building ws_server (Deno)..."
-cd "$SCRIPT_DIR/ws_server"
+# Build server
+print_info "Building server (Deno)..."
+cd "$SCRIPT_DIR/server"
 mkdir -p build
-if deno compile --allow-net --allow-read --allow-run --output build/ws_server main.ts; then
-    print_success "ws_server built successfully"
+if deno compile --allow-net --allow-read --allow-run --output build/server main.ts; then
+    print_success "server built successfully"
 else
-    print_error "Failed to build ws_server"
+    print_error "Failed to build server"
     exit 1
 fi
 
@@ -331,11 +331,11 @@ else
     exit 1
 fi
 
-print_info "Copying ws_server executable..."
-if cp "$SCRIPT_DIR/ws_server/build/ws_server" "$SCRIPT_DIR/build/vd"; then
+print_info "Copying server executable..."
+if cp "$SCRIPT_DIR/server/build/server" "$SCRIPT_DIR/build/vd"; then
     print_success "Copied vd"
 else
-    print_error "Failed to copy ws_server"
+    print_error "Failed to copy server"
     exit 1
 fi
 
