@@ -93,12 +93,12 @@ Print-Success "C++ dependency check completed"
 # ============================================================================
 Print-Section "Phase 2: Installing package dependencies"
 
-# fg_parser dependencies
-Print-Info "Installing fg_parser (OCaml) dependencies..."
-Set-Location "$ScriptDir\fg_parser"
+# model_parser dependencies
+Print-Info "Installing model_parser (OCaml) dependencies..."
+Set-Location "$ScriptDir\model_parser"
 opam install . --deps-only -y
-if ($LASTEXITCODE -ne 0) { Print-Error "Failed to install fg_parser dependencies"; exit 1 }
-Print-Success "fg_parser dependencies installed"
+if ($LASTEXITCODE -ne 0) { Print-Error "Failed to install model_parser dependencies"; exit 1 }
+Print-Success "model_parser dependencies installed"
 
 # client dependencies
 Print-Info "Installing client (npm) dependencies via Deno..."
@@ -127,10 +127,10 @@ Print-Info "Removing top-level build directory..."
 Remove-Item -Path "$ScriptDir\build" -Recurse -Force -ErrorAction SilentlyContinue
 Print-Success "Removed build\"
 
-Print-Info "Cleaning fg_parser..."
-Set-Location "$ScriptDir\fg_parser"
+Print-Info "Cleaning model_parser..."
+Set-Location "$ScriptDir\model_parser"
 dune clean 2>$null; $true  # ignore errors
-Print-Success "Cleaned fg_parser"
+Print-Success "Cleaned model_parser"
 
 Print-Info "Cleaning backend..."
 Remove-Item -Path "$ScriptDir\backend\build" -Recurse -Force -ErrorAction SilentlyContinue
@@ -156,12 +156,12 @@ Print-Success "All clean phases completed"
 # ============================================================================
 Print-Section "Phase 4: Building all components"
 
-# Build fg_parser
-Print-Info "Building fg_parser (OCaml)..."
-Set-Location "$ScriptDir\fg_parser"
+# Build model_parser
+Print-Info "Building model_parser (OCaml)..."
+Set-Location "$ScriptDir\model_parser"
 opam exec -- dune build
-if ($LASTEXITCODE -ne 0) { Print-Error "Failed to build fg_parser"; exit 1 }
-Print-Success "fg_parser built successfully"
+if ($LASTEXITCODE -ne 0) { Print-Error "Failed to build model_parser"; exit 1 }
+Print-Success "model_parser built successfully"
 
 # Build backend
 Print-Info "Building backend (C++)..."
@@ -237,7 +237,7 @@ Print-Info "Creating build directory structure..."
 New-Item -ItemType Directory -Path "$ScriptDir\build\client" -Force | Out-Null
 
 Print-Info "Copying model_parser executable..."
-Copy-Item "$ScriptDir\fg_parser\_build\default\bin\model_parser.exe" `
+Copy-Item "$ScriptDir\model_parser\_build\default\bin\model_parser.exe" `
           "$ScriptDir\build\vd-model-parser.exe" -ErrorAction Stop
 Print-Success "Copied vd-model-parser.exe"
 

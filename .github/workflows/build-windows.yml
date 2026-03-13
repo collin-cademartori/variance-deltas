@@ -21,7 +21,7 @@ jobs:
         with:
           ocaml-compiler: 5
           dune-cache: true
-          opam-local-packages: fg_parser/*.opam
+          opam-local-packages: model_parser/*.opam
 
       - name: Install fg_parser OCaml dependencies
         run: opam install fg_parser --deps-only -y

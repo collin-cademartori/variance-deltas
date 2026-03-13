@@ -145,13 +145,13 @@ print_success "C++ dependency check completed"
 # ============================================================================
 print_section "Phase 2: Installing package dependencies"
 
-# fg_parser dependencies
-print_info "Installing fg_parser (OCaml) dependencies..."
-cd "$SCRIPT_DIR/fg_parser"
+# model_parser dependencies
+print_info "Installing model_parser (OCaml) dependencies..."
+cd "$SCRIPT_DIR/model_parser"
 if opam install . --deps-only -y; then
-    print_success "fg_parser dependencies installed"
+    print_success "model_parser dependencies installed"
 else
-    print_error "Failed to install fg_parser dependencies"
+    print_error "Failed to install model_parser dependencies"
     exit 1
 fi
 
@@ -187,10 +187,10 @@ print_info "Removing top-level build directory..."
 rm -rf "$SCRIPT_DIR/build/"
 print_success "Removed build/"
 
-print_info "Cleaning fg_parser..."
-cd "$SCRIPT_DIR/fg_parser"
+print_info "Cleaning model_parser..."
+cd "$SCRIPT_DIR/model_parser"
 dune clean 2>/dev/null || true
-print_success "Cleaned fg_parser"
+print_success "Cleaned model_parser"
 
 print_info "Cleaning backend..."
 cd "$SCRIPT_DIR/backend"
@@ -220,15 +220,15 @@ print_success "All clean phases completed"
 # ============================================================================
 print_section "Phase 4: Building all components"
 
-# Build fg_parser
-print_info "Building fg_parser (OCaml)..."
-cd "$SCRIPT_DIR/fg_parser"
+# Build model_parser
+print_info "Building model_parser (OCaml)..."
+cd "$SCRIPT_DIR/model_parser"
 # Re-evaluate opam environment to pick up local switch if present
 eval $(opam env)
 if dune build; then
-    print_success "fg_parser built successfully"
+    print_success "model_parser built successfully"
 else
-    print_error "Failed to build fg_parser"
+    print_error "Failed to build model_parser"
     exit 1
 fi
 
@@ -308,7 +308,7 @@ print_info "Creating build directory structure..."
 mkdir -p "$SCRIPT_DIR/build/client"
 
 print_info "Copying model_parser executable..."
-if cp "$SCRIPT_DIR/fg_parser/_build/default/bin/model_parser.exe" "$SCRIPT_DIR/build/vd-model-parser"; then
+if cp "$SCRIPT_DIR/model_parser/_build/default/bin/model_parser.exe" "$SCRIPT_DIR/build/vd-model-parser"; then
     print_success "Copied vd-model-parser"
 else
     print_error "Failed to copy model_parser.exe"
