@@ -192,10 +192,10 @@ cd "$SCRIPT_DIR/fg_parser"
 dune clean 2>/dev/null || true
 print_success "Cleaned fg_parser"
 
-print_info "Cleaning graph_backend..."
-cd "$SCRIPT_DIR/graph_backend"
+print_info "Cleaning backend..."
+cd "$SCRIPT_DIR/backend"
 rm -rf build/
-print_success "Cleaned graph_backend"
+print_success "Cleaned backend"
 
 print_info "Cleaning client..."
 cd "$SCRIPT_DIR/client"
@@ -232,9 +232,9 @@ else
     exit 1
 fi
 
-# Build graph_backend
-print_info "Building graph_backend (C++)..."
-cd "$SCRIPT_DIR/graph_backend"
+# Build backend
+print_info "Building backend (C++)..."
+cd "$SCRIPT_DIR/backend"
 mkdir -p build
 cd build
 CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Release"
@@ -250,9 +250,9 @@ else
 fi
 
 if make; then
-    print_success "graph_backend built successfully"
+    print_success "backend built successfully"
 else
-    print_error "Failed to build graph_backend"
+    print_error "Failed to build backend"
     exit 1
 fi
 
@@ -315,8 +315,8 @@ else
     exit 1
 fi
 
-print_info "Copying graph_backend executable..."
-if cp "$SCRIPT_DIR/graph_backend/build/backend" "$SCRIPT_DIR/build/vd-backend"; then
+print_info "Copying backend executable..."
+if cp "$SCRIPT_DIR/backend/build/backend" "$SCRIPT_DIR/build/vd-backend"; then
     print_success "Copied vd-backend"
 else
     print_error "Failed to copy backend"

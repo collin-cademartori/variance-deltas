@@ -132,9 +132,9 @@ Set-Location "$ScriptDir\fg_parser"
 dune clean 2>$null; $true  # ignore errors
 Print-Success "Cleaned fg_parser"
 
-Print-Info "Cleaning graph_backend..."
-Remove-Item -Path "$ScriptDir\graph_backend\build" -Recurse -Force -ErrorAction SilentlyContinue
-Print-Success "Cleaned graph_backend"
+Print-Info "Cleaning backend..."
+Remove-Item -Path "$ScriptDir\backend\build" -Recurse -Force -ErrorAction SilentlyContinue
+Print-Success "Cleaned backend"
 
 Print-Info "Cleaning client..."
 Remove-Item -Path "$ScriptDir\client\build" -Recurse -Force -ErrorAction SilentlyContinue
@@ -163,9 +163,9 @@ opam exec -- dune build
 if ($LASTEXITCODE -ne 0) { Print-Error "Failed to build fg_parser"; exit 1 }
 Print-Success "fg_parser built successfully"
 
-# Build graph_backend
-Print-Info "Building graph_backend (C++)..."
-Set-Location "$ScriptDir\graph_backend"
+# Build backend
+Print-Info "Building backend (C++)..."
+Set-Location "$ScriptDir\backend"
 New-Item -ItemType Directory -Path "build" -Force | Out-Null
 Set-Location "build"
 
@@ -182,15 +182,15 @@ if ($env:VCPKG_ROOT) {
 
 & cmake @CmakeArgs ..\src
 if ($LASTEXITCODE -ne 0) {
-    Print-Error "CMake configuration failed for graph_backend"
+    Print-Error "CMake configuration failed for backend"
     Print-Error "Make sure C++ dependencies are installed via vcpkg"
     exit 1
 }
 Print-Success "CMake configuration completed (Release mode)"
 
 cmake --build . --config Release
-if ($LASTEXITCODE -ne 0) { Print-Error "Failed to build graph_backend"; exit 1 }
-Print-Success "graph_backend built successfully"
+if ($LASTEXITCODE -ne 0) { Print-Error "Failed to build backend"; exit 1 }
+Print-Success "backend built successfully"
 
 # Build ranger
 Print-Info "Building ranger (C++)..."
@@ -241,8 +241,8 @@ Copy-Item "$ScriptDir\fg_parser\_build\default\bin\model_parser.exe" `
           "$ScriptDir\build\vd-model-parser.exe" -ErrorAction Stop
 Print-Success "Copied vd-model-parser.exe"
 
-Print-Info "Copying graph_backend executable..."
-Copy-Item "$ScriptDir\graph_backend\build\Release\backend.exe" `
+Print-Info "Copying backend executable..."
+Copy-Item "$ScriptDir\backend\build\Release\backend.exe" `
           "$ScriptDir\build\vd-backend.exe" -ErrorAction Stop
 Print-Success "Copied vd-backend.exe"
 
