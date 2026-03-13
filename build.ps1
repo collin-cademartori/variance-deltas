@@ -238,13 +238,13 @@ New-Item -ItemType Directory -Path "$ScriptDir\build\client" -Force | Out-Null
 
 Print-Info "Copying model_parser executable..."
 Copy-Item "$ScriptDir\fg_parser\_build\default\bin\model_parser.exe" `
-          "$ScriptDir\build\model_parser.exe" -ErrorAction Stop
-Print-Success "Copied model_parser.exe"
+          "$ScriptDir\build\vd-model-parser.exe" -ErrorAction Stop
+Print-Success "Copied vd-model-parser.exe"
 
 Print-Info "Copying graph_backend executable..."
 Copy-Item "$ScriptDir\graph_backend\build\Release\backend.exe" `
-          "$ScriptDir\build\backend.exe" -ErrorAction Stop
-Print-Success "Copied backend.exe"
+          "$ScriptDir\build\vd-backend.exe" -ErrorAction Stop
+Print-Success "Copied vd-backend.exe"
 
 Print-Info "Copying ranger executable..."
 Copy-Item "$ScriptDir\ranger\cpp_version\build\Release\ranger.exe" `
@@ -253,8 +253,8 @@ Print-Success "Copied ranger.exe"
 
 Print-Info "Copying ws_server executable..."
 Copy-Item "$ScriptDir\ws_server\build\ws_server.exe" `
-          "$ScriptDir\build\ws_server.exe" -ErrorAction Stop
-Print-Success "Copied ws_server.exe"
+          "$ScriptDir\build\vd.exe" -ErrorAction Stop
+Print-Success "Copied vd.exe"
 
 Print-Info "Copying tree_frontend static files..."
 Copy-Item "$ScriptDir\tree_frontend\build\*" "$ScriptDir\build\client\" -Recurse -ErrorAction Stop
@@ -284,9 +284,9 @@ function Verify-File {
     }
 }
 
-Verify-File "$ScriptDir\build\ws_server.exe"             "ws_server.exe"
-Verify-File "$ScriptDir\build\backend.exe"               "backend.exe"
-Verify-File "$ScriptDir\build\model_parser.exe"          "model_parser.exe"
+Verify-File "$ScriptDir\build\vd.exe"                    "vd.exe"
+Verify-File "$ScriptDir\build\vd-backend.exe"            "vd-backend.exe"
+Verify-File "$ScriptDir\build\vd-model-parser.exe"       "vd-model-parser.exe"
 Verify-File "$ScriptDir\build\ranger.exe"                "ranger.exe"
 Verify-File "$ScriptDir\build\client\index.html"         "Frontend index.html"
 Verify-File "$ScriptDir\build\client\_app\version.json"  "Frontend app bundle"
@@ -308,11 +308,11 @@ Print-Info "Build artifacts location: $ScriptDir\build\"
 Write-Host ""
 Print-Info "To run the application:"
 Write-Host "  cd build"
-Write-Host "  .\ws_server.exe -M <model file> -D <data file> -S <stan file prefix> -N <number of chains> [--port <port>]"
+Write-Host "  .\vd.exe -M <model file> -D <data file> -S <stan file prefix> -N <number of chains> [--port <port>]"
 Write-Host ""
 Print-Info "Example:"
 Write-Host "  cd build"
-Write-Host "  .\ws_server.exe -M ..\data\model_spec -D ..\data\data.json -S ..\data\posterior_samples -N 4"
+Write-Host "  .\vd.exe -M ..\data\model_spec -D ..\data\data.json -S ..\data\posterior_samples -N 4"
 Write-Host ""
 Print-Info "The server defaults to port 8765. Specify --port to use a different port."
 Write-Host ""

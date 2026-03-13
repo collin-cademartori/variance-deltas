@@ -31,7 +31,7 @@ Print-Info "Application directory: $AppDir"
 Print-Section "Verifying build artifacts"
 $MissingFiles = @()
 
-foreach ($file in @("ws_server.exe", "backend.exe", "model_parser.exe", "ranger.exe")) {
+foreach ($file in @("vd.exe", "vd-backend.exe", "vd-model-parser.exe", "ranger.exe")) {
     if (-not (Test-Path (Join-Path $ScriptDir $file))) {
         $MissingFiles += $file
     }
@@ -69,17 +69,17 @@ Print-Success "Created application directory: $AppDir"
 # Install application files
 Print-Section "Installing application files"
 
-Print-Info "Copying ws_server.exe as vd.exe..."
-Copy-Item (Join-Path $ScriptDir "ws_server.exe") (Join-Path $AppDir "vd.exe")
+Print-Info "Copying vd.exe..."
+Copy-Item (Join-Path $ScriptDir "vd.exe") (Join-Path $AppDir "vd.exe")
 Print-Success "Installed vd.exe (main executable)"
 
-Print-Info "Copying backend.exe..."
-Copy-Item (Join-Path $ScriptDir "backend.exe") (Join-Path $AppDir "backend.exe")
-Print-Success "Installed backend.exe"
+Print-Info "Copying vd-backend.exe..."
+Copy-Item (Join-Path $ScriptDir "vd-backend.exe") (Join-Path $AppDir "vd-backend.exe")
+Print-Success "Installed vd-backend.exe"
 
-Print-Info "Copying model_parser.exe..."
-Copy-Item (Join-Path $ScriptDir "model_parser.exe") (Join-Path $AppDir "model_parser.exe")
-Print-Success "Installed model_parser.exe"
+Print-Info "Copying vd-model-parser.exe..."
+Copy-Item (Join-Path $ScriptDir "vd-model-parser.exe") (Join-Path $AppDir "vd-model-parser.exe")
+Print-Success "Installed vd-model-parser.exe"
 
 Print-Info "Copying ranger.exe..."
 Copy-Item (Join-Path $ScriptDir "ranger.exe") (Join-Path $AppDir "ranger.exe")

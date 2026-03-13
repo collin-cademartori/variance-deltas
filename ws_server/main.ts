@@ -7,7 +7,7 @@ const execPath = Deno.realPathSync(Deno.execPath());
 const execDir = path.dirname(execPath);
 
 // Construct paths relative to executable location
-const backend_path = path.join(execDir, "backend");
+const backend_path = path.join(execDir, "vd-backend");
 const site_root = path.join(execDir, "client");
 
 type WSData = {

@@ -80,7 +80,7 @@ print_info "Symlink: $SYMLINK_PATH"
 print_section "Verifying build artifacts"
 MISSING_FILES=()
 
-for file in ws_server backend model_parser ranger; do
+for file in vd vd-backend vd-model-parser ranger; do
     if [ ! -f "$SCRIPT_DIR/$file" ]; then
         MISSING_FILES+=("$file")
     fi
@@ -129,20 +129,20 @@ print_success "Created bin directory: $BIN_DIR"
 # Install application files
 print_section "Installing application files"
 
-print_info "Copying ws_server as vd..."
-cp "$SCRIPT_DIR/ws_server" "$APP_DIR/vd"
+print_info "Copying vd..."
+cp "$SCRIPT_DIR/vd" "$APP_DIR/"
 chmod +x "$APP_DIR/vd"
 print_success "Installed vd (main executable)"
 
-print_info "Copying backend..."
-cp "$SCRIPT_DIR/backend" "$APP_DIR/"
-chmod +x "$APP_DIR/backend"
-print_success "Installed backend"
+print_info "Copying vd-backend..."
+cp "$SCRIPT_DIR/vd-backend" "$APP_DIR/"
+chmod +x "$APP_DIR/vd-backend"
+print_success "Installed vd-backend"
 
-print_info "Copying model_parser..."
-cp "$SCRIPT_DIR/model_parser" "$APP_DIR/"
-chmod +x "$APP_DIR/model_parser"
-print_success "Installed model_parser"
+print_info "Copying vd-model-parser..."
+cp "$SCRIPT_DIR/vd-model-parser" "$APP_DIR/"
+chmod +x "$APP_DIR/vd-model-parser"
+print_success "Installed vd-model-parser"
 
 print_info "Copying ranger..."
 cp "$SCRIPT_DIR/ranger" "$APP_DIR/"

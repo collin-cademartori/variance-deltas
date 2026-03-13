@@ -308,16 +308,16 @@ print_info "Creating build directory structure..."
 mkdir -p "$SCRIPT_DIR/build/client"
 
 print_info "Copying model_parser executable..."
-if cp "$SCRIPT_DIR/fg_parser/_build/default/bin/model_parser.exe" "$SCRIPT_DIR/build/model_parser"; then
-    print_success "Copied model_parser (stripped .exe extension)"
+if cp "$SCRIPT_DIR/fg_parser/_build/default/bin/model_parser.exe" "$SCRIPT_DIR/build/vd-model-parser"; then
+    print_success "Copied vd-model-parser"
 else
     print_error "Failed to copy model_parser.exe"
     exit 1
 fi
 
 print_info "Copying graph_backend executable..."
-if cp "$SCRIPT_DIR/graph_backend/build/backend" "$SCRIPT_DIR/build/"; then
-    print_success "Copied backend"
+if cp "$SCRIPT_DIR/graph_backend/build/backend" "$SCRIPT_DIR/build/vd-backend"; then
+    print_success "Copied vd-backend"
 else
     print_error "Failed to copy backend"
     exit 1
@@ -332,8 +332,8 @@ else
 fi
 
 print_info "Copying ws_server executable..."
-if cp "$SCRIPT_DIR/ws_server/build/ws_server" "$SCRIPT_DIR/build/"; then
-    print_success "Copied ws_server"
+if cp "$SCRIPT_DIR/ws_server/build/ws_server" "$SCRIPT_DIR/build/vd"; then
+    print_success "Copied vd"
 else
     print_error "Failed to copy ws_server"
     exit 1
@@ -393,9 +393,9 @@ verify_executable() {
     fi
 }
 
-verify_executable "$SCRIPT_DIR/build/ws_server" "ws_server"
-verify_executable "$SCRIPT_DIR/build/backend" "backend"
-verify_executable "$SCRIPT_DIR/build/model_parser" "model_parser"
+verify_executable "$SCRIPT_DIR/build/vd" "vd"
+verify_executable "$SCRIPT_DIR/build/vd-backend" "vd-backend"
+verify_executable "$SCRIPT_DIR/build/vd-model-parser" "vd-model-parser"
 verify_executable "$SCRIPT_DIR/build/ranger" "ranger"
 verify_file "$SCRIPT_DIR/build/client/index.html" "Frontend index.html"
 verify_file "$SCRIPT_DIR/build/client/_app/version.json" "Frontend app bundle"
@@ -417,11 +417,11 @@ print_info "Build artifacts location: $SCRIPT_DIR/build/"
 echo ""
 print_info "To run the application:"
 echo "  cd build"
-echo "  ./ws_server -M <model file> -D <data file> -S <stan file prefix> -N <number of chains> [--port <port>]"
+echo "  ./vd -M <model file> -D <data file> -S <stan file prefix> -N <number of chains> [--port <port>]"
 echo ""
 print_info "Example:"
 echo "  cd build"
-echo "  ./ws_server -M ../data/model_spec -D ../data/data.json -S ../data/posterior_samples -N 4"
+echo "  ./vd -M ../data/model_spec -D ../data/data.json -S ../data/posterior_samples -N 4"
 echo ""
 print_info "The server defaults to port 8765. Specify --port to use a different port."
 echo ""
