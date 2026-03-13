@@ -8,7 +8,7 @@ struct ParserOutput {
   std::string tree_data;
 };
 
-// Runs the model_parser subprocess and captures its output.
+// Runs the model parser subprocess and captures its output.
 // Returns nullopt if the parser fails or produces malformed output.
 std::optional<ParserOutput> run_model_parser(
   const std::string& model_file,

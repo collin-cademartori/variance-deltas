@@ -29,14 +29,14 @@ std::optional<ParserOutput> run_model_parser(
   boost::filesystem::path exec_path = boost::dll::program_location();
   boost::filesystem::path exec_dir = exec_path.parent_path();
 #ifdef _WIN32
-  boost::filesystem::path model_parser_path = exec_dir / "model_parser.exe";
+  boost::filesystem::path model_parser_path = exec_dir / "vd-model-parser.exe";
 #else
-  boost::filesystem::path model_parser_path = exec_dir / "model_parser";
+  boost::filesystem::path model_parser_path = exec_dir / "vd-model-parser";
 #endif
 
-  // Check that model_parser exists before trying to run it
+  // Check that vd-model-parser exists before trying to run it
   if (!boost::filesystem::exists(model_parser_path)) {
-    cerr << "Error: model_parser executable not found at: " << model_parser_path << endl;
+    cerr << "Error: vd-model-parser executable not found at: " << model_parser_path << endl;
     return std::nullopt;
   }
 
@@ -59,14 +59,14 @@ std::optional<ParserOutput> run_model_parser(
   bool pipe_done = (pipe_code == asio::error::eof)
     || (pipe_code == asio::error::broken_pipe);
   if (!pipe_done) {
-    cerr << "Error reading model_parser output: " << pipe_code.message() << endl;
+    cerr << "Error reading model parser output: " << pipe_code.message() << endl;
     return std::nullopt;
   }
 
   int exit_code = interp_proc.wait();
 
   if (exit_code != 0) {
-    cerr << "Error: model_parser exited with code " << exit_code << endl;
+    cerr << "Error: model parser exited with code " << exit_code << endl;
     if (!interp_data.empty()) {
       cerr << "Parser output:\n" << interp_data << endl;
     }
@@ -82,7 +82,7 @@ std::optional<ParserOutput> run_model_parser(
 
   // Check for empty output
   if (interp_data.empty()) {
-    cerr << "Error: model_parser produced no output." << endl;
+    cerr << "Error: model parser produced no output." << endl;
     return std::nullopt;
   }
 
