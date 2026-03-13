@@ -155,14 +155,14 @@ else
     exit 1
 fi
 
-# tree_frontend dependencies
-print_info "Installing tree_frontend (npm) dependencies via Deno..."
-cd "$SCRIPT_DIR/tree_frontend"
+# client dependencies
+print_info "Installing client (npm) dependencies via Deno..."
+cd "$SCRIPT_DIR/client"
 # Deno reads package.json and installs all dependencies to node_modules/
 if deno install --node-modules-dir; then
-    print_success "tree_frontend dependencies installed"
+    print_success "client dependencies installed"
 else
-    print_error "Failed to install tree_frontend dependencies"
+    print_error "Failed to install client dependencies"
     exit 1
 fi
 
@@ -197,10 +197,10 @@ cd "$SCRIPT_DIR/graph_backend"
 rm -rf build/
 print_success "Cleaned graph_backend"
 
-print_info "Cleaning tree_frontend..."
-cd "$SCRIPT_DIR/tree_frontend"
+print_info "Cleaning client..."
+cd "$SCRIPT_DIR/client"
 rm -rf build/
-print_success "Cleaned tree_frontend"
+print_success "Cleaned client"
 
 print_info "Cleaning ws_server..."
 cd "$SCRIPT_DIR/ws_server"
@@ -275,13 +275,13 @@ else
     exit 1
 fi
 
-# Build tree_frontend
-print_info "Building tree_frontend (Svelte/TypeScript)..."
-cd "$SCRIPT_DIR/tree_frontend"
+# Build client
+print_info "Building client (Svelte/TypeScript)..."
+cd "$SCRIPT_DIR/client"
 if deno run -A npm:vite build; then
-    print_success "tree_frontend built successfully"
+    print_success "client built successfully"
 else
-    print_error "Failed to build tree_frontend"
+    print_error "Failed to build client"
     exit 1
 fi
 
@@ -339,8 +339,8 @@ else
     exit 1
 fi
 
-print_info "Copying tree_frontend static files..."
-if cp -r "$SCRIPT_DIR/tree_frontend/build/"* "$SCRIPT_DIR/build/client/"; then
+print_info "Copying client static files..."
+if cp -r "$SCRIPT_DIR/client/build/"* "$SCRIPT_DIR/build/client/"; then
     print_success "Copied frontend files"
 else
     print_error "Failed to copy frontend files"

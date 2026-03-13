@@ -100,12 +100,12 @@ opam install . --deps-only -y
 if ($LASTEXITCODE -ne 0) { Print-Error "Failed to install fg_parser dependencies"; exit 1 }
 Print-Success "fg_parser dependencies installed"
 
-# tree_frontend dependencies
-Print-Info "Installing tree_frontend (npm) dependencies via Deno..."
-Set-Location "$ScriptDir\tree_frontend"
+# client dependencies
+Print-Info "Installing client (npm) dependencies via Deno..."
+Set-Location "$ScriptDir\client"
 deno install --node-modules-dir
-if ($LASTEXITCODE -ne 0) { Print-Error "Failed to install tree_frontend dependencies"; exit 1 }
-Print-Success "tree_frontend dependencies installed"
+if ($LASTEXITCODE -ne 0) { Print-Error "Failed to install client dependencies"; exit 1 }
+Print-Success "client dependencies installed"
 
 # ws_server dependencies
 Print-Info "Caching ws_server (Deno) dependencies..."
@@ -136,9 +136,9 @@ Print-Info "Cleaning graph_backend..."
 Remove-Item -Path "$ScriptDir\graph_backend\build" -Recurse -Force -ErrorAction SilentlyContinue
 Print-Success "Cleaned graph_backend"
 
-Print-Info "Cleaning tree_frontend..."
-Remove-Item -Path "$ScriptDir\tree_frontend\build" -Recurse -Force -ErrorAction SilentlyContinue
-Print-Success "Cleaned tree_frontend"
+Print-Info "Cleaning client..."
+Remove-Item -Path "$ScriptDir\client\build" -Recurse -Force -ErrorAction SilentlyContinue
+Print-Success "Cleaned client"
 
 Print-Info "Cleaning ws_server..."
 Remove-Item -Path "$ScriptDir\ws_server\build" -Recurse -Force -ErrorAction SilentlyContinue
@@ -210,12 +210,12 @@ cmake --build . --config Release
 if ($LASTEXITCODE -ne 0) { Print-Error "Failed to build ranger"; exit 1 }
 Print-Success "ranger built successfully"
 
-# Build tree_frontend
-Print-Info "Building tree_frontend (Svelte/TypeScript)..."
-Set-Location "$ScriptDir\tree_frontend"
+# Build client
+Print-Info "Building client (Svelte/TypeScript)..."
+Set-Location "$ScriptDir\client"
 deno run -A npm:vite build
-if ($LASTEXITCODE -ne 0) { Print-Error "Failed to build tree_frontend"; exit 1 }
-Print-Success "tree_frontend built successfully"
+if ($LASTEXITCODE -ne 0) { Print-Error "Failed to build client"; exit 1 }
+Print-Success "client built successfully"
 
 # Build ws_server
 Print-Info "Building ws_server (Deno)..."
@@ -256,8 +256,8 @@ Copy-Item "$ScriptDir\ws_server\build\ws_server.exe" `
           "$ScriptDir\build\vd.exe" -ErrorAction Stop
 Print-Success "Copied vd.exe"
 
-Print-Info "Copying tree_frontend static files..."
-Copy-Item "$ScriptDir\tree_frontend\build\*" "$ScriptDir\build\client\" -Recurse -ErrorAction Stop
+Print-Info "Copying client static files..."
+Copy-Item "$ScriptDir\client\build\*" "$ScriptDir\build\client\" -Recurse -ErrorAction Stop
 Print-Success "Copied frontend files"
 
 Print-Info "Copying install scripts..."
