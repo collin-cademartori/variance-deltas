@@ -8,7 +8,9 @@ This is a software package for constructing variance deltas, tree-structured vis
 3. **Web-based interactive interface:** The main interface with which users can visualize, modify, and export generated variance deltas.
 
 ## Installation
-Currently, this project can be built from source and installed on MacOS by running the `./build.sh && ./install.sh` from the root directory. In the near future, binary distributions will be provided for all major platforms. Building on other platforms is likely to work but is currently unsupported.
+Binaries for Windows, MacOS (Apple Silicon), and Linux can be found on the [releases](https://github.com/collin-cademartori/variance-deltas/releases) page. The `install.sh` and `install.ps1` scripts install and add the `vd` utility to the path on MacOS/Linux and Windows respectively.
+
+This project can also be built from source and installed on MacOS by running the `./build.sh && ./install.sh` from the root directory. Building from source may also work on other platforms, but this is untested.
 
 ## Licensing
 The `variance-deltas` package is provided under the GNU GPLv3 license. See `/LICENSE` for full terms.
