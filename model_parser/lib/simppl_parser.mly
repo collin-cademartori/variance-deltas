@@ -1,7 +1,3 @@
-{
-  (** Parser for the model specification language. *)
-}
-
 %token TILDE
 %token <string>VAR
 %token <float>ARG 
