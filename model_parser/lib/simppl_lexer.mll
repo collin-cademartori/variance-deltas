@@ -1,4 +1,5 @@
 {
+  (** Lexer for model specification language. *)
   open Simppl_parser
 
   exception SyntaxError of string
@@ -22,12 +23,14 @@ let int_lit = "int"
 let iarray_lit = "int_array"
 let bool_lit = "bool"
 let colon_lit = ":"
+let semicolon_lit = ";"
 
 
 rule read =
   parse
   | white { read lexbuf }
   | newline { Lexing.new_line lexbuf; read lexbuf }
+  | semicolon_lit { SEMICOLON }
   | "~" { TILDE }
   | "(" { LPAREN }
   | ")" { RPAREN }

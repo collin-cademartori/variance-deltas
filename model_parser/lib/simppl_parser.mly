@@ -1,3 +1,7 @@
+{
+  (** Parser for the model specification language. *)
+}
+
 %token TILDE
 %token <string>VAR
 %token <float>ARG 
@@ -20,6 +24,7 @@
 %token LEAF
 %token ROOT
 %token TBD
+%token SEMICOLON
 
 %start <Ast.meta Ast.model> filespec
 %%
@@ -49,7 +54,8 @@ dataspec:
 data_dec:
   | dt = DTYPE;
     ils = option(index_list(index_exp));
-    dn = VAR 
+    dn = VAR;
+    option(SEMICOLON)
     { Ast.Data (dn, dt, Option.value ils ~default:[], $loc) }
   ;
 
@@ -60,7 +66,8 @@ paramspec:
 param_dec:
   | pt = DTYPE; 
     ils = option(index_list(index_exp));
-    pn = VAR
+    pn = VAR;
+    option(SEMICOLON)
     { Ast.Param (pn, pt, Option.value ils ~default:[], $loc) }
   ;
 
@@ -69,7 +76,7 @@ modelspec:
   ;
 
 sampling_stmt:
-  | var = arg; TILDE; dist = VAR; LPAREN; args = argslist; RPAREN
+  | var = arg; TILDE; dist = VAR; LPAREN; args = argslist; RPAREN; option(SEMICOLON)
     { Ast.Dist (dist, var, args, $loc) }
   | FOR; LPAREN; loop_i = VAR; IN; loop_is = index_exp; RPAREN;
     LBRACK; loop_spec = modelspec; RBRACK;
@@ -81,8 +88,8 @@ treespec:
   ;
 
 tree_stmt:
-  | ROOT; LPAREN; var = arg; RPAREN { Ast.Root (var, $loc) }
-  | LEAF; LPAREN; vars = argslist; RPAREN { Ast.Leaf (vars, $loc) }
+  | ROOT; LPAREN; var = arg; RPAREN; option(SEMICOLON) { Ast.Root (var, $loc) }
+  | LEAF; LPAREN; vars = argslist; RPAREN; option(SEMICOLON) { Ast.Leaf (vars, $loc) }
   | FOR; LPAREN; loop_i = VAR; IN; loop_is = index_exp; RPAREN;
     LBRACK; loop_spec = treespec; RBRACK;
     { Ast.TreeFor (loop_i, loop_is, loop_spec, $loc) }

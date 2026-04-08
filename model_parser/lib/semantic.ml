@@ -1,3 +1,9 @@
+(** Semantic analysis for model specification ASTs.
+    
+    Two operations are implemented: type checking and checking
+    that root nodes of trees are uniquely declared at the top level
+    of a [tree] block. Semantic analysis failures raise errors. *)
+
 open Static_env.StaticEnv
 open Ast
 open Lib_types
@@ -12,6 +18,9 @@ let rec index_type = function
   | (IntArray_T _) :: _ -> raise (IndexError "Only one-dimension integer arrays can be used as indices.")
   | _ :: _ -> raise (IndexError "Indices must be integer or integer arrays.")
 
+(** [typeof_stmt env exp] returns the type of the literal, range, variable, or function application
+    expression [exp] in the context of the environment [env], raising a TypeError if the expression 
+    does not have a valid type. *)
 let rec typeof_stmt env = function
   | Ast.Lit _ -> Float_T
   | Ast.LitInt _ -> Int_T
@@ -61,6 +70,9 @@ let rec typeof_stmt env = function
         | _ -> raise (TypeError ("Indices can only be applied to array types.", loc))
       end
 
+(** [typecheck_s env sample_stmt] type checks the sample statement [sample_stmet]
+    against the environment [env], returning true if and only if the sample
+    statement has valid type.  *)
 let rec typecheck_s env = function
   | Ast.Dist (_, sub_left, subs_right, loc) -> 
     if (typeof_stmt env sub_left == Bool_T ||
@@ -74,6 +86,10 @@ let rec typecheck_s env = function
         List.for_all (fun x -> typecheck_s l_env x) sub_inner
     else raise (TypeError ("Must loop over one-dimensional integer array-like.", loc))
 
+(** [typecheck env root_allowed tree_stmt] type checks the tree statement
+    [tree_dec] against the environment [env], returning true if and only if the
+    statement has valid type. Root declarations can only type check if [root_allowed]
+    is true, which allows the program to enforce uniqueness of the root declaration. *)
 let rec typecheck_t env root_allowed = function
   | Ast.TreeFor (l_name, sub_loop, sub_inner, loc) -> 
     if (typeof_stmt env sub_loop == IntArray_T 1) then
@@ -92,6 +108,9 @@ let rec typecheck_t env root_allowed = function
       raise (TypeError ("Leaf node variables must be of numeric type.", loc))
     else true
 
+(** [add_param_to_env env param_dec] adds a mapping into env which maps the of the name 
+    of the parameter declared by [param_dec] to its corresponding type, raising a TypeError
+    if the type declaration is invalid (e.g. a Float declared with multiple dimensions). *)
 let add_param_to_env env param = match param with
   | Ast.Param (pn, pt, pi, loc) -> try match pi with
     | [] -> if (pt == Ast.Real) then
@@ -105,6 +124,9 @@ let add_param_to_env env param = match param with
     with
       | LookupError msg -> raise (TypeError (msg, loc))
 
+(** [add_datum_to_env env data_dec] adds a mapping into env which maps the of the name 
+    of the variable declared by [data_dec] to its corresponding type, raising a TypeError
+    if the type declaration is invalid (e.g. a Bool declared with multiple dimensions). *)
 let add_datum_to_env env datum = match datum with
   | Ast.Data (dn, dt, di, loc) -> try match di with
     | [] -> if (dt = Ast.Int) then
@@ -125,6 +147,8 @@ let add_datum_to_env env datum = match datum with
     with
       | LookupError msg -> raise (TypeError (msg, loc))
 
+
+(** [check_model model] raises a type error if any statement in the model block or tree block fails to type check. *)
 let check_model model =
   try begin
     let data_env = List.fold_left add_datum_to_env empty model.data_block in
