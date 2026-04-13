@@ -230,6 +230,9 @@ and eval_tree_stmts_with tree param_ctx data_env index index_val tstmts =
   let new_env = ((index, Some (ar_singleton index_val)) :: data_env) in
   concat_trees (List.map (fun tstmt -> eval_tree_stmt tree param_ctx new_env tstmt) tstmts)
 
+(** Given a context [ctx] and data environment [env], [eval_param ctx env stmt] converts the parameter declaration statement
+    [stmt] to a string parameter name and an integer list describing the corresponding parameter's shape, adding the resulting
+    pair to [ctx] and returning the extended context. *)
 let eval_param param_ctx data_env = function
   | Ast.Param (pname, _, pis, loc) -> 
     let dims = try List.map (fun pi -> expand_integer data_env pi) pis
@@ -239,6 +242,9 @@ let eval_param param_ctx data_env = function
 let eval_params data_env param_block =
   List.fold_left (fun pd param -> eval_param pd data_env param) [] param_block
 
+(** Given a context [ctx] and data environment [env], [eval_datum ctx env stmt] converts the datum declaration statement
+    [stmt] to a string data variable name and an integer list describing the corresponding variable's shape, adding the resulting
+    pair to [ctx] and returning the extended context. *)
 let eval_datum param_ctx data_env = function
   | Ast.Data (dname, _, dis, loc) -> 
     let dims = try List.map (fun di -> expand_integer data_env di) dis
